@@ -1,3 +1,1 @@
-# myfin
-
-A new Flutter project.
+# MyFin
