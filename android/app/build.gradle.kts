@@ -42,11 +42,11 @@ android {
     }
 
     signingConfigs {
-        debug {
-            storeFile file(MYAPP_DEBUG_STORE_FILE)
-            storePassword MYAPP_DEBUG_STORE_PASSWORD
-            keyAlias MYAPP_DEBUG_KEY_ALIAS
-            keyPassword MYAPP_DEBUG_KEY_PASSWORD
+        getByName("debug") {
+            storeFile = file(property("MYAPP_DEBUG_STORE_FILE") as String)
+            storePassword = property("MYAPP_DEBUG_STORE_PASSWORD") as String
+            keyAlias = property("MYAPP_DEBUG_KEY_ALIAS") as String
+            keyPassword = property("MYAPP_DEBUG_KEY_PASSWORD") as String
         }
     }
 }
