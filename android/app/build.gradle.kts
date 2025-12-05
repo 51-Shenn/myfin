@@ -43,10 +43,11 @@ android {
 
     signingConfigs {
         getByName("debug") {
-            storeFile = file(property("MYAPP_DEBUG_STORE_FILE") as String)
-            storePassword = property("MYAPP_DEBUG_STORE_PASSWORD") as String
-            keyAlias = property("MYAPP_DEBUG_KEY_ALIAS") as String
-            keyPassword = property("MYAPP_DEBUG_KEY_PASSWORD") as String
+            val keyStoreFile = project.property("MYAPP_DEBUG_STORE_FILE") as String
+            storeFile = file(keyStoreFile)
+            storePassword = project.property("MYAPP_DEBUG_STORE_PASSWORD") as String
+            keyAlias = project.property("MYAPP_DEBUG_KEY_ALIAS") as String
+            keyPassword = project.property("MYAPP_DEBUG_KEY_PASSWORD") as String
         }
     }
 }
