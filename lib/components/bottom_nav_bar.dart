@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/navigation/report_nav.dart';
 
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
@@ -59,7 +60,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
               Container(color: Colors.red), // DashboardNav
               Container(color: Colors.green), // AiChatbotNav
               Container(color: Colors.blue), // UploadNav
-              Container(color: Colors.yellow), // ReportsNav
+              const ReportsNav(), // ReportsNav
               Container(color: Colors.orange), // ProfileNav
             ],
           ),

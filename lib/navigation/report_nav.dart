@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/screens/report/report.dart';
 
 class ReportsNav extends StatefulWidget {
   const ReportsNav({super.key});
@@ -26,7 +27,7 @@ class _ReportsNavState extends State<ReportsNav> {
             // use in button
             // onPressed: () => Navigator.pushNamed(context, '/report_details'),
 
-            return Container(); // report screen
+            return const ReportsScreen(); // report screen
           }
         );
       },
