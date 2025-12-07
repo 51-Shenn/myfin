@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/screens/report/report.dart';
+import 'package:myfin/screens/report/report_history.dart';
+import 'package:myfin/screens/report/report_main.dart';
 
 class ReportsNav extends StatefulWidget {
   const ReportsNav({super.key});
@@ -21,13 +22,13 @@ class _ReportsNavState extends State<ReportsNav> {
           builder: (BuildContext context) {
             // routes for report navigation
             if (settings.name == '/report_details') {
-              return Container(); // report details screen
+              return const ReportHistoryScreen(); // report details screen
             } 
 
             // use in button
             // onPressed: () => Navigator.pushNamed(context, '/report_details'),
 
-            return const ReportsScreen(); // report screen
+            return const ReportScreen(); // report screen
           }
         );
       },
