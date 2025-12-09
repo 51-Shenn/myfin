@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/screens/aichatbot.dart'; // Make sure this is imported
+import 'package:myfin/screens/aichatbot.dart';
 
 class AiChatbotNav extends StatefulWidget {
   const AiChatbotNav({super.key});

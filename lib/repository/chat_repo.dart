@@ -12,11 +12,13 @@ class ChatRepository {
   }
 
   Future<String> sendMessage(String message) async {
-    try {
-      final response = await _chatSession.sendMessage(Content.text(message));
-      return response.text ?? "No response received.";
-    } catch (e) {
-      throw Exception('Failed to communicate with AI: $e');
-    }
+  try {
+    final response = await _chatSession.sendMessage(Content.text(message));
+    return response.text ?? "No response received.";
+  } catch (e) {
+    // ADD THIS PRINT STATEMENT
+    print("GEMINI ERROR: $e"); 
+    throw Exception('Failed to communicate with AI: $e');
   }
+}
 }

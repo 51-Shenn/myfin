@@ -16,17 +16,16 @@ class _BottomNavBarState extends State<BottomNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        // bottom nav bar
         bottomNavigationBar: NavigationBar(
-          // ... (keep your existing NavigationBar code) ...
           selectedIndex: _selectedIndex,
           onDestinationSelected: (int index) {
             setState(() {
               _selectedIndex = index;
             });
           },
-          destinations: const <NavigationDestination>[
-             // ... (keep your existing destinations) ...
-             NavigationDestination(
+          destinations: <NavigationDestination>[
+            NavigationDestination(
               selectedIcon: Icon(Icons.bar_chart_rounded),
               icon: Icon(Icons.bar_chart_rounded),
               label: 'Dashboard',
@@ -59,6 +58,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
           child: IndexedStack(
             index: _selectedIndex,
             children: [
+              // replace with const nav widgets
               Container(color: Colors.red), // DashboardNav
               const AiChatbotNav(), 
               Container(color: Colors.blue), // UploadNav
