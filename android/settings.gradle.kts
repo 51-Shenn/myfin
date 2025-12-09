@@ -1,3 +1,5 @@
+rootProject.name = "myfin"
+
 pluginManagement {
     val flutterSdkPath =
         run {
