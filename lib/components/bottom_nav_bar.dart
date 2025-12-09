@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/navigation/report_nav.dart';
-// 1. ADD THIS IMPORT
 import 'package:myfin/navigation/aichatbot_nav.dart'; 
+import 'package:myfin/navigation/user_profile_nav.dart';
 
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
@@ -60,13 +60,12 @@ class _BottomNavBarState extends State<BottomNavBar> {
             index: _selectedIndex,
             children: [
               Container(color: Colors.red), // DashboardNav
-              
-              // 2. CHANGE THIS LINE (Remove the green container)
               const AiChatbotNav(), 
-              
               Container(color: Colors.blue), // UploadNav
-              const ReportsNav(), // ReportsNav
-              Container(color: Colors.orange), // ProfileNav
+              const ReportsNav(), 
+              
+              // CHANGE THIS LINE
+              const ProfileNav(), // ProfileNav
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/screens/user_profile.dart'; // Import this
 
 class ProfileNav extends StatefulWidget {
   const ProfileNav({super.key});
@@ -20,13 +21,11 @@ class _ProfileNavState extends State<ProfileNav> {
           builder: (BuildContext context) {
             // routes for profile navigation
             if (settings.name == '/profile_details') {
-              return Container(); // profile details screen
+              return Container(); // Placeholder for edit profile screen
             } 
 
-            // use in button
-            // onPressed: () => Navigator.pushNamed(context, '/profile_details'),
-
-            return Container(); // profile screen
+            // Return the new UserProfileScreen
+            return const UserProfileScreen(); 
           }
         );
       },
