@@ -12,7 +12,7 @@ class ReportScreen extends StatefulWidget {
 }
 
 class _ReportScreenState extends State<ReportScreen> {
-  String selectedReportType = 'P & L Report';
+  String? selectedReportType;
   DateTime? startDate;
   DateTime? endDate;
 
@@ -124,18 +124,31 @@ class _ReportScreenState extends State<ReportScreen> {
                             ),
                             borderRadius: BorderRadius.circular(27),
                           ),
+
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: selectedReportType,
                               isExpanded: true,
                               dropdownColor: Colors.white,
                               icon: const Icon(Icons.keyboard_arrow_down),
-                              items: reportTypes.map((String type) {
-                                return DropdownMenuItem<String>(
-                                  value: type,
-                                  child: Text(type),
-                                );
-                              }).toList(),
+                              items:[
+                                    const DropdownMenuItem<String>(
+                                      value: null,
+                                      child: Text(
+                                        'Please select type',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                    ...reportTypes.map((String type) {
+                                      return DropdownMenuItem<String>(
+                                        value: type,
+                                        child: Text(type),
+                                      );
+                                    }),
+                                  ].where((item) {
+                                    return selectedReportType == null ||
+                                        item.value != null;
+                                  }).toList(),
                               onChanged: (String? newValue) {
                                 if (newValue != null) {
                                   setState(() {
@@ -315,7 +328,8 @@ class _ReportScreenState extends State<ReportScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/report_details'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/report_details'),
                           child: const Text(
                             'View All',
                             style: TextStyle(
@@ -422,8 +436,8 @@ class RecentReportCard extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-            report.dateRange,
-            style: TextStyle(fontSize: 13, color: Colors.grey[800]),
+          report.dateRange,
+          style: TextStyle(fontSize: 13, color: Colors.grey[800]),
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
