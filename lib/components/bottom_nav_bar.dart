@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/navigation/report_nav.dart';
+import 'package:myfin/navigation/aichatbot_nav.dart'; 
+import 'package:myfin/navigation/user_profile_nav.dart';
 
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
@@ -58,10 +60,12 @@ class _BottomNavBarState extends State<BottomNavBar> {
             children: [
               // replace with const nav widgets
               Container(color: Colors.red), // DashboardNav
-              Container(color: Colors.green), // AiChatbotNav
+              const AiChatbotNav(), 
               Container(color: Colors.blue), // UploadNav
-              const ReportsNav(), // ReportsNav
-              Container(color: Colors.orange), // ProfileNav
+              const ReportsNav(), 
+              
+              // CHANGE THIS LINE
+              const ProfileNav(), // ProfileNav
             ],
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/screens/aichatbot.dart';
 
 class AiChatbotNav extends StatefulWidget {
   const AiChatbotNav({super.key});
@@ -18,7 +19,7 @@ class _AiChatbotNavState extends State<AiChatbotNav> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            return Container(); // ai chatbot screen
+            return const AiChatbotScreen(); 
           }
         );
       },
