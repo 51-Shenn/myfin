@@ -21,8 +21,8 @@ class _ReportsNavState extends State<ReportsNav> {
           settings: settings,
           builder: (BuildContext context) {
             // routes for report navigation
-            if (settings.name == '/report_details') {
-              return const ReportHistoryScreen(); // report details screen
+            if (settings.name == '/report_history') {
+              return const ReportHistoryScreen(); // report history screen
             } 
 
             // use in button

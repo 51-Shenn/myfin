@@ -15,6 +15,7 @@ class _ReportScreenState extends State<ReportScreen> {
   String? selectedReportType;
   DateTime? startDate;
   DateTime? endDate;
+  String member_id = "M123";
 
   final List<String> reportTypes = [
     'P & L Report',
@@ -53,7 +54,8 @@ class _ReportScreenState extends State<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ReportViewmodel(ReportRepository())..loadReports("M123"),
+      create: (_) =>
+          ReportViewmodel(ReportRepository())..loadReports(member_id),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -77,275 +79,6 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
             ],
           ),
-          centerTitle: true,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(400.0),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32.0,
-                      vertical: 24.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    // Report Function Container
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Report Type Selector
-                        const Text(
-                          'Report Type',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.grey[300]!,
-                              width: 1.5,
-                            ),
-                            borderRadius: BorderRadius.circular(27),
-                          ),
-
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedReportType,
-                              isExpanded: true,
-                              dropdownColor: Colors.white,
-                              icon: const Icon(Icons.keyboard_arrow_down),
-                              items:[
-                                    const DropdownMenuItem<String>(
-                                      value: null,
-                                      child: Text(
-                                        'Please select type',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    ),
-                                    ...reportTypes.map((String type) {
-                                      return DropdownMenuItem<String>(
-                                        value: type,
-                                        child: Text(type),
-                                      );
-                                    }),
-                                  ].where((item) {
-                                    return selectedReportType == null ||
-                                        item.value != null;
-                                  }).toList(),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    selectedReportType = newValue;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Fiscal Period
-                        const Text(
-                          'Fiscal Period',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  _selectDate(context, true);
-                                },
-                                style: startDate == null
-                                    ? ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF2B46F9,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            27,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      )
-                                    : OutlinedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: Colors.black,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            27,
-                                          ),
-                                          side: const BorderSide(
-                                            color: Color(0xFFE0E0E0),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                child: Text(
-                                  startDate == null
-                                      ? 'Pick Start Date'
-                                      : _formatDate(startDate),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  _selectDate(context, false);
-                                },
-                                style: endDate == null
-                                    ? ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF2B46F9,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            27,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      )
-                                    : OutlinedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: Colors.black,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            27,
-                                          ),
-                                          side: const BorderSide(
-                                            color: Color(0xFFE0E0E0),
-                                            width: 1.5,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                child: Text(
-                                  endDate == null
-                                      ? 'Pick End Date'
-                                      : _formatDate(endDate),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Generate Report Button
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: generate report function
-                              print(
-                                'Generate Report: $selectedReportType from $startDate to $endDate',
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2B46F9),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(27),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Generate Report',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Recent Reports Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Recent Reports',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/report_details'),
-                          child: const Text(
-                            'View All',
-                            style: TextStyle(
-                              color: Color(0xFF2D5FFF),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
         body: BlocBuilder<ReportViewmodel, ReportState>(
           builder: (context, state) {
@@ -365,13 +98,15 @@ class _ReportScreenState extends State<ReportScreen> {
             final reports = state.reports;
 
             return SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Recent Reports List
-                    ListView.separated(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Recent Reports List
+                  _buildReportFunctions(),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: reports.length,
@@ -382,12 +117,266 @@ class _ReportScreenState extends State<ReportScreen> {
                         return RecentReportCard(report: report);
                       },
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildReportFunctions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 32.0,
+              vertical: 24.0,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            // Report Function Container
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Report Type Selector
+                const Text(
+                  'Report Type',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!, width: 1.5),
+                    borderRadius: BorderRadius.circular(27),
+                  ),
+
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedReportType,
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      icon: const Icon(Icons.keyboard_arrow_down),
+                      items:
+                          [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                'Please select type',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            ...reportTypes.map((String type) {
+                              return DropdownMenuItem<String>(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }),
+                          ].where((item) {
+                            return selectedReportType == null ||
+                                item.value != null;
+                          }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            selectedReportType = newValue;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Fiscal Period
+                const Text(
+                  'Fiscal Period',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _selectDate(context, true);
+                        },
+                        style: startDate == null
+                            ? ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2B46F9),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(27),
+                                ),
+                                elevation: 0,
+                              )
+                            : OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(27),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                elevation: 0,
+                              ),
+                        child: Text(
+                          startDate == null
+                              ? 'Pick Start Date'
+                              : _formatDate(startDate),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _selectDate(context, false);
+                        },
+                        style: endDate == null
+                            ? ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2B46F9),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(27),
+                                ),
+                                elevation: 0,
+                              )
+                            : OutlinedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(27),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                elevation: 0,
+                              ),
+                        child: Text(
+                          endDate == null
+                              ? 'Pick End Date'
+                              : _formatDate(endDate),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Generate Report Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // TODO: generate report function
+                      print(
+                        'Generate Report: $selectedReportType from $startDate to $endDate',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2B46F9),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(27),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Generate Report',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Recent Reports Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recent Reports',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/report_history'),
+                  child: const Text(
+                    'View All',
+                    style: TextStyle(
+                      color: Color(0xFF2D5FFF),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
