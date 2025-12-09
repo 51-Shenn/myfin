@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/navigation/report_nav.dart';
-// 1. ADD THIS IMPORT
-import 'package:myfin/navigation/aichatbot_nav.dart'; 
 
 class BottomNavBar extends StatefulWidget {
   const BottomNavBar({super.key});
@@ -16,17 +14,16 @@ class _BottomNavBarState extends State<BottomNavBar> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        // bottom nav bar
         bottomNavigationBar: NavigationBar(
-          // ... (keep your existing NavigationBar code) ...
           selectedIndex: _selectedIndex,
           onDestinationSelected: (int index) {
             setState(() {
               _selectedIndex = index;
             });
           },
-          destinations: const <NavigationDestination>[
-             // ... (keep your existing destinations) ...
-             NavigationDestination(
+          destinations: <NavigationDestination>[
+            NavigationDestination(
               selectedIcon: Icon(Icons.bar_chart_rounded),
               icon: Icon(Icons.bar_chart_rounded),
               label: 'Dashboard',
@@ -59,11 +56,9 @@ class _BottomNavBarState extends State<BottomNavBar> {
           child: IndexedStack(
             index: _selectedIndex,
             children: [
+              // replace with const nav widgets
               Container(color: Colors.red), // DashboardNav
-              
-              // 2. CHANGE THIS LINE (Remove the green container)
-              const AiChatbotNav(), 
-              
+              Container(color: Colors.green), // AiChatbotNav
               Container(color: Colors.blue), // UploadNav
               const ReportsNav(), // ReportsNav
               Container(color: Colors.orange), // ProfileNav
