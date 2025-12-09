@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "985128793202",
+    "project_id": "myfin-194ee",
+    "storage_bucket": "myfin-194ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985128793202:android:9ce2a22c56a145815dfeeb",
+        "android_client_info": {
+          "package_name": "com.example.myfin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5peQ8PEgwY4w4r8Drsc7Z-euaJP75hVE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
