@@ -300,7 +300,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             child: const Text(
                               'Generate Report',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 1.5,
                               ),
