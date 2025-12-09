@@ -14,8 +14,8 @@ dependencies:
   bloc: ^9.1.0
   flutter_bloc: ^9.1.0
   google_generative_ai: ^0.4.0  
-  flutter_dotenv: ^5.2.1  # Add this line
-  flutter_markdown: ^0.7.3  # Add this line
+  flutter_dotenv: ^5.2.1  
+  flutter_markdown: ^0.7.3 
 
 dev_dependencies:
   flutter_test:
@@ -25,4 +25,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - .env  # Add this line
+    - .env

@@ -13,7 +13,6 @@ class AiChatbotScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2. We provide the ViewModel to the screen
     return BlocProvider(
       create: (_) => ChatViewModel(ChatRepository()),
       child: Scaffold(

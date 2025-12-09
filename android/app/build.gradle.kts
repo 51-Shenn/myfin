@@ -41,7 +41,7 @@ android {
         }
     }
 
-    signingConfigs {
+     signingConfigs {
         getByName("debug") {
             val keyStoreFile = project.property("MYAPP_DEBUG_STORE_FILE") as String
             storeFile = file(keyStoreFile)
@@ -50,6 +50,8 @@ android {
             keyPassword = project.property("MYAPP_DEBUG_KEY_PASSWORD") as String
         }
     }
+
+
 }
 
 flutter {
