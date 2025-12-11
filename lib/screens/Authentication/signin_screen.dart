@@ -1,9 +1,9 @@
 
 import 'package:flutter/material.dart';
-import 'package:myfin/components/auth_switcher.dart';
-import 'package:myfin/components/custom_text_field.dart';
-import 'package:myfin/components/social_login_button.dart';
-import 'package:myfin/navigation/app_routes.dart';
+import 'package:myfin/core/components/auth_switcher.dart';
+import 'package:myfin/core/components/custom_text_field.dart';
+import 'package:myfin/core/components/social_login_button.dart';
+import 'package:myfin/core/navigation/app_routes.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});

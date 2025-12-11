@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
-import 'package:myfin/components/auth_switcher.dart';
-import 'package:myfin/components/custom_text_field.dart';
+import 'package:myfin/core/components/auth_switcher.dart';
+import 'package:myfin/core/components/custom_text_field.dart';
 import 'package:intl/intl.dart'; // Add 'intl' package to pubspec.yaml for date formatting
 
 class SignUpScreen extends StatefulWidget {
