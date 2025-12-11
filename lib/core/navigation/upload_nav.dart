@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/features/document_uploader/presentation/pages/doc_details.dart';
-import 'package:myfin/features/document_uploader/presentation/pages/upload_main.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_main.dart';
 
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
@@ -21,7 +21,7 @@ class _UploadNavState extends State<UploadNav> {
           settings: settings,
           builder: (BuildContext context) {
             // routes for upload navigation
-            if (settings.name == '/upload_doc_details') {
+            if (settings.name == '/manual_entry') {
               return DocumentDetailsScreen(); // upload doc details screen
             } 
 

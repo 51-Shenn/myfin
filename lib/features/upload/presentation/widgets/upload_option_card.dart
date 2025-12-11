@@ -1,65 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/features/document_uploader/presentation/pages/option.dart';
+import 'package:myfin/features/upload/presentation/pages/option.dart';
 
-class UploadScreen extends StatefulWidget {
-  const UploadScreen ({super.key});
+class UploadOptionCard extends StatelessWidget {
+  final Option option;
+  final EdgeInsetsGeometry? customPadding;
 
-  @override
-  State<UploadScreen> createState() => _UploadScreenState();
-}
-
-class _UploadScreenState extends State<UploadScreen> {
+  const UploadOptionCard({
+    super.key,
+    required this.option,
+    this.customPadding
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Upload',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 30,
-            fontWeight: FontWeight.bold
-            )
-          ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildUploadOptionCard(Option.manual),
-            _buildUploadOptionCard(Option.file),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildUploadOptionCard(
-                    Option.gallery,
-                    customPadding: EdgeInsets.fromLTRB(30, 10, 10, 10)
-                  )
-                ),
-                Expanded(
-                  child: _buildUploadOptionCard(
-                    Option.scan,
-                    customPadding: EdgeInsets.fromLTRB(10, 10, 30, 10)
-                  )
-                )
-              ],
-            ),
-            _buildRecentUploads(),
-          ],
-        )
-      )
-    );
-  }
-
-  Widget _buildUploadOptionCard(Option option, {EdgeInsetsGeometry? customPadding}) {
-    double iconSize = option.isMainOption? 50 : 40;
-    double titleFontSize = option.isMainOption? 20: 14;
-    double descFontSize = option.isMainOption? 16 : 20;
-    double horizontalPadding = option.isMainOption? 25 : 15;
+    double iconSize = option.isMainOption? 40 : 35;
+    double titleFontSize = option.isMainOption? 20: 12;
+    double descFontSize = option.isMainOption? 15 : 18;
+    double horizontalPadding = option.isMainOption? 25 : 10;
 
     return Padding(
-      padding: customPadding?? EdgeInsets.symmetric(vertical: 10, horizontal: 30),
+      padding: customPadding?? EdgeInsets.symmetric(vertical: 10, horizontal: 20),
       child: Align(
         alignment: Alignment.center,
         child: Material(
@@ -69,7 +29,7 @@ class _UploadScreenState extends State<UploadScreen> {
           clipBehavior: Clip.hardEdge,
           child: Center(
             child: InkWell(
-              onTap: () => Navigator.pushNamed(context, option.navigateTo), // should get button to navigate to their own
+              onTap: () => Navigator.pushNamed(context, option.navigateTo),
               borderRadius: BorderRadius.circular(20),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 10.0),
@@ -115,9 +75,5 @@ class _UploadScreenState extends State<UploadScreen> {
         )
       )
     );
-  }
-
-  Widget _buildRecentUploads() {
-    return Container(); // TODO
   }
 }

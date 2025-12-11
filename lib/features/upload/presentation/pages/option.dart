@@ -6,7 +6,7 @@ enum Option {
     description: 'Type document information manually.',
     icon: Icons.keyboard,
     isMainOption: true,
-    navigateTo: '/upload_doc_details',
+    navigateTo: '/manual_entry',
   ),
   file(
     title: 'File Upload',
