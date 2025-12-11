@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 
@@ -29,7 +30,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
 
         return ReportUiModel(
           report_id: report.report_id,
-          report_type: report.report_type,
+          report_type: report.report_type.convertString,
           dateRange: dateRange,
         );
       }).toList();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
@@ -18,13 +19,13 @@ class _ReportScreenState extends State<ReportScreen> {
   DateTime? endDate;
   String member_id = "M123";
 
-  final List<String> reportTypes = [
-    'P & L Report',
-    'Balance Sheet',
-    'Cash Flow',
-    'Accounts Payable',
-    'Accounts Receivable',
-  ];
+  List<String> reportTypes = [
+    ReportType.profitLoss,
+    ReportType.balanceSheet,
+    ReportType.cashFlow,
+    ReportType.accountsPayable,
+    ReportType.accountsReceivable,
+  ].map((e) => e.convertString).toList();
 
   void _showErrorSnackBar(BuildContext context, String message) {
     if (!mounted) return;
@@ -85,19 +86,6 @@ class _ReportScreenState extends State<ReportScreen> {
           },
           child: BlocBuilder<ReportBLoC, ReportState>(
             builder: (context, state) {
-              if (state.loading && state.reports.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state.error != null) {
-                return Center(
-                  child: Text(
-                    state.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
               final reports = state.reports;
 
               return SingleChildScrollView(
@@ -107,6 +95,23 @@ class _ReportScreenState extends State<ReportScreen> {
                     // Report Functions
                     _buildReportFunctions(),
                     const SizedBox(height: 16),
+
+                    if (state.loading && state.reports.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(48.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    
+                    if (state.error != null)
+                      Center(
+                        child: Text(
+                          state.error!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+
                     // Recent Reports List
                     if (!state.loading && state.reports.isEmpty)
                       Padding(
