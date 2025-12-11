@@ -1,40 +1,47 @@
+import 'package:equatable/equatable.dart';
+
 // only hold string values for UI display
-class ReportUiModel {
+class ReportUiModel extends Equatable {
   final String report_id;
   final String report_type;
   final String dateRange;
 
-  ReportUiModel({
+  const ReportUiModel({
     required this.report_id,
     required this.report_type,
     required this.dateRange,
   });
+
+  @override
+  List<Object> get props => [report_id, report_type, dateRange];
 }
 
-// state for report viewmodel
-class ReportState {
+// state for report bloc
+class ReportState extends Equatable {
   final bool loading;
+  final bool generating;
   final List<ReportUiModel> reports;
   final String? error;
 
-  ReportState({
-    required this.loading,
-    required this.reports,
-    this.error,
-  });
+  const ReportState({required this.loading, required this.reports, this.error, required this.generating});
 
   factory ReportState.initial() =>
-      ReportState(loading: false, reports: []);
+      const ReportState(loading: false, generating: false, reports: []);
 
   ReportState copyWith({
     bool? loading,
+    bool? generating,
     List<ReportUiModel>? reports,
     String? error,
   }) {
     return ReportState(
       loading: loading ?? this.loading,
+      generating: generating ?? this.generating,
       reports: reports ?? this.reports,
       error: error,
     );
   }
+
+  @override
+  List<Object?> get props => [loading, reports, error];
 }

@@ -1,3 +1,6 @@
+// concrete data models
+
+// report entity
 class Report {
   final String report_id;
   final DateTime generated_at;
@@ -18,3 +21,9 @@ class Report {
     return 'Report(ID: $report_id, Type: $report_type, Period: ${fiscal_period['startDate']} - ${fiscal_period['endDate']})';
   }
 }
+
+// profit & loss report entity
+// cash flow statement entity
+// balance sheet entity
+// account receivable entity
+// account payable entity

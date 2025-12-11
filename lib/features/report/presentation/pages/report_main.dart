@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
+import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 
 class ReportScreen extends StatefulWidget {
@@ -25,37 +26,27 @@ class _ReportScreenState extends State<ReportScreen> {
     'Accounts Receivable',
   ];
 
-  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: isStartDate
-          ? (startDate ?? DateTime.now())
-          : (endDate ?? DateTime.now()),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
+  void _showErrorSnackBar(BuildContext context, String message) {
+    if (!mounted) return;
 
-    if (picked != null) {
-      setState(() {
-        if (isStartDate) {
-          startDate = picked;
-        } else {
-          endDate = picked;
-        }
-      });
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Select Date';
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  void _showSuccessSnackBar(BuildContext context, String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ReportViewmodel(ReportRepository())..loadReports(member_id),
+      create: (context) =>
+          ReportBLoC(ReportRepository())..add(LoadReportsEvent(member_id)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -79,49 +70,99 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
             ],
           ),
+          centerTitle: true,
         ),
-        body: BlocBuilder<ReportViewmodel, ReportState>(
-          builder: (context, state) {
-            if (state.loading) {
-              return const Center(child: CircularProgressIndicator());
+        body: BlocListener<ReportBLoC, ReportState>(
+          listener: (context, state) {
+            if (state.error != null && mounted) {
+              _showErrorSnackBar(context, state.error!);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  context.read<ReportBLoC>().add(ClearErrorEvent());
+                }
+              });
             }
+          },
+          child: BlocBuilder<ReportBLoC, ReportState>(
+            builder: (context, state) {
+              if (state.loading && state.reports.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (state.error != null) {
-              return Center(
-                child: Text(
-                  state.error!,
-                  style: const TextStyle(color: Colors.red),
+              if (state.error != null) {
+                return Center(
+                  child: Text(
+                    state.error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final reports = state.reports;
+
+              return SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Report Functions
+                    _buildReportFunctions(),
+                    const SizedBox(height: 16),
+                    // Recent Reports List
+                    if (!state.loading && state.reports.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.description,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No reports found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (mounted) {
+                                    context.read<ReportBLoC>().add(
+                                      LoadReportsEvent(member_id),
+                                    );
+                                  }
+                                },
+                                child: const Text('Refresh'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    if (state.reports.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: reports.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final report = reports[index];
+                            return RecentReportCard(report: report);
+                          },
+                        ),
+                      ),
+                  ],
                 ),
               );
-            }
-
-            final reports = state.reports;
-
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Recent Reports List
-                  _buildReportFunctions(),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: reports.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final report = reports[index];
-                        return RecentReportCard(report: report);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -176,31 +217,23 @@ class _ReportScreenState extends State<ReportScreen> {
                       isExpanded: true,
                       dropdownColor: Colors.white,
                       icon: const Icon(Icons.keyboard_arrow_down),
-                      items:
-                          [
-                            const DropdownMenuItem<String>(
-                              value: null,
-                              child: Text(
-                                'Please select type',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                            ...reportTypes.map((String type) {
-                              return DropdownMenuItem<String>(
-                                value: type,
-                                child: Text(type),
-                              );
-                            }),
-                          ].where((item) {
-                            return selectedReportType == null ||
-                                item.value != null;
-                          }).toList(),
+
+                      hint: const Text(
+                        'Please select type',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+
+                      items: reportTypes.map((String type) {
+                        return DropdownMenuItem<String>(
+                          value: type,
+                          child: Text(type),
+                        );
+                      }).toList(),
+
                       onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            selectedReportType = newValue;
-                          });
-                        }
+                        setState(() {
+                          selectedReportType = newValue;
+                        });
                       },
                     ),
                   ),
@@ -317,10 +350,47 @@ class _ReportScreenState extends State<ReportScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // TODO: generate report function
+                      // simple validation
+                      if (selectedReportType == null) {
+                        _showErrorSnackBar(
+                          context,
+                          'Please select a Report Type.',
+                        );
+                        return;
+                      }
+                      if (startDate == null || endDate == null) {
+                        _showErrorSnackBar(
+                          context,
+                          'Please select a Start and End Date.',
+                        );
+                        return;
+                      }
+                      if (startDate!.isAfter(endDate!)) {
+                        _showErrorSnackBar(
+                          context,
+                          'Start Date cannot be after End Date.',
+                        );
+                        return;
+                      }
+
+                      context.read<ReportBLoC>().add(
+                        GenerateReportEvent(
+                          reportType: selectedReportType!,
+                          member_id: member_id,
+                          startDate: startDate!,
+                          endDate: endDate!,
+                        ),
+                      );
                       print(
                         'Generate Report: $selectedReportType from $startDate to $endDate',
                       );
+
+                      _showSuccessSnackBar(
+                        context,
+                        'Report generation started!',
+                      );
+
+                      // navigate to generated report after generation complete
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2B46F9),
@@ -379,6 +449,32 @@ class _ReportScreenState extends State<ReportScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: isStartDate
+          ? (startDate ?? DateTime.now())
+          : (endDate ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        if (isStartDate) {
+          startDate = picked;
+        } else {
+          endDate = picked;
+        }
+      });
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Select Date';
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }
 

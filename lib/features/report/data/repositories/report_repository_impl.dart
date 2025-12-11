@@ -1,24 +1,24 @@
 import 'dart:async';
-
 import 'package:myfin/features/report/domain/entities/report.dart';
 
+// repo implementation
 class ReportRepository {
   // testing
   final List<Map<String, dynamic>> _exampleCollection = [
-    {
-      "report_id": "RPT-001",
-      "generated_at": "2024-11-10T08:30:00Z",
-      "fiscal_period": {"startDate": "2024-01-01T00:00:00Z", "endDate": "2024-12-31T23:59:59Z"},
-      "report_type": "Balance Sheet",
-      "member_id": "M123",
-    },
-    {
-      "report_id": "RPT-002",
-      "generated_at": "2024-10-02T12:00:00Z",
-      "fiscal_period": {"startDate": "2025-01-01T00:00:00Z", "endDate": "2025-12-31T23:59:59Z"},
-      "report_type": "P & L Report",
-      "member_id": "M123",
-    },
+    // {
+    //   "report_id": "RPT-001",
+    //   "generated_at": "2024-11-10T08:30:00Z",
+    //   "fiscal_period": {"startDate": "2024-01-01T00:00:00Z", "endDate": "2024-12-31T23:59:59Z"},
+    //   "report_type": "Balance Sheet",
+    //   "member_id": "M123",
+    // },
+    // {
+    //   "report_id": "RPT-002",
+    //   "generated_at": "2024-10-02T12:00:00Z",
+    //   "fiscal_period": {"startDate": "2025-01-01T00:00:00Z", "endDate": "2025-12-31T23:59:59Z"},
+    //   "report_type": "P & L Report",
+    //   "member_id": "M123",
+    // },
   ];
 
   // fake delay
@@ -48,4 +48,11 @@ class ReportRepository {
         .toList();
     return memberReports;
   }
+
+  // generate report
+  // save report log to firebase
+  // fetch data from firebase
+  // call report factory to get corresponding report formatter
+  // pass report data to report formatter
+  // get formatted report -> pass to ui
 }
