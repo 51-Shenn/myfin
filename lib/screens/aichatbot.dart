@@ -24,13 +24,8 @@ class AiChatbotScreen extends StatelessWidget {
             Expanded(
               child: BlocBuilder<ChatViewModel, ChatState>(
                 builder: (context, state) {
-                  // Auto-scroll logic is handled usually by a specialized widget or 
-                  // by passing a controller to the ListView. For simplicity in Clean Arch,
-                  // we stick to rendering the list. 
-                  
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                    // If loading, add 1 extra item for the spinner
                     itemCount: state.messages.length + (state.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= state.messages.length) {
@@ -65,20 +60,29 @@ class AiChatbotScreen extends StatelessWidget {
     return AppBar(
       backgroundColor: _primaryBlue,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
+      automaticallyImplyLeading: false, 
       title: Row(
         children: [
+          // --- CHANGED SECTION START ---
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(2), // Smaller padding for image
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.rocket_launch, color: _primaryBlue, size: 20),
+            // ClipOval crops the square image into a circle
+            child: ClipOval(
+              child: Image.asset(
+                'assets/AI_ChatBot_Logo.png', // MAKE SURE THIS MATCHES YOUR FILENAME
+                width: 35, 
+                height: 35,
+                fit: BoxFit.cover, // Ensures image fills the circle
+                // If you get an error before adding the asset, 
+                // you can temporarily use: Icon(Icons.person, color: _primaryBlue)
+              ),
+            ),
           ),
+          
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

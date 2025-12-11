@@ -26,3 +26,5 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - assets/MyFin.png
+    - assets/AI_ChatBot_Logo.png
