@@ -13,7 +13,7 @@ enum ReportType {
 
 // toString extension for ReportType
 extension ReportTypeExtension on ReportType {
-  String get convertString {
+  String get reportTypeToString {
     switch (this) {
       case ReportType.profitLoss:
         return 'Profit & Loss Report';
@@ -26,6 +26,24 @@ extension ReportTypeExtension on ReportType {
       case ReportType.accountsReceivable:
         return 'Accounts Receivable';
     }
+  }
+}
+
+// convert String to ReportType
+ReportType stringToReportType(String type) {
+  switch (type) {
+    case 'Profit & Loss Report':
+      return ReportType.profitLoss;
+    case 'Balance Sheet':
+      return ReportType.balanceSheet;
+    case 'Cash Flow Statement':
+      return ReportType.cashFlow;
+    case 'Accounts Payable':
+      return ReportType.accountsPayable;
+    case 'Accounts Receivable':
+      return ReportType.accountsReceivable;
+    default:
+      throw Exception('Unknown report type: $type');
   }
 }
 
@@ -44,6 +62,22 @@ class Report extends Equatable {
     required this.report_type,
     required this.member_id,
   });
+
+  Report copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+  }) {
+    return Report(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+    );
+  }
 
   @override
   String toString() {
@@ -74,6 +108,20 @@ class ReportLineItem extends Equatable {
     required this.isIncrease,
   });
 
+  ReportLineItem copyWith({
+    String? item_title,
+    String? description,
+    double? amount,
+    bool? isIncrease,
+  }) {
+    return ReportLineItem(
+      item_title: item_title ?? this.item_title,
+      description: description ?? this.description,
+      amount: amount ?? this.amount,
+      isIncrease: isIncrease ?? this.isIncrease,
+    );
+  }
+
   @override
   List<Object?> get props => [item_title, description, amount, isIncrease];
 }
@@ -90,6 +138,18 @@ class ReportGroup extends Equatable {
     required this.subtotal,
   });
 
+  ReportGroup copyWith({
+    String? group_title,
+    List<ReportLineItem>? line_items,
+    double? subtotal,
+  }) {
+    return ReportGroup(
+      group_title: group_title ?? this.group_title,
+      line_items: line_items ?? this.line_items,
+      subtotal: subtotal ?? this.subtotal,
+    );
+  }
+
   @override
   List<Object> get props => [group_title, line_items, subtotal];
 }
@@ -105,6 +165,18 @@ class ReportSection extends Equatable {
     required this.groups,
     required this.grand_total,
   });
+
+  ReportSection copyWith({
+    String? section_title,
+    List<ReportGroup>? groups,
+    double? grand_total,
+  }) {
+    return ReportSection(
+      section_title: section_title ?? this.section_title,
+      groups: groups ?? this.groups,
+      grand_total: grand_total ?? this.grand_total,
+    );
+  }
 
   @override
   List<Object> get props => [section_title, groups, grand_total];

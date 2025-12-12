@@ -25,7 +25,7 @@ class _ReportScreenState extends State<ReportScreen> {
     ReportType.cashFlow,
     ReportType.accountsPayable,
     ReportType.accountsReceivable,
-  ].map((e) => e.convertString).toList();
+  ].map((e) => e.reportTypeToString).toList();
 
   void _showErrorSnackBar(BuildContext context, String message) {
     if (!mounted) return;

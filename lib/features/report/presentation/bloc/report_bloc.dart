@@ -30,7 +30,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
 
         return ReportUiModel(
           report_id: report.report_id,
-          report_type: report.report_type.convertString,
+          report_type: report.report_type.reportTypeToString,
           dateRange: dateRange,
         );
       }).toList();
@@ -57,11 +57,20 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(generating: true, error: null));
 
     try {
-      final fiscal_period = _toFiscalPeriod(event.startDate, event.endDate);
+      Report report = Report(
+        member_id: event.member_id,
+        report_type: stringToReportType(event.reportType),
+        fiscal_period: {'startDate': event.startDate, 'endDate': event.endDate},
+        report_id: 'RPT-001',
+        generated_at: DateTime.now(),
+      );
 
-      // call generate report func pass fiscal_period, report_type, member_id
+      // create report
+      report = await repo.createReport(report);
 
       emit(state.copyWith(generating: false));
+
+      // TODO: display generated report after report creation
 
       // reload reports list
       await _onLoadReports(LoadReportsEvent(event.member_id), emit);
@@ -92,7 +101,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
   }
 
   // format startDate and endDate to fiscal period
-  Map<String, DateTime> _toFiscalPeriod(DateTime startDate, DateTime endDate) {
-    return {'startDate': startDate, 'endDate': endDate};
-  }
+  // Map<String, DateTime> _toFiscalPeriod(DateTime startDate, DateTime endDate) {
+  //   return {'startDate': startDate, 'endDate': endDate};
+  // }
 }

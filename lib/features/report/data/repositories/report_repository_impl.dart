@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/services/generator/report_factory.dart';
 
 // repo implementation
 class ReportRepository {
@@ -50,9 +51,15 @@ class ReportRepository {
   }
 
   // generate report
-  // save report log to firebase
-  // fetch data from firebase
-  // call report factory to get corresponding report formatter
-  // pass report data to report formatter
-  // get formatted report -> pass to ui
+  Future<Report> createReport(Report report) async {
+    ReportFactory reportFactory = ReportFactory();
+    Report generatedReport = report;
+    List<Map<dynamic, dynamic>> reportData = [];
+
+    // TODO: saveReportLog(report); - repo function
+    // TODO: reportData = await getReportData(report); - repo function
+    generatedReport = await reportFactory.generateReport(report, reportData);
+
+    return generatedReport;
+  }
 }
