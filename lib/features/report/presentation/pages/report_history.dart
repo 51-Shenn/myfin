@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
+import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 
 class ReportHistoryScreen extends StatefulWidget {
@@ -12,10 +13,21 @@ class ReportHistoryScreen extends StatefulWidget {
 }
 
 class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
+  String member_id = "M123";
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ReportViewmodel(ReportRepository())..loadReports("M123"),
+      create: (_) =>
+          ReportBLoC(ReportRepository())..add(LoadReportsEvent(member_id)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -42,32 +54,88 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
           ),
           centerTitle: true,
         ),
-        body: BlocBuilder<ReportViewmodel, ReportState>(
-          builder: (context, state) {
-            if (state.loading) {
-              return const Center(child: CircularProgressIndicator());
+        body: BlocListener<ReportBLoC, ReportState>(
+          listener: (context, state) {
+            if (state.error != null && mounted) {
+              _showErrorSnackBar(context, state.error!);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  context.read<ReportBLoC>().add(ClearErrorEvent());
+                }
+              });
             }
+          },
+          child: BlocBuilder<ReportBLoC, ReportState>(
+            builder: (context, state) {
+              if (state.loading && state.reports.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (state.error != null) {
-              return Center(
-                child: Text(
-                  state.error!,
-                  style: const TextStyle(color: Colors.red),
+              if (state.error != null) {
+                return Center(
+                  child: Text(
+                    state.error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              final reports = state.reports;
+
+              return Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!state.loading && state.reports.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.description,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No reports found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (mounted) {
+                                    context.read<ReportBLoC>().add(
+                                      LoadReportsEvent(member_id),
+                                    );
+                                  }
+                                },
+                                child: const Text('Refresh'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    if (state.reports.isNotEmpty)
+                      ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: reports.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          return ReportCard(report: reports[index]);
+                        },
+                      ),
+                  ],
                 ),
               );
-            }
-
-            final reports = state.reports;
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: reports.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return ReportCard(report: reports[index]);
-              },
-            );
-          },
+            },
+          ),
         ),
       ),
     );

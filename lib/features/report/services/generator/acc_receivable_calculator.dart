@@ -1,0 +1,1 @@
+// prepare account receivable report data for page viewing
