@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/features/authentication/domain/entities/member.dart'; 
 import 'package:myfin/features/profile/presentation/pages/profile_main.dart';
+import 'package:myfin/features/profile/presentation/pages/edit_profile.dart'; 
+import 'package:myfin/features/profile/presentation/pages/business_profile.dart'; 
 
 class ProfileNav extends StatefulWidget {
   const ProfileNav({super.key});
@@ -19,12 +22,18 @@ class _ProfileNavState extends State<ProfileNav> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            // routes for profile navigation
             if (settings.name == '/profile_details') {
-              return Container(); // Placeholder for edit profile screen
+              final args = settings.arguments as Member?;
+              return EditProfileScreen(member: args);
             } 
+            
+            // --- ADD THIS BLOCK ---
+            if (settings.name == '/business_profile') {
+              return const BusinessProfileScreen();
+            }
+            // ----------------------
 
-            // Return the new UserProfileScreen
+            // Return the UserProfileScreen
             return const UserProfileScreen(); 
           }
         );
