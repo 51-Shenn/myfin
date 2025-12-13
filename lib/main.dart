@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myfin/firebase_options.dart';
-import 'package:myfin/core/navigation/app_routes.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +24,7 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: true,
       theme: ThemeData(useMaterial3: true),
-      initialRoute: AppRoutes.signin, // <-- SET the initial route to the sign-in screen
-      routes: AppRoutes.routes,  
+      home: const BottomNavBar(),
     );
   }
 }
