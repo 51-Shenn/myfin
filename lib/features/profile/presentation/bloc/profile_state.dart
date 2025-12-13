@@ -14,7 +14,6 @@ class ProfileState {
     this.error,
   });
 
-  // Initial state
   factory ProfileState.initial() {
     return const ProfileState(
       isLoading: false,
@@ -24,7 +23,6 @@ class ProfileState {
     );
   }
 
-  // CopyWith method to update specific fields while keeping others
    ProfileState copyWith({
     bool? isLoading,
     Member? member,

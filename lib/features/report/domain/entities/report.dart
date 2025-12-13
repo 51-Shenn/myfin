@@ -1,5 +1,3 @@
-// concrete data models
-
 import 'package:equatable/equatable.dart';
 
 // report types

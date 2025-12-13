@@ -4,6 +4,7 @@ import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
+import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -11,7 +12,11 @@ class UserProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProfileViewModel(ProfileRepository())..loadProfile("M123"),
+      create: (_) => ProfileViewModel(
+        ProfileRepositoryImpl(
+          remoteDataSource: ProfileRemoteDataSourceImpl(), // Inject DataSource
+        ),
+      )..loadProfile("M123"),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(

@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:myfin/features/profile/domain/repositories/profile_repository.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 
@@ -13,8 +13,8 @@ class ProfileViewModel extends Cubit<ProfileState> {
 
     try {
       final results = await Future.wait([
-        _repo.fetchMemberProfile(memberId),
-        _repo.fetchBusinessProfile(memberId),
+        _repo.getMemberProfile(memberId),
+        _repo.getBusinessProfile(memberId),
       ]);
 
       emit(
@@ -32,7 +32,6 @@ class ProfileViewModel extends Cubit<ProfileState> {
   }
 
   Future<void> logout() async {
-    // Reset to initial state
     emit(ProfileState.initial());
   }
 
@@ -40,13 +39,11 @@ class ProfileViewModel extends Cubit<ProfileState> {
     emit(state.copyWith(isLoading: true));
 
     try {
-      // 1. Save to Firebase
       await _repo.saveBusinessProfile(profile);
 
-      // 2. Update local state so UI reflects changes immediately
       emit(state.copyWith(
         isLoading: false,
-        businessProfile: profile, // Update the displayed profile
+        businessProfile: profile,
       ));
     } catch (e) {
       emit(state.copyWith(

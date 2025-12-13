@@ -4,6 +4,7 @@ import 'package:myfin/features/profile/data/repositories/profile_repository_impl
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
+import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
@@ -11,7 +12,11 @@ class BusinessProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProfileViewModel(ProfileRepository())..loadProfile("M123"),
+      create: (_) => ProfileViewModel(
+        ProfileRepositoryImpl(
+          remoteDataSource: ProfileRemoteDataSourceImpl(),
+        ),
+      )..loadProfile("M123"),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -64,8 +69,8 @@ class BusinessProfileScreen extends StatelessWidget {
                   _buildDetailsCard(business),
                   const SizedBox(height: 30),
                   
-                  _buildSectionTitle("SETTINGS"),
-                  _buildSettingsCard(),
+                 _buildSectionTitle("SETTINGS"),
+                  _buildSettingsCard(context, business),
                 ],
               ),
             );
@@ -154,7 +159,7 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsCard() {
+  Widget _buildSettingsCard(BuildContext context, BusinessProfile? business) {
     return Container(
       decoration: _boxDecoration(),
       child: ListTile(
@@ -167,6 +172,15 @@ class BusinessProfileScreen extends StatelessWidget {
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF2B46F9)),
         onTap: () {
           // Navigate to edit form
+          Navigator.pushNamed(
+            context, 
+            '/edit_business_profile',
+            arguments: {
+              'bloc': context.read<ProfileViewModel>(), // Pass the Bloc
+              'profile': business, // Pass current data to pre-fill
+              'memberId': "M123", // Or business?.memberId
+            }
+          );
         },
       ),
     );
