@@ -19,8 +19,7 @@ final class AuthLoginRequested extends AuthEvent {
   List<Object> get props => [email, password];
 }
 
-final class AuthLogoutRequested extends AuthEvent {
-}
+final class AuthLogoutRequested extends AuthEvent {}
 
 final class AuthRegisterMemberRequested extends AuthEvent {
   final String username;
@@ -69,13 +68,7 @@ final class AuthRegisterAdminRequested extends AuthEvent {
   );
 
   @override
-  List<Object> get props => [
-    username,
-    first_name,
-    last_name,
-    email,
-    password,
-  ];
+  List<Object> get props => [username, first_name, last_name, email, password];
 }
 
 final class AuthResetPasswordRequested extends AuthEvent {
@@ -85,4 +78,11 @@ final class AuthResetPasswordRequested extends AuthEvent {
 
   @override
   List<Object> get props => [email];
+}
+
+final class AuthPageChanged extends AuthEvent {
+  final int page;
+  const AuthPageChanged(this.page);
+  @override
+  List<Object> get props => [page];
 }

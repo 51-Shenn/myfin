@@ -1,4 +1,4 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/authentication/domain/entities/admin.dart';
 import 'package:myfin/features/authentication/domain/entities/member.dart';
@@ -31,6 +31,51 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterMemberRequested>(onMemberRegister);
     on<AuthRegisterAdminRequested>(onAdminRegister);
     on<AuthResetPasswordRequested>(onResetPassword);
+    on<AuthPageChanged>(onPageChanged);
+  }
+
+  void onPageChanged(AuthPageChanged event, Emitter<AuthState> emit) {
+    if (state is AuthInitial) {
+      emit(AuthInitial(currentPage: event.page));
+    } else if (state is AuthLoading) {
+      emit(AuthLoading(currentPage: event.page));
+    } else if (state is AuthAuthenticatedAsMember) {
+      emit(
+        AuthAuthenticatedAsMember(
+          (state as AuthAuthenticatedAsMember).member,
+          currentPage: event.page,
+        ),
+      );
+    } else if (state is AuthAuthenticatedAsAdmin) {
+      emit(
+        AuthAuthenticatedAsAdmin(
+          (state as AuthAuthenticatedAsAdmin).admin,
+          currentPage: event.page,
+        ),
+      );
+    } else if (state is AuthUnauthenticated) {
+      emit(AuthUnauthenticated(currentPage: event.page));
+    } else if (state is AuthFailure) {
+      emit(
+        AuthFailure((state as AuthFailure).message, currentPage: event.page),
+      );
+    } else if (state is AuthRegisterSuccess) {
+      emit(
+        AuthRegisterSuccess(
+          (state as AuthRegisterSuccess).message,
+          currentPage: event.page,
+        ),
+      );
+    } else if (state is AuthRegisterFailure) {
+      emit(
+        AuthRegisterFailure(
+          (state as AuthRegisterFailure).message,
+          currentPage: event.page,
+        ),
+      );
+    } else {
+      emit(AuthUnauthenticated(currentPage: event.page));
+    }
   }
 
   Future<void> onAuthCheck(
