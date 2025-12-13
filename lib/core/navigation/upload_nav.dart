@@ -21,7 +21,7 @@ class _UploadNavState extends State<UploadNav> {
           settings: settings,
           builder: (BuildContext context) {
             // routes for upload navigation
-            if (settings.name == '/manual_entry') {
+            if (settings.name == '/empty_doc_details') {
               return DocumentDetailsScreen(); // upload doc details screen
             } 
 

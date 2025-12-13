@@ -31,3 +31,26 @@ class UploadError extends UploadState {
   @override
   List<Object> get props => [document, message];
 }
+
+class UploadNavigateToManual extends UploadState {
+  const UploadNavigateToManual(super.document);
+}
+
+class UploadImagePicked extends UploadState {
+  final String imagePath;
+
+  const UploadImagePicked(super.document, this.imagePath);
+
+  @override
+  List<Object> get props => [document, imagePath];
+}
+
+class UploadFilePicked extends UploadState {
+  final String filePath;
+  final String fileName;
+
+  const UploadFilePicked(super.document, this.filePath, this.fileName);
+
+  @override
+  List<Object> get props => [document, filePath, fileName];
+}

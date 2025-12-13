@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/core/navigation/dashboard_nav.dart';
 import 'package:myfin/core/navigation/report_nav.dart';
 import 'package:myfin/core/navigation/aichatbot_nav.dart';
 import 'package:myfin/core/navigation/upload_nav.dart'; 
@@ -60,7 +61,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
             index: _selectedIndex,
             children: [
               // replace with const nav widgets
-              Container(color: Colors.red), // DashboardNav
+              const DashboardNav(), // DashboardNav
               const AiChatbotNav(), 
               const UploadNav(),
               const ReportsNav(), 

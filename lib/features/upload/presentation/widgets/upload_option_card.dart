@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
 import 'package:myfin/features/upload/presentation/pages/option.dart';
 
 class UploadOptionCard extends StatelessWidget {
@@ -13,6 +15,8 @@ class UploadOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uploadCubit = context.read<UploadCubit>();
+    
     double iconSize = option.isMainOption? 40 : 35;
     double titleFontSize = option.isMainOption? 20: 12;
     double descFontSize = option.isMainOption? 15 : 18;
@@ -29,7 +33,22 @@ class UploadOptionCard extends StatelessWidget {
           clipBehavior: Clip.hardEdge,
           child: Center(
             child: InkWell(
-              onTap: () => Navigator.pushNamed(context, option.navigateTo),
+              onTap: () {
+                switch(option) {
+                  case Option.manual: 
+                    uploadCubit.manualKeyInSelected();
+                    break;
+                  case Option.file:
+                    uploadCubit.fileUploadSelected();
+                    break;
+                  case Option.gallery:
+                    uploadCubit.selectFromGallery();
+                    break;
+                  case Option.scan:
+                    uploadCubit.scanUsingCamera();
+                    break;
+                }
+              },
               borderRadius: BorderRadius.circular(20),
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 10.0),
