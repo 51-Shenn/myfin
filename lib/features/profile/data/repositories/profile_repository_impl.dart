@@ -9,14 +9,14 @@ class ProfileRepository {
     await _delay();
     
     return Member(
-      memberId: memberId,
+      member_id: memberId,
       username: "Username", // Matches image
-      firstName: "User",
-      lastName: "Name",
+      first_name: "User",
+      last_name: "Name",
       email: "username@gmail.com",
-      phoneNumber: "+60 123456789",
+      phone_number: "+60 123456789",
       address: "12, Jalan Danau Saujana",
-      createdAt: DateTime.now(),
+      created_at: DateTime.now(),
       status: "Active",
     );
   }
