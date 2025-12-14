@@ -6,7 +6,6 @@ import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 class DocDetailCubit extends Cubit<DocDetailState> {
   DocDetailCubit() : super(DocDetailState());
 
-  // === 1. THIS IS THE KEY FUNCTION FOR PRE-FILLING ===
   void initializeWithData(Document document, List<DocumentLineItem>? lineItems) {
     emit(state.copyWith(
       isLoading: false,
@@ -18,7 +17,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     ));
   }
 
-  // === 2. STANDARD LOAD BY ID ===
   Future<void> loadDocument(String? documentId) async {
     try {
       emit(state.copyWith(isLoading: true));

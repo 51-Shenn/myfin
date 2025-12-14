@@ -217,7 +217,6 @@ class DocDetailsView extends StatelessWidget {
                                         .format(state.document!.postingDate)
                                     : DateFormat('yyyy-MM-dd')
                                         .format(DateTime.now()),
-                                readOnly: true,
                               ),
                             ),
                           ],
@@ -452,8 +451,7 @@ class DocDetailsView extends StatelessWidget {
         _buildTextFormField(
           context,
           DocFieldHeader.total,
-          value: '\$${(lineItem.debit - lineItem.credit).abs().toStringAsFixed(2)}',
-          readOnly: true,
+          value: 'RM {(lineItem.debit - lineItem.credit).abs().toStringAsFixed(2)}',
         ),
         const SizedBox(height: 10),
         DynamicKeyValueSection(

@@ -28,12 +28,18 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void recentUploadedDocClicked(Document doc) {
-    // We pass the full object, not just doc.id
+    final currentDocuments = state.document;
+
     emit(UploadNavigateToDocDetails(doc));
+
+    emit(UploadLoaded(currentDocuments));
   }
 
   void manualKeyInSelected() {
-    emit(UploadNavigateToManual(state.document));
+    final currentDocs = state.document;
+    emit(UploadNavigateToManual(currentDocs));
+    // Reset state to Loaded so the UI shows the list, not the spinner
+    emit(UploadLoaded(currentDocs)); 
   }
 
   Future<void> fileUploadSelected() async {
