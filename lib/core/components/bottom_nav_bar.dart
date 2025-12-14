@@ -32,6 +32,8 @@ class _TabItemBuilder extends DelegateBuilder {
           padding: const EdgeInsets.all(8),
           child: active ? (item.activeIcon ?? item.icon) : item.icon,
         ),
+        if (index == 2)
+          const SizedBox(height: 20),
         if (item.title?.isNotEmpty ?? false)
           Padding(
             padding: const EdgeInsets.only(top: 0),
@@ -48,6 +50,27 @@ class _TabItemBuilder extends DelegateBuilder {
 
   @override
   bool fixed() => true;
+}
+
+class NavBarController extends InheritedWidget {
+  final VoidCallback toggleNavBar;
+  final bool isVisible;
+
+  const NavBarController({
+    super.key,
+    required this.toggleNavBar,
+    required this.isVisible,
+    required super.child,
+  });
+
+  static NavBarController? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<NavBarController>();
+  }
+
+  @override
+  bool updateShouldNotify(NavBarController oldWidget) {
+    return isVisible != oldWidget.isVisible;
+  }
 }
 
 class BottomNavBar extends StatefulWidget {
@@ -165,12 +188,12 @@ class _BottomNavBarState extends State<BottomNavBar> {
       ),
       backgroundColor: Colors.white,
       count: _navigationDestinations.length,
-      elevation: 8.0,
+      elevation: 4.0,
       cornerRadius: 8.0,
       curveSize: 80.0,
       shadowColor: shadowBlue,
       initialActiveIndex: _selectedIndex,
-      height: 65.0,
+      height: 75.0,
       onTap: (index) => setState(() {
         _selectedIndex = index;
       }),
@@ -179,17 +202,20 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      bottomNavigationBar: _isVisible ? _buildNavigationBar() : null,
-      body: Stack(
-        children: [IndexedStack(index: _selectedIndex, children: _pages)],
+    return NavBarController(
+      toggleNavBar: toggleNavBar,
+      isVisible: _isVisible,
+      child: Scaffold(
+        bottomNavigationBar: _isVisible ? _buildNavigationBar() : null,
+        body: Stack(
+          children: [IndexedStack(index: _selectedIndex, children: _pages)],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: toggleNavBar,
+          child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       ),
-      // test
-      floatingActionButton: FloatingActionButton(
-        onPressed: toggleNavBar,
-        child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
     );
   }
 }
