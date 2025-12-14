@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/upload/domain/entities/document.dart';
+import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
+import 'package:myfin/features/upload/domain/usecases/get_recent_doc_use_case.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/option.dart';
 import 'package:myfin/features/upload/presentation/widgets/document_card.dart';
 import 'package:myfin/features/upload/presentation/widgets/upload_option_card.dart';
@@ -12,7 +16,11 @@ class UploadScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => UploadCubit()..fetchDocument(),
+      create: (context) => UploadCubit(
+        getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
+          MockDocumentRepository(),
+        ),
+      )..fetchDocument(),
       child: UploadView(),
     );
   }
@@ -23,19 +31,26 @@ class UploadView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // access the same cubit instance declared in BlocProvider
     final uploadCubit = context.read<UploadCubit>();
 
     return BlocListener<UploadCubit, UploadState>(
       listener: (context, state) {
         if (state is UploadNavigateToManual) {
-          Navigator.pushNamed(context, '/empty_doc_details');
+          Navigator.pushNamed(context, '/doc_details');
+        }
+        else if (state is UploadNavigateToDocDetails) {
+          Navigator.pushNamed(
+            context,
+            '/doc_details',
+            arguments: DocDetailsArguments(
+              existingDocument: state.selectedDocument,
+            ),
+          );
         }
         else if (state is UploadImagePicked) {
-
-        }
-        else if (state is UploadFilePicked) {
-          
+          uploadCubit.processPickedImage(state.imagePath);
+        } else if (state is UploadFilePicked) {
+          uploadCubit.processPickedFile(state.filePath, state.fileName);
         }
       },
       child: Scaffold(
@@ -97,7 +112,7 @@ class UploadView extends StatelessWidget {
                             if (state.document.isNotEmpty && state.document.length > 2)
                               TextButton(
                                 onPressed: () {
-                                  uploadCubit.forceLoading();
+                                  Navigator.pushNamed(context, '/upload_history');
                                 },
                                 style: TextButton.styleFrom(
                                   splashFactory: NoSplash.splashFactory,
@@ -129,7 +144,13 @@ class UploadView extends StatelessWidget {
       
                             if (state is UploadError) {
                               return Center(
-                                child: Text('Error: ${state.message}'),
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Error: ${state.message}',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
                               );
                             }
                             
@@ -152,7 +173,12 @@ class UploadView extends StatelessWidget {
                               return Column(
                                 children: [
                                   for (final doc in state.document.take(2))
-                                    DocumentCard(document: doc),
+                                    DocumentCard(
+                                      document: doc,
+                                      onTap: () {
+                                        uploadCubit.recentUploadedDocClicked(doc);
+                                      }
+                                    ),
                                 ],
                               );
                             }
@@ -177,5 +203,82 @@ class UploadView extends StatelessWidget {
         )
       )
     );
+  }
+}
+
+class MockDocumentRepository extends DocumentRepository {
+  @override
+  Future<Document> createDocument(Document document) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteDocument(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> getDocumentById(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Document>> getDocuments({
+    String? status,
+    String? type,
+    DocumentSortField sortBy = DocumentSortField.updatedAt,
+    SortDirection direction = SortDirection.descending,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    return [
+      Document(
+        id: 'DOC001',
+        memberId: 'user123',
+        name: 'Invoice #1001',
+        type: 'Invoice',
+        status: 'Draft',
+        createdBy: 'Admin',
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 1, 10),
+      ),
+      Document(
+        id: 'DOC002',
+        memberId: 'user123',
+        name: 'Receipt #900',
+        type: 'Receipt',
+        status: 'Posted',
+        createdBy: 'System',
+        createdAt: DateTime(2025, 2, 1),
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 2, 5),
+      ),
+      Document(
+        id: 'DOC003',
+        memberId: 'user123',
+        name: 'Receipt #100',
+        type: 'Receipt',
+        status: 'Posted',
+        createdBy: 'System',
+        createdAt: DateTime(2025, 2, 1),
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 2, 5),
+      ),
+    ];
+  }
+
+  @override
+  Future<List<Document>> getDocumentsByCreator(String createdBy) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> updateDocument(Document document) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> updateDocumentStatus(String id, String newStatus) {
+    throw UnimplementedError();
   }
 }

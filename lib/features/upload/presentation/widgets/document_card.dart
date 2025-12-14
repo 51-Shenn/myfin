@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 
 class DocumentCard extends StatelessWidget {
-  // create up to 3 cards only based on the most recent 3
-  // display user-defined doc name, updated_datetime, 
   final Document document;
+  final VoidCallback? onTap;
 
-  const DocumentCard({super.key, required this.document});
+  const DocumentCard({super.key, required this.document, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final dateFormat = DateFormat('MMM dd, yyyy - HH:mm');
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5, horizontal: 0),
       child: Align(
@@ -23,9 +25,7 @@ class DocumentCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(10.0),
           clipBehavior: Clip.hardEdge,
           child: InkWell(
-            onTap: () {
-              // TODO
-            },
+            onTap: onTap,
             borderRadius: BorderRadius.circular(10.0),
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 20.0),
@@ -64,7 +64,7 @@ class DocumentCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              document.updatedAt.toString(),
+                              dateFormat.format(document.updatedAt).toString(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -81,6 +81,7 @@ class DocumentCard extends StatelessWidget {
                   const Icon(
                     Icons.navigate_next,
                     size: 26,
+                    color: Colors.grey
                   ),
                 ]
               )

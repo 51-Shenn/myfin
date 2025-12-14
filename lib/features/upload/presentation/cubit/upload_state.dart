@@ -36,6 +36,16 @@ class UploadNavigateToManual extends UploadState {
   const UploadNavigateToManual(super.document);
 }
 
+class UploadNavigateToDocDetails extends UploadState {
+  final Document selectedDocument; // 1. Renamed to avoid conflict with List<Document>
+
+  // 2. Pass empty list [] to super because we are just navigating
+  const UploadNavigateToDocDetails(this.selectedDocument) : super(const []);
+
+  @override
+  List<Object> get props => [selectedDocument];
+}
+
 class UploadImagePicked extends UploadState {
   final String imagePath;
 

@@ -1,74 +1,39 @@
+import 'dart:io';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
+import 'package:myfin/features/upload/domain/usecases/get_recent_doc_use_case.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 import 'package:file_picker/file_picker.dart';
 
 class UploadCubit extends Cubit<UploadState> {
-  UploadCubit() : super(UploadInitial());
+  final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
+  final ImagePicker _picker = ImagePicker();
+
+  UploadCubit({
+    required this.getRecentDocumentsUseCase,
+  }) : super(UploadInitial());
 
   Future<void> fetchDocument() async {
     try {
-      // current state is loading
       emit(UploadLoading(state.document));
 
-      // show loading indicator (stimulate database call)
-      await Future<void>.delayed(const Duration(seconds: 1));
+      // Use the use case to get documents
+      final documents = await getRecentDocumentsUseCase(limit: 3);
 
-      // retrive data
-      final List<Document> data = [
-        Document(
-          id: 'DOC001',
-          name: 'Invoice #1001',
-          type: 'Invoice',
-          status: 'Draft',
-          createdBy: 'Admin',
-          updatedAt: DateTime.now(),
-          postingDate: DateTime(2025, 1, 10),
-          memberId: ''
-        ),
-        Document(
-          id: 'DOC002',
-          name: 'Receipt #900',
-          type: 'Receipt',
-          status: 'Posted',
-          createdBy: 'System',
-          createdAt: DateTime(2025, 2, 1),
-          updatedAt: DateTime.now(),
-          postingDate: DateTime(2025, 2, 5),
-          memberId: ''
-        ),
-        Document(
-          id: 'DOC003',
-          name: 'Delivery Order',
-          type: 'DO',
-          status: 'Completed',
-          createdBy: 'Manager',
-          updatedAt: DateTime.now(),
-          postingDate: DateTime(2025, 3, 20),
-          metadata: [
-            {"weight": 120},
-            {"truckNo": "AB1234"},
-          ],
-          memberId: ''
-        ),
-      ];
-
-      // if got data, tell state that currently is not loading
-      emit(UploadLoaded(data));
-
+      emit(UploadLoaded(documents));
     } catch (e) {
-      // emit error state if something goes wrong
-      emit(UploadError(state.document, 'Failed to load documents'));
+      emit(UploadError(state.document, 'Failed to load documents: $e'));
     }
   }
 
-  void manualKeyInSelected() {
-    // emit nav state
-    emit(UploadNavigateToManual(state.document));
+  void recentUploadedDocClicked(Document doc) {
+    // We pass the full object, not just doc.id
+    emit(UploadNavigateToDocDetails(doc));
+  }
 
-    // if user nav back reset state
-    emit(UploadLoaded(state.document));
+  void manualKeyInSelected() {
+    emit(UploadNavigateToManual(state.document));
   }
 
   Future<void> fileUploadSelected() async {
@@ -83,15 +48,13 @@ class UploadCubit extends Cubit<UploadState> {
         String name = result.files.single.name;
 
         emit(UploadFilePicked(state.document, path, name));
-        emit(UploadLoaded(state.document));
-      } 
+        // Don't emit UploadLoaded here as we might want to process the file
+      }
     } catch (e) {
       emit(UploadError(state.document, 'File pick error: $e'));
     }
   }
 
-  // helper
-  final ImagePicker _picker = ImagePicker();
   Future<void> selectFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -101,8 +64,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       if (image != null) {
         emit(UploadImagePicked(state.document, image.path));
-        emit(UploadLoaded(state.document));
-      } 
+      }
     } catch (e) {
       emit(UploadError(state.document, 'Failed to open gallery: $e'));
     }
@@ -117,26 +79,30 @@ class UploadCubit extends Cubit<UploadState> {
 
       if (photo != null) {
         emit(UploadImagePicked(state.document, photo.path));
-        emit(UploadLoaded(state.document));
       }
     } catch (e) {
       emit(UploadError(state.document, 'Camera error: $e'));
     }
-    
-  }
-
-  void recentUploadedDocClicked(Document document) {
-    // nav to doc_details with id (doc_id)
   }
 
   void forceLoading() {
     emit(UploadLoading(state.document));
-    
-    // Auto return to loaded state after 3 seconds
+
     Future.delayed(Duration(seconds: 2), () {
       if (!isClosed) {
-        emit(UploadLoaded(state.document));
+        fetchDocument();
       }
     });
+  }
+
+  // Add method to process picked image/file
+  Future<void> processPickedFile(String path, String fileName) async {
+    // TODO: Implement file processing logic
+    print('Processing file: $fileName at $path');
+  }
+
+  Future<void> processPickedImage(String imagePath) async {
+    // TODO: Implement image processing logic
+    print('Processing image: $imagePath');
   }
 }
