@@ -23,7 +23,7 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: true,
       theme: ThemeData(useMaterial3: true),
 
-      initialRoute: AppRoutes.auth,
+      initialRoute: AppRoutes.home,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
