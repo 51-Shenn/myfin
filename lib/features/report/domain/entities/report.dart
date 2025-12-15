@@ -414,7 +414,7 @@ class Supplier extends Equatable {
 // accounts receivable entity
 class AccountsReceivable extends Report {
   final List<Customer> customers;
-  final double total_due;
+  final double total_receivable;
   final double total_overdue;
   final int overdue_invoice_count;
 
@@ -425,7 +425,7 @@ class AccountsReceivable extends Report {
     required super.report_type,
     required super.member_id,
     required this.customers,
-    required this.total_due,
+    required this.total_receivable,
     required this.total_overdue,
     required this.overdue_invoice_count,
   });
@@ -438,7 +438,7 @@ class AccountsReceivable extends Report {
     ReportType? report_type,
     String? member_id,
     List<Customer>? customers,
-    double? total_due,
+    double? total_receivable,
     double? total_overdue,
     int? overdue_invoice_count,
   }) {
@@ -449,7 +449,7 @@ class AccountsReceivable extends Report {
       report_type: report_type ?? this.report_type,
       member_id: member_id ?? this.member_id,
       customers: customers ?? this.customers,
-      total_due: total_due ?? this.total_due,
+      total_receivable: total_receivable ?? this.total_receivable,
       total_overdue: total_overdue ?? this.total_overdue,
       overdue_invoice_count:
           overdue_invoice_count ?? this.overdue_invoice_count,
@@ -460,7 +460,7 @@ class AccountsReceivable extends Report {
   List<Object> get props => [
     ...super.props,
     customers,
-    total_due,
+    total_receivable,
     total_overdue,
     overdue_invoice_count,
   ];
