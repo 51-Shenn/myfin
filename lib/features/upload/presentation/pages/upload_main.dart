@@ -45,6 +45,7 @@ class UploadView extends StatelessWidget {
             '/doc_details',
             arguments: DocDetailsArguments(
               existingDocument: state.selectedDocument,
+              existingLineItems: state.extractedLineItems, 
             ),
           );
           if (context.mounted) context.read<UploadCubit>().fetchDocument();

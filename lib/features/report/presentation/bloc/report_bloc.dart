@@ -4,6 +4,7 @@ import 'package:myfin/features/report/data/repositories/report_repository_impl.d
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
+import 'package:myfin/features/report/services/generator/report_factory.dart';
 
 class ReportBLoC extends Bloc<ReportEvent, ReportState> {
   final ReportRepository repo;
@@ -28,7 +29,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
       final uiReports = reports.map((report) {
         final dateRange = _toDateRange(report.fiscal_period);
 
-        return ReportUiModel(
+        return ReportCardUiModel(
           report_id: report.report_id,
           report_type: report.report_type.reportTypeToString,
           dateRange: dateRange,
@@ -57,20 +58,26 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(generating: true, error: null));
 
     try {
-      Report report = Report(
-        member_id: event.member_id,
-        report_type: stringToReportType(event.reportType),
-        fiscal_period: {'startDate': event.startDate, 'endDate': event.endDate},
-        report_id: 'RPT-001',
-        generated_at: DateTime.now(),
+      // Build report from event data
+      final report = ReportFactory.createReportFromEvent(
+        event.reportType,
+        event.member_id,
+        event.startDate,
+        event.endDate,
       );
 
-      // create report
-      report = await repo.createReport(report);
+      final generatedReport = await repo.createReport(report);
+
+      if (generatedReport.report_id.isEmpty) {
+        emit(state.copyWith(loading: false, generating: false, error: 'Failed to generate report id'));
+      }
 
       emit(state.copyWith(generating: false));
 
-      // TODO: display generated report after report creation
+      if (generatedReport.report_id.isNotEmpty) {
+        // TODO: display generated report after report creation
+        print("Generated Report: $generatedReport");
+      }
 
       // reload reports list
       await _onLoadReports(LoadReportsEvent(event.member_id), emit);
