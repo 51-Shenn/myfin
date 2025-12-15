@@ -34,6 +34,11 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadLoaded(currentDocuments));
   }
 
+  void viewAllClicked() {
+    emit(UploadNavigateToHistory(state.document));
+    emit(UploadLoaded(state.document));
+  }
+
   void manualKeyInSelected() {
     final currentDocs = state.document;
     emit(UploadNavigateToManual(currentDocs));

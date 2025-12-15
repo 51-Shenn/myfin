@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
-import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
 import 'package:myfin/features/upload/presentation/pages/upload_main.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_history.dart'; 
 
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
@@ -32,13 +32,13 @@ class _UploadNavState extends State<UploadNav> {
               );
             } 
             else if (settings.name == '/upload_history') {
-              // return UploadHistoryScreen();
+              return const UploadHistoryScreen();
             }
 
             // use in button
             // onPressed: () => Navigator.pushNamed(context, '/upload_doc_details'),
 
-            return UploadScreen(); // upload screen
+            return const UploadScreen(); // upload screen
           }
         );
       },
