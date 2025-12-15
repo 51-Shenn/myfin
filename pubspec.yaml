@@ -9,7 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  firebase_core: ^4.2.1
+  firebase_core: any
+  cloud_firestore: any
+  firebase_auth: any
   intl: ^0.20.2
   flutter_bloc: ^9.1.0
   google_generative_ai: ^0.4.0  
@@ -19,6 +21,7 @@ dependencies:
   image_picker: ^1.2.1
   uuid: ^4.5.2
   cloud_firestore: ^6.1.0
+  file_picker: ^10.3.7
 
 dev_dependencies:
   flutter_test:
@@ -29,5 +32,4 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/MyFin.png
-    - assets/AI_ChatBot_Logo.png
+    - assets/

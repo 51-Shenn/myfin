@@ -43,14 +43,14 @@ class ProfileRepositoryImpl implements ProfileRepository {
     // In the future, you would call remoteDataSource.fetchMember(memberId)
     await Future.delayed(const Duration(milliseconds: 500));
     return Member(
-      memberId: memberId,
-      username: "Eugene",
-      firstName: "Eugene",
-      lastName: "Tan",
-      email: "eugene@gmail.com",
-      phoneNumber: "+60 123456789",
+      member_id: memberId,
+      username: "Username", // Matches image
+      first_name: "User",
+      last_name: "Name",
+      email: "username@gmail.com",
+      phone_number: "+60 123456789",
       address: "12, Jalan Danau Saujana",
-      createdAt: DateTime.now(),
+      created_at: DateTime.now(),
       status: "Active",
     );
   }

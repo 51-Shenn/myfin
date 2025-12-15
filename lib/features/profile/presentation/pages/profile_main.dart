@@ -137,7 +137,7 @@ class UserProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            member.phoneNumber,
+                            member.phone_number,
                             style: TextStyle(
                               fontSize: 14,
                               fontFamily: 'Inter',

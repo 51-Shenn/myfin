@@ -1,25 +1,28 @@
 class Member {
-  final String memberId;
+  final String member_id;
   final String username;
-  final String firstName;
-  final String lastName;
+  final String first_name;
+  final String last_name;
   final String email;
-  final String phoneNumber;
+  final String phone_number;
   final String address;
-  final DateTime createdAt;
+  final DateTime created_at;
   final String status;
 
   Member({
-    required this.memberId,
+    required this.member_id,
     required this.username,
-    required this.firstName,
-    required this.lastName,
+    required this.first_name,
+    required this.last_name,
     required this.email,
-    required this.phoneNumber,
+    required this.phone_number,
     required this.address,
-    required this.createdAt,
+    required this.created_at,
     required this.status,
   });
 
-  String get fullName => '$firstName $lastName';
+  @override
+  String toString() {
+    return 'Member(ID: $member_id, Username: $username, First Name: $first_name, Last Name: $last_name, Email: $email, Phone Number: $phone_number, Address: $address, Created At: $created_at, Status: $status)';
+  }
 }
