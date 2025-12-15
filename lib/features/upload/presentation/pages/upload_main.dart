@@ -1,0 +1,284 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/upload/domain/entities/document.dart';
+import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
+import 'package:myfin/features/upload/domain/usecases/get_recent_doc_use_case.dart';
+import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
+import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
+import 'package:myfin/features/upload/presentation/pages/option.dart';
+import 'package:myfin/features/upload/presentation/widgets/document_card.dart';
+import 'package:myfin/features/upload/presentation/widgets/upload_option_card.dart';
+
+class UploadScreen extends StatelessWidget {
+  const UploadScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => UploadCubit(
+        getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
+          MockDocumentRepository(),
+        ),
+      )..fetchDocument(),
+      child: UploadView(),
+    );
+  }
+}
+
+class UploadView extends StatelessWidget {
+  const UploadView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final uploadCubit = context.read<UploadCubit>();
+
+    return BlocListener<UploadCubit, UploadState>(
+      listener: (context, state) {
+        if (state is UploadNavigateToManual) {
+          Navigator.pushNamed(context, '/doc_details');
+        }
+        else if (state is UploadNavigateToDocDetails) {
+          Navigator.pushNamed(
+            context,
+            '/doc_details',
+            arguments: DocDetailsArguments(
+              existingDocument: state.selectedDocument,
+            ),
+          );
+        }
+        else if (state is UploadImagePicked) {
+          uploadCubit.processPickedImage(state.imagePath);
+        } else if (state is UploadFilePicked) {
+          uploadCubit.processPickedFile(state.filePath, state.fileName);
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Upload',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 30,
+              fontWeight: FontWeight.bold
+              )
+            ),
+          centerTitle: true,
+        ),
+        body: BlocBuilder<UploadCubit, UploadState>(
+          builder: (context, state) {
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  UploadOptionCard(option: Option.manual),
+                  UploadOptionCard(option: Option.file),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: UploadOptionCard(
+                          option: Option.gallery,
+                          customPadding: EdgeInsets.fromLTRB(20, 10, 10, 10)
+                        )
+                      ),
+                      Expanded(
+                        child: UploadOptionCard(
+                          option: Option.scan,
+                          customPadding: EdgeInsets.fromLTRB(10, 10, 20, 10)
+                        )
+                      )
+                    ],
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(5, 10, 0, 10),
+                              child: Text(
+                                'Recent Uploads',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Spacer(),
+                            if (state.document.isNotEmpty && state.document.length > 2)
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/upload_history');
+                                },
+                                style: TextButton.styleFrom(
+                                  splashFactory: NoSplash.splashFactory,
+                                ),
+                                child: Text(
+                                  'View All',
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        Builder(
+                          builder: (context) {
+                            if (state is UploadLoading) {
+                              return const Center(
+                                child: Column(
+                                  children: [
+                                    SizedBox(height: 80),
+                                    CircularProgressIndicator(),
+                                  ],
+                                )
+                              );
+                            }
+      
+                            if (state is UploadError) {
+                              return Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    'Error: ${state.message}',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              );
+                            }
+                            
+                            if (state is UploadLoaded && state.document.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(0, 80, 0, 0),
+                                  child: Text(
+                                    'No recent uploads',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+      
+                            if (state is UploadLoaded) {
+                              return Column(
+                                children: [
+                                  for (final doc in state.document.take(2))
+                                    DocumentCard(
+                                      document: doc,
+                                      onTap: () {
+                                        uploadCubit.recentUploadedDocClicked(doc);
+                                      }
+                                    ),
+                                ],
+                              );
+                            }
+      
+                            return const Center(
+                              child: Column(
+                                children: [
+                                  SizedBox(height: 50),
+                                  CircularProgressIndicator(),
+                                ],
+                              )
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        )
+      )
+    );
+  }
+}
+
+class MockDocumentRepository extends DocumentRepository {
+  @override
+  Future<Document> createDocument(Document document) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteDocument(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> getDocumentById(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<Document>> getDocuments({
+    String? status,
+    String? type,
+    DocumentSortField sortBy = DocumentSortField.updatedAt,
+    SortDirection direction = SortDirection.descending,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    return [
+      Document(
+        id: 'DOC001',
+        memberId: 'user123',
+        name: 'Invoice #1001',
+        type: 'Invoice',
+        status: 'Draft',
+        createdBy: 'Admin',
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 1, 10),
+      ),
+      Document(
+        id: 'DOC002',
+        memberId: 'user123',
+        name: 'Receipt #900',
+        type: 'Receipt',
+        status: 'Posted',
+        createdBy: 'System',
+        createdAt: DateTime(2025, 2, 1),
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 2, 5),
+      ),
+      Document(
+        id: 'DOC003',
+        memberId: 'user123',
+        name: 'Receipt #100',
+        type: 'Receipt',
+        status: 'Posted',
+        createdBy: 'System',
+        createdAt: DateTime(2025, 2, 1),
+        updatedAt: DateTime.now(),
+        postingDate: DateTime(2025, 2, 5),
+      ),
+    ];
+  }
+
+  @override
+  Future<List<Document>> getDocumentsByCreator(String createdBy) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> updateDocument(Document document) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Document> updateDocumentStatus(String id, String newStatus) {
+    throw UnimplementedError();
+  }
+}
