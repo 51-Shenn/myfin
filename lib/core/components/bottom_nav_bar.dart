@@ -210,6 +210,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
         body: Stack(
           children: [IndexedStack(index: _selectedIndex, children: _pages)],
         ),
+        // TODO: remove later
         floatingActionButton: FloatingActionButton(
           onPressed: toggleNavBar,
           child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
