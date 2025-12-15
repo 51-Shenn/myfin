@@ -1,12 +1,12 @@
 import 'package:equatable/equatable.dart';
 
 // only hold string values for UI display
-class ReportUiModel extends Equatable {
+class ReportCardUiModel extends Equatable {
   final String report_id;
   final String report_type;
   final String dateRange;
 
-  const ReportUiModel({
+  const ReportCardUiModel({
     required this.report_id,
     required this.report_type,
     required this.dateRange,
@@ -22,7 +22,7 @@ class ReportUiModel extends Equatable {
 class ReportState extends Equatable {
   final bool loading;
   final bool generating;
-  final List<ReportUiModel> reports;
+  final List<ReportCardUiModel> reports;
   final String? error;
 
   const ReportState({required this.loading, required this.reports, this.error, required this.generating});
@@ -33,7 +33,7 @@ class ReportState extends Equatable {
   ReportState copyWith({
     bool? loading,
     bool? generating,
-    List<ReportUiModel>? reports,
+    List<ReportCardUiModel>? reports,
     String? error,
   }) {
     return ReportState(

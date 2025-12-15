@@ -484,7 +484,7 @@ class _ReportScreenState extends State<ReportScreen> {
 }
 
 class RecentReportCard extends StatelessWidget {
-  final ReportUiModel report;
+  final ReportCardUiModel report;
 
   const RecentReportCard({super.key, required this.report});
 
