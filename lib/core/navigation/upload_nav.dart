@@ -32,7 +32,7 @@ class _UploadNavState extends State<UploadNav> {
               );
             } 
             else if (settings.name == '/upload_history') {
-              return UploadHistoryScreen();
+              // return UploadHistoryScreen();
             }
 
             // use in button

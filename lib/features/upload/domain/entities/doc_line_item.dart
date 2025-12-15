@@ -7,6 +7,7 @@ class DocumentLineItem {
   final DateTime? lineDate;
   final String categoryCode;
   final String? description;
+  final double total;
   final double debit;
   final double credit;
   final List<AdditionalInfoRow> attribute; 
@@ -18,6 +19,7 @@ class DocumentLineItem {
     this.lineDate,
     required this.categoryCode,
     this.description,
+    required this.total,
     required this.debit,
     required this.credit,
     required this.attribute,
@@ -30,6 +32,7 @@ class DocumentLineItem {
       'lineDate': lineDate,
       'categoryCode': categoryCode,
       'description': description,
+      'total': total,
       'debit': debit,
       'credit': credit,
       'attribute': attribute.map((x) => x.toMap()).toList(),
@@ -47,6 +50,7 @@ class DocumentLineItem {
       lineDate: convert(data['lineDate']),
       categoryCode: data['categoryCode'] as String? ?? '',
       description: data['description'] as String?,
+      total: (data['total'] as num?)?.toDouble() ?? 0.0,
       debit: (data['debit'] as num?)?.toDouble() ?? 0.0,
       credit: (data['credit'] as num?)?.toDouble() ?? 0.0,
       attribute: (data['attribute'] as List<dynamic>?)
@@ -69,6 +73,7 @@ class DocumentLineItem {
       lineDate: convert(data['lineDate']),
       categoryCode: data['categoryCode'] as String? ?? '',
       description: data['description'] as String?,
+      total: (data['total'] as num?)?.toDouble() ?? 0.0,
       debit: (data['debit'] as num?)?.toDouble() ?? 0.0,
       credit: (data['credit'] as num?)?.toDouble() ?? 0.0,
       attribute: (data['attribute'] as List<dynamic>?)
@@ -85,6 +90,7 @@ class DocumentLineItem {
     DateTime? lineDate,
     String? categoryCode,
     String? description,
+    double? total,
     double? debit,
     double? credit,
     List<AdditionalInfoRow>? attribute,
@@ -96,6 +102,7 @@ class DocumentLineItem {
       lineDate: lineDate ?? this.lineDate,
       categoryCode: categoryCode ?? this.categoryCode,
       description: description ?? this.description,
+      total: total ?? this.total,
       debit: debit ?? this.debit,
       credit: credit ?? this.credit,
       attribute: attribute ?? this.attribute,

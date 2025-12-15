@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
+import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
+import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_field_header.dart';
@@ -23,7 +25,10 @@ class DocumentDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-        final cubit = DocDetailCubit();
+        final cubit = DocDetailCubit(
+          docRepository: context.read<DocumentRepository>(),
+          lineItemRepository: context.read<DocumentLineItemRepository>(),
+        );
         
         // 1. If objects are passed directly (e.g. from File Upload/OCR), use them.
         if (existingDocument != null) {
@@ -47,6 +52,18 @@ class DocumentDetailsScreen extends StatelessWidget {
 
 class DocDetailsView extends StatelessWidget {
   const DocDetailsView({super.key});
+
+  Future<void> _pickDate(BuildContext context, DateTime initialDate, Function(DateTime) onDatePicked) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      onDatePicked(picked);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +155,7 @@ class DocDetailsView extends StatelessWidget {
                             ),
                           ),
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Expanded(
                               child: Column(
@@ -213,10 +230,16 @@ class DocDetailsView extends StatelessWidget {
                                 context,
                                 DocFieldHeader.postingDate,
                                 value: state.document != null
-                                    ? DateFormat('yyyy-MM-dd')
-                                        .format(state.document!.postingDate)
-                                    : DateFormat('yyyy-MM-dd')
-                                        .format(DateTime.now()),
+                                    ? DateFormat('yyyy-MM-dd').format(state.document!.postingDate)
+                                    : '',
+                                isDate: true,
+                                onTap: () {
+                                  if (state.document != null) {
+                                    _pickDate(context, state.document!.postingDate, (pickedDate) {
+                                      context.read<DocDetailCubit>().updateDocumentField('postingDate', pickedDate);
+                                    });
+                                  }
+                                }
                               ),
                             ),
                           ],
@@ -281,6 +304,8 @@ class DocDetailsView extends StatelessWidget {
     bool isAdditional = false,
     void Function(String)? onChanged,
     bool multiLine = false,
+    VoidCallback? onTap,
+    bool isDate = false
   }) {
     return Padding(
       padding: const EdgeInsets.all(5.0),
@@ -298,14 +323,17 @@ class DocDetailsView extends StatelessWidget {
             ),
           const SizedBox(height: 5),
           TextFormField(
+            key: isDate? ValueKey(value) : null,
             initialValue: value,
-            readOnly: readOnly,
+            readOnly: readOnly || isDate,
+            onTap: onTap,
             onChanged: onChanged,
             minLines: multiLine ? 3 : 1,
             maxLines: multiLine ? 5 : 1,
             keyboardType:
                 multiLine ? TextInputType.multiline : TextInputType.text,
             decoration: InputDecoration(
+              suffixIcon: isDate ? const Icon(Icons.calendar_today, size: 20) : null,
               filled: true,
               fillColor: readOnly ? Colors.grey[100] : Colors.white,
               contentPadding:
@@ -360,8 +388,7 @@ class DocDetailsView extends StatelessWidget {
               ),
             ),
             ...state.lineItems
-                .map((lineItem) => _buildLineItem(context, lineItem))
-                .toList(),
+                .map((lineItem) => _buildLineItem(context, lineItem)),
           ],
         );
       },
@@ -427,16 +454,24 @@ class DocDetailsView extends StatelessWidget {
                 value: lineItem.lineDate != null
                     ? DateFormat('yyyy-MM-dd').format(lineItem.lineDate!)
                     : '',
-                onChanged: (value) {},
+                isDate: true,
+                onTap: () {
+                  final initialDate = lineItem.lineDate ?? DateTime.now();
+                  _pickDate(context, initialDate, (pickedDate) {
+                    cubit.updateLineItemField(lineItem.lineItemId, 'date', pickedDate);
+                  });
+                },
               ),
             ),
             Expanded(
-              flex: 2,
+              flex: 1,
               child: _buildTextFormField(
                 context,
                 DocFieldHeader.category,
                 value: lineItem.categoryCode,
-                onChanged: (value) {},
+                onChanged: (value) {
+                  cubit.updateLineItemField(lineItem.lineItemId, 'category', value);
+                },
               ),
             ),
           ],
@@ -446,12 +481,17 @@ class DocDetailsView extends StatelessWidget {
           DocFieldHeader.description,
           value: lineItem.description ?? '',
           multiLine: true,
-          onChanged: (value) {},
+          onChanged: (value) {
+            cubit.updateLineItemField(lineItem.lineItemId, 'description', value);
+          },
         ),
         _buildTextFormField(
           context,
           DocFieldHeader.total,
-          value: 'RM {(lineItem.debit - lineItem.credit).abs().toStringAsFixed(2)}',
+          value: lineItem.total.toStringAsFixed(2),
+          onChanged: (value) {
+            cubit.updateLineItemField(lineItem.lineItemId, 'amount', value);
+          }
         ),
         const SizedBox(height: 10),
         DynamicKeyValueSection(
