@@ -278,3 +278,6 @@ class _InputAreaState extends State<_InputArea> {
     );
   }
 }
+
+// hide nav bar
+// NavBarController.of(context)?.toggleNavBar();
