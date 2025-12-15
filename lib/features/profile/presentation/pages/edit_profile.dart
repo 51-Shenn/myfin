@@ -26,10 +26,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _firstNameController = TextEditingController(text: widget.member?.firstName ?? '');
-    _lastNameController = TextEditingController(text: widget.member?.lastName ?? '');
+    _firstNameController = TextEditingController(
+      text: widget.member?.firstName ?? '',
+    );
+    _lastNameController = TextEditingController(
+      text: widget.member?.lastName ?? '',
+    );
     _emailController = TextEditingController(text: widget.member?.email ?? '');
-    _phoneController = TextEditingController(text: widget.member?.phoneNumber ?? '');
+    _phoneController = TextEditingController(
+      text: widget.member?.phoneNumber ?? '',
+    );
   }
 
   @override
@@ -51,9 +57,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -110,7 +116,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -158,7 +168,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: GestureDetector(
                       onTap: _showImageSourceModal, // Trigger the modal
                       child: Container(
-                        padding: const EdgeInsets.all(8), // Increased touch area slightly
+                        padding: const EdgeInsets.all(
+                          8,
+                        ), // Increased touch area slightly
                         decoration: BoxDecoration(
                           color: const Color(0xFF2B46F9),
                           shape: BoxShape.circle,
@@ -287,7 +299,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: Colors.black,
           ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -298,7 +313,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF2B46F9), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF2B46F9),
+                width: 1.5,
+              ),
             ),
             filled: true,
             fillColor: Colors.white,

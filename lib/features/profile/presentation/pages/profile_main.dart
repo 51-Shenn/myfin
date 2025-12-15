@@ -5,6 +5,7 @@ import 'package:myfin/features/profile/data/repositories/profile_repository_impl
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -12,15 +13,13 @@ class UserProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProfileViewModel(
-        ProfileRepositoryImpl(
-          remoteDataSource: ProfileRemoteDataSourceImpl(), // Inject DataSource
-        ),
-      )..loadProfile("M123"),
+      create: (_) => ProfileBloc(
+        ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
+      )..add(const LoadProfileEvent("M123")),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: BlocBuilder<ProfileViewModel, ProfileState>(
+          child: BlocBuilder<ProfileBloc, ProfileState>(
             builder: (context, state) {
               // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
               if (state.isLoading && state.member == null) {
@@ -231,6 +230,46 @@ class UserProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 30),
 
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10.0, left: 4),
+            child: Text(
+              "SECURITY",
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Inter',
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: commonShadow,
+            ),
+            child: Column(
+              children: [
+                _buildActionRow(
+                  Icons.lock_outline,
+                  "Change Password",
+                  hasArrow: true,
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/change_password',
+                      arguments: context
+                          .read<ProfileBloc>(), // Pass the BLOC here
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
           // 3. Actions Section
           const Padding(
             padding: EdgeInsets.only(bottom: 10.0, left: 4),
@@ -254,9 +293,24 @@ class UserProfileScreen extends StatelessWidget {
             child: Column(
               children: [
                 _buildActionRow(
+                  Icons.admin_panel_settings_outlined,
+                  "Admin Dashboard",
+                  hasArrow: true,
+                  onTap: () {
+                    Navigator.of(context, rootNavigator: true).pushNamed('/admin_dashboard');
+                  },
+                ),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Colors.grey.shade200,
+                  indent: 50,
+                ),
+
+                _buildActionRow(
                   Icons.logout_outlined,
                   "Log Out",
-                  onTap: () => context.read<ProfileViewModel>().logout(),
+                  onTap: () => context.read<ProfileBloc>().add(LogoutEvent()),
                 ),
                 Divider(
                   height: 1,

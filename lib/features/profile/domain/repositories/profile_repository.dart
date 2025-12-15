@@ -5,4 +5,5 @@ abstract class ProfileRepository {
   Future<Member> getMemberProfile(String memberId);
   Future<BusinessProfile> getBusinessProfile(String memberId);
   Future<void> saveBusinessProfile(BusinessProfile profile);
+  Future<void> changePassword(String currentPassword, String newPassword);
 }

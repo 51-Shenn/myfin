@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 
 class EditBusinessProfileScreen extends StatefulWidget {
   final BusinessProfile? existingProfile;
@@ -37,8 +38,9 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     super.initState();
     final profile = widget.existingProfile;
     _companyNameController = TextEditingController(text: profile?.name ?? '');
-    _regNoController =
-        TextEditingController(text: profile?.registrationNo ?? '');
+    _regNoController = TextEditingController(
+      text: profile?.registrationNo ?? '',
+    );
     _emailController = TextEditingController(text: profile?.email ?? '');
     _contactController = TextEditingController(text: profile?.contactNo ?? '');
     _addressController = TextEditingController(text: profile?.address ?? '');
@@ -63,9 +65,9 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -106,7 +108,7 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     // 1. Create updated object
     final updatedProfile = BusinessProfile(
       // If editing, keep ID. If new, use memberId or generate new UUID
-      profileId: widget.existingProfile?.profileId ?? widget.memberId, 
+      profileId: widget.existingProfile?.profileId ?? widget.memberId,
       name: _companyNameController.text,
       registrationNo: _regNoController.text,
       contactNo: _contactController.text,
@@ -116,7 +118,7 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     );
 
     // 2. Call Bloc to save
-    context.read<ProfileViewModel>().updateBusinessProfile(updatedProfile);
+    context.read<ProfileBloc>().add(UpdateBusinessProfileEvent(updatedProfile));
 
     // 3. Go back
     Navigator.pop(context);
@@ -130,7 +132,11 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -183,17 +189,21 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: const [
-                                      Icon(Icons.layers_outlined,
-                                          size: 30, color: Color(0xFF2B46F9)),
+                                      Icon(
+                                        Icons.layers_outlined,
+                                        size: 30,
+                                        color: Color(0xFF2B46F9),
+                                      ),
                                       SizedBox(height: 4),
                                       Text(
                                         "COMPANY\nSLOGAN HERE",
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black54),
-                                      )
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 )
@@ -339,8 +349,10 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: Colors.grey.shade300),
@@ -351,8 +363,10 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-                  const BorderSide(color: Color(0xFF2B46F9), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF2B46F9),
+                width: 1.5,
+              ),
             ),
             filled: true,
             fillColor: Colors.white,

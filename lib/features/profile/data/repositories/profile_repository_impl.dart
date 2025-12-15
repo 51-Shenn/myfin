@@ -39,7 +39,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<Member> getMemberProfile(String memberId) async {
-    // Currently you are mocking this. 
+    // Currently you are mocking this.
     // In the future, you would call remoteDataSource.fetchMember(memberId)
     await Future.delayed(const Duration(milliseconds: 500));
     return Member(
@@ -53,5 +53,22 @@ class ProfileRepositoryImpl implements ProfileRepository {
       createdAt: DateTime.now(),
       status: "Active",
     );
+  }
+
+  @override
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    // TODO: Implement actual Firebase/Backend logic here
+    // Example: await FirebaseAuth.instance.currentUser?.updatePassword(newPassword);
+
+    // Simulating delay for now
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Simulating a check (remove this in real app)
+    if (currentPassword == "wrong") {
+      throw Exception("Current password is incorrect");
+    }
   }
 }

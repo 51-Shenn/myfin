@@ -5,6 +5,7 @@ import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
@@ -12,11 +13,9 @@ class BusinessProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProfileViewModel(
-        ProfileRepositoryImpl(
-          remoteDataSource: ProfileRemoteDataSourceImpl(),
-        ),
-      )..loadProfile("M123"),
+      create: (_) => ProfileBloc(
+        ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
+      )..add(const LoadProfileEvent("M123")),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -24,7 +23,11 @@ class BusinessProfileScreen extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: const Text(
@@ -37,7 +40,7 @@ class BusinessProfileScreen extends StatelessWidget {
             ),
           ),
         ),
-        body: BlocBuilder<ProfileViewModel, ProfileState>(
+        body: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
             // 1. Loading State
             if (state.isLoading) {
@@ -51,25 +54,28 @@ class BusinessProfileScreen extends StatelessWidget {
 
             // 3. Success State
             final business = state.businessProfile;
-            
+
             // If no business profile exists yet
             if (business == null) {
-               return const Center(child: Text("No Business Profile Found"));
+              return const Center(child: Text("No Business Profile Found"));
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 20.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeaderCard(business),
                   const SizedBox(height: 30),
-                  
+
                   _buildSectionTitle("OFFICIAL DETAILS"),
                   _buildDetailsCard(business),
                   const SizedBox(height: 30),
-                  
-                 _buildSectionTitle("SETTINGS"),
+
+                  _buildSectionTitle("SETTINGS"),
                   _buildSettingsCard(context, business),
                 ],
               ),
@@ -90,13 +96,21 @@ class BusinessProfileScreen extends StatelessWidget {
         children: [
           Column(
             children: [
-              const Icon(Icons.layers_outlined, size: 50, color: Color(0xFF2B46F9)),
+              const Icon(
+                Icons.layers_outlined,
+                size: 50,
+                color: Color(0xFF2B46F9),
+              ),
               const SizedBox(height: 4),
               const Text(
                 "COMPANY\nLOGO HERE",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-              )
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -127,10 +141,10 @@ class BusinessProfileScreen extends StatelessWidget {
           _buildDetailItem(
             icon: Icons.domain,
             title: "Registration No.",
-            value: business.registrationNo, 
+            value: business.registrationNo,
           ),
           _buildDivider(),
-          
+
           // DYNAMIC DATA: Email
           _buildDetailItem(
             icon: Icons.email_outlined,
@@ -138,7 +152,7 @@ class BusinessProfileScreen extends StatelessWidget {
             value: business.email,
           ),
           _buildDivider(),
-          
+
           // DYNAMIC DATA: Contact No
           _buildDetailItem(
             icon: Icons.phone_outlined,
@@ -146,7 +160,7 @@ class BusinessProfileScreen extends StatelessWidget {
             value: business.contactNo,
           ),
           _buildDivider(),
-          
+
           // DYNAMIC DATA: Address
           _buildDetailItem(
             icon: Icons.location_on_outlined,
@@ -167,19 +181,23 @@ class BusinessProfileScreen extends StatelessWidget {
         leading: const Icon(Icons.person_outline, color: Colors.black),
         title: const Text(
           "Manage Business Profile",
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, fontFamily: 'Inter'),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Inter',
+          ),
         ),
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF2B46F9)),
         onTap: () {
           // Navigate to edit form
           Navigator.pushNamed(
-            context, 
+            context,
             '/edit_business_profile',
             arguments: {
-              'bloc': context.read<ProfileViewModel>(), // Pass the Bloc
+              'bloc': context.read<ProfileBloc>(),
               'profile': business, // Pass current data to pre-fill
               'memberId': "M123", // Or business?.memberId
-            }
+            },
           );
         },
       ),
@@ -193,7 +211,11 @@ class BusinessProfileScreen extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       boxShadow: [
-        const BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
+        const BoxShadow(
+          color: Colors.black12,
+          blurRadius: 8,
+          offset: Offset(0, 2),
+        ),
       ],
       border: Border.all(color: Colors.grey.shade200),
     );
@@ -261,10 +283,10 @@ class BusinessProfileScreen extends StatelessWidget {
 
   Widget _buildDivider() {
     return Divider(
-      height: 1, 
-      thickness: 1, 
-      color: Colors.grey.shade100, 
-      indent: 64, 
+      height: 1,
+      thickness: 1,
+      color: Colors.grey.shade100,
+      indent: 64,
       endIndent: 20,
     );
   }
