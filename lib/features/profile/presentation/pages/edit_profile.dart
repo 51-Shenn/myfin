@@ -27,14 +27,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     _firstNameController = TextEditingController(
-      text: widget.member?.firstName ?? '',
+      text: widget.member?.first_name ?? '',
     );
     _lastNameController = TextEditingController(
-      text: widget.member?.lastName ?? '',
+      text: widget.member?.last_name ?? '',
     );
     _emailController = TextEditingController(text: widget.member?.email ?? '');
     _phoneController = TextEditingController(
-      text: widget.member?.phoneNumber ?? '',
+      text: widget.member?.phone_number ?? '',
     );
   }
 

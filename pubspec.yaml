@@ -10,7 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   firebase_core: any
-  cloud_firestore: any
   firebase_auth: any
   intl: ^0.20.2
   flutter_bloc: ^9.1.0
