@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; 
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:myfin/features/fin_ai/data/repositories/chat_repository_impl.dart';
 import 'package:myfin/features/fin_ai/domain/entities/chat_message.dart';
 import 'package:myfin/features/fin_ai/presentation/bloc/fin_ai_bloc.dart';
