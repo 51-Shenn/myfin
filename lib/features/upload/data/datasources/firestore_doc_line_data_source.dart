@@ -48,7 +48,7 @@ class FirestoreDocumentLineItemDataSource implements DocumentLineItemDataSource 
 
   @override
   Future<void> updateLineItem(String lineItemId, Map<String, dynamic> updateData) async {
-    await _collectionRef.doc(lineItemId).update(updateData);
+    await _collectionRef.doc(lineItemId).set(updateData, SetOptions(merge: true));
   }
 
   @override

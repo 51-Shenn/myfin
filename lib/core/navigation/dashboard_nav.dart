@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 
 class DashboardNav extends StatefulWidget {
   const DashboardNav({super.key});
