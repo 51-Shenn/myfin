@@ -1,10 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/admin_main.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
+import 'package:myfin/features/upload/data/repositories/doc_line_item_repository_impl.dart';
+import 'package:myfin/features/upload/data/repositories/document_repository_impl.dart';
+import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
+import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/firebase_options.dart';
 
 Future<void> main() async {
@@ -14,7 +22,25 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const MainApp());
+  final firestore = FirebaseFirestore.instance;
+
+  runApp(
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<DocumentRepository>(
+          create: (context) => DocumentRepositoryImpl(
+            FirestoreDocumentDataSource(firestore: firestore),
+          ),
+        ),
+        RepositoryProvider<DocumentLineItemRepository>(
+          create: (context) => DocumentLineItemRepositoryImpl(
+            FirestoreDocumentLineItemDataSource(firestore: firestore),
+          ),
+        )
+      ],
+      child: const MainApp(),
+    )
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -25,11 +51,13 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: true,
       theme: ThemeData(useMaterial3: true),
-      // home: const BottomNavBar(),
+      home: const BottomNavBar(),
 
       initialRoute: AppRoutes.auth,
       onGenerateRoute: AppRoutes.onGenerateRoute,
       routes: {'/admin_dashboard': (context) => const AdminMainScreen()},
+      // initialRoute: AppRoutes.auth,
+      // onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

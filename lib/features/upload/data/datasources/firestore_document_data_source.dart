@@ -82,7 +82,7 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
   Future<void> updateDocument(String id, Map<String, dynamic> updateData) async {
     // Ensure updatedAt is updated on every modification
     updateData['updatedAt'] = FieldValue.serverTimestamp(); 
-    await _collectionRef.doc(id).update(updateData);
+    await _collectionRef.doc(id).set(updateData, SetOptions(merge: true));
   }
 
   // DELETE

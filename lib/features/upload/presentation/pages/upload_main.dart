@@ -18,10 +18,10 @@ class UploadScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) => UploadCubit(
         getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
-          MockDocumentRepository(),
+          context.read<DocumentRepository>(),
         ),
       )..fetchDocument(),
-      child: UploadView(),
+      child: const UploadView(),
     );
   }
 }
@@ -34,9 +34,10 @@ class UploadView extends StatelessWidget {
     final uploadCubit = context.read<UploadCubit>();
 
     return BlocListener<UploadCubit, UploadState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is UploadNavigateToManual) {
           Navigator.pushNamed(context, '/doc_details');
+          if (context.mounted) context.read<UploadCubit>().fetchDocument();
         }
         else if (state is UploadNavigateToDocDetails) {
           Navigator.pushNamed(
@@ -46,6 +47,7 @@ class UploadView extends StatelessWidget {
               existingDocument: state.selectedDocument,
             ),
           );
+          if (context.mounted) context.read<UploadCubit>().fetchDocument();
         }
         else if (state is UploadImagePicked) {
           uploadCubit.processPickedImage(state.imagePath);
@@ -203,82 +205,5 @@ class UploadView extends StatelessWidget {
         )
       )
     );
-  }
-}
-
-class MockDocumentRepository extends DocumentRepository {
-  @override
-  Future<Document> createDocument(Document document) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> deleteDocument(String id) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Document> getDocumentById(String id) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<Document>> getDocuments({
-    String? status,
-    String? type,
-    DocumentSortField sortBy = DocumentSortField.updatedAt,
-    SortDirection direction = SortDirection.descending,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    return [
-      Document(
-        id: 'DOC001',
-        memberId: 'user123',
-        name: 'Invoice #1001',
-        type: 'Invoice',
-        status: 'Draft',
-        createdBy: 'Admin',
-        updatedAt: DateTime.now(),
-        postingDate: DateTime(2025, 1, 10),
-      ),
-      Document(
-        id: 'DOC002',
-        memberId: 'user123',
-        name: 'Receipt #900',
-        type: 'Receipt',
-        status: 'Posted',
-        createdBy: 'System',
-        createdAt: DateTime(2025, 2, 1),
-        updatedAt: DateTime.now(),
-        postingDate: DateTime(2025, 2, 5),
-      ),
-      Document(
-        id: 'DOC003',
-        memberId: 'user123',
-        name: 'Receipt #100',
-        type: 'Receipt',
-        status: 'Posted',
-        createdBy: 'System',
-        createdAt: DateTime(2025, 2, 1),
-        updatedAt: DateTime.now(),
-        postingDate: DateTime(2025, 2, 5),
-      ),
-    ];
-  }
-
-  @override
-  Future<List<Document>> getDocumentsByCreator(String createdBy) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Document> updateDocument(Document document) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Document> updateDocumentStatus(String id, String newStatus) {
-    throw UnimplementedError();
   }
 }

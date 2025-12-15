@@ -9,56 +9,45 @@ class DocumentLineItemRepositoryImpl implements DocumentLineItemRepository {
 
   @override
   Future<DocumentLineItem> createLineItem(DocumentLineItem lineItem) async {
-    final rawData = lineItem.toMap();
-    final lineItemId = await dataSource.createLineItem(rawData);
-
-    return DocumentLineItem(
-      lineItemId: lineItemId,
-      documentId: lineItem.documentId,
-      lineNo: lineItem.lineNo,
-      lineDate: lineItem.lineDate,
-      categoryCode: lineItem.categoryCode,
-      description: lineItem.description,
-      debit: lineItem.debit,
-      credit: lineItem.credit,
-      attribute: lineItem.attribute,
-    );
+    final data = lineItem.toMap();
+    // Remove the ID if it's empty so Firestore generates one, 
+    // or keep it if you are generating IDs client-side.
+    if (lineItem.lineItemId.isEmpty) {
+      data.remove('lineItemId');
+    }
+    
+    final id = await dataSource.createLineItem(data);
+    
+    return lineItem.copyWith(lineItemId: id);
   }
 
   @override
   Future<DocumentLineItem> getLineItemById(String lineItemId) async {
-    final rawData = await dataSource.getLineItem(lineItemId);
-
-    if (rawData == null) {
-      throw Exception('Line item with ID $lineItemId not found.');
-    }
-
-    return DocumentLineItem.fromMap(rawData);
+    final data = await dataSource.getLineItem(lineItemId);
+    if (data == null) throw Exception('Line Item not found');
+    return DocumentLineItem.fromMap(data);
   }
 
   @override
-  Future<List<DocumentLineItem>> getLineItemsByDocumentId(
-    String documentId,
-  ) async {
-    final rawList = await dataSource.getLineItemsByDocumentId(documentId);
-    return rawList.map((data) => DocumentLineItem.fromMap(data)).toList();
+  Future<List<DocumentLineItem>> getLineItemsByDocumentId(String documentId) async {
+    final result = await dataSource.getLineItemsByDocumentId(documentId);
+    return result.map((data) => DocumentLineItem.fromMap(data)).toList();
   }
 
   @override
   Future<DocumentLineItem> updateLineItem(DocumentLineItem lineItem) async {
-    final updateData = lineItem.toMap();
-    await dataSource.updateLineItem(lineItem.lineItemId, updateData);
+    await dataSource.updateLineItem(lineItem.lineItemId, lineItem.toMap());
     return lineItem;
   }
 
   @override
   Future<void> deleteLineItem(String lineItemId) async {
-    await dataSource.deleteLineItem(lineItemId);
+    return dataSource.deleteLineItem(lineItemId);
   }
 
   @override
   Future<void> deleteLineItemsByDocumentId(String documentId) async {
-    await dataSource.deleteLineItemsByDocumentId(documentId);
+    return dataSource.deleteLineItemsByDocumentId(documentId);
   }
 
   @override
@@ -67,11 +56,12 @@ class DocumentLineItemRepositoryImpl implements DocumentLineItemRepository {
     int page = 1,
     int limit = 20,
   }) async {
-    final rawList = await dataSource.getLineItemsByDocumentId(
-      documentId,
-      limit: limit,
-      page: page,
+    // Basic implementation delegating to the datasource
+    final result = await dataSource.getLineItemsByDocumentId(
+      documentId, 
+      limit: limit, 
+      page: page
     );
-    return rawList.map((data) => DocumentLineItem.fromMap(data)).toList();
+    return result.map((data) => DocumentLineItem.fromMap(data)).toList();
   }
 }
