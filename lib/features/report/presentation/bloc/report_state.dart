@@ -16,6 +16,8 @@ class ReportUiModel extends Equatable {
   List<Object> get props => [report_id, report_type, dateRange];
 }
 
+// TODO: different report ui model state
+
 // state for report bloc
 class ReportState extends Equatable {
   final bool loading;

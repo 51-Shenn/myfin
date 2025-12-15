@@ -532,7 +532,8 @@ class RecentReportCard extends StatelessWidget {
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
           // TODO: navigate to report details
-          print('Navigate report details: ${report.report_type}');
+          // Navigator.pushNamed(context, '/report_details', arguments: report);
+          print('Navigate report details: ${report.report_type} ${report.report_id}');
         },
       ),
     );
