@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
+import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 abstract class UploadState extends Equatable {
   final List<Document> document;
@@ -38,12 +39,13 @@ class UploadNavigateToManual extends UploadState {
 
 class UploadNavigateToDocDetails extends UploadState {
   final Document selectedDocument; // 1. Renamed to avoid conflict with List<Document>
+  final List<DocumentLineItem>? extractedLineItems; // Added this field
 
   // 2. Pass empty list [] to super because we are just navigating
-  const UploadNavigateToDocDetails(this.selectedDocument) : super(const []);
+  const UploadNavigateToDocDetails(this.selectedDocument, {this.extractedLineItems}) : super(const []);
 
   @override
-  List<Object> get props => [selectedDocument];
+  List<Object> get props => [selectedDocument, if (extractedLineItems != null) extractedLineItems!];
 }
 
 class UploadImagePicked extends UploadState {

@@ -5,6 +5,8 @@ import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/domain/usecases/get_recent_doc_use_case.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:myfin/features/upload/domain/entities/doc_line_item.dart'; // Import
+import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.dart'; // Import
 
 class UploadCubit extends Cubit<UploadState> {
   final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
