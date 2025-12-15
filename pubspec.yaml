@@ -20,6 +20,7 @@ dependencies:
   image_picker: ^1.2.1
   uuid: ^4.5.2
   cloud_firestore: ^6.1.0
+  convex_bottom_bar: 3.2.0
   file_picker: ^10.3.7
 
 dev_dependencies:

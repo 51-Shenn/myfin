@@ -287,14 +287,46 @@ class BalanceSheetTemplate {
   };
 }
 
-class AccountsPayableTemplate {
+class AccountsReceivableTemplate {
   static const Map<String, dynamic> structure = {
-    'I. REVENUE': ['Sales Revenue', 'Service Revenue'],
+    'Customer':[
+      'Customer',
+      'Contact',
+      'Invoices',
+    ],
+    'Invoices': [
+      'Invoice Number',
+      'Invoice Date',
+      'Due Date',
+      'Amount',
+      'Status',
+    ],
+    'Total': [
+      'Total Receivable',
+      'Total Overdue',
+      'Overdue Invoice Count',
+    ]
   };
 }
 
-class AccountsReceivableTemplate {
+class AccountsPayableTemplate {
   static const Map<String, dynamic> structure = {
-    'I. REVENUE': ['Sales Revenue', 'Service Revenue'],
+    'Supplier':[
+      'Supplier',
+      'Contact',
+      'Bills',
+    ],
+    'Bills': [
+      'Bill Number',
+      'Bill Date',
+      'Due Date',
+      'Amount',
+      'Status',
+    ],
+    'Total': [
+      'Total Payable',
+      'Total Overdue',
+      'Overdue Invoice Count',
+    ]
   };
 }

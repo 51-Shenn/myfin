@@ -45,53 +45,6 @@ ReportType stringToReportType(String type) {
   }
 }
 
-// report entity
-class Report extends Equatable {
-  final String report_id;
-  final DateTime generated_at;
-  final Map<String, DateTime> fiscal_period;
-  final ReportType report_type;
-  final String member_id;
-
-  const Report({
-    required this.report_id,
-    required this.generated_at,
-    required this.fiscal_period,
-    required this.report_type,
-    required this.member_id,
-  });
-
-  Report copyWith({
-    String? report_id,
-    DateTime? generated_at,
-    Map<String, DateTime>? fiscal_period,
-    ReportType? report_type,
-    String? member_id,
-  }) {
-    return Report(
-      report_id: report_id ?? this.report_id,
-      generated_at: generated_at ?? this.generated_at,
-      fiscal_period: fiscal_period ?? this.fiscal_period,
-      report_type: report_type ?? this.report_type,
-      member_id: member_id ?? this.member_id,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'Report(ID: $report_id, Type: $report_type, Period: ${fiscal_period['startDate']} - ${fiscal_period['endDate']})';
-  }
-
-  @override
-  List<Object> get props => [
-    report_id,
-    generated_at,
-    fiscal_period,
-    member_id,
-    report_type,
-  ];
-}
-
 // report line item entity
 class ReportLineItem extends Equatable {
   final String item_title;
@@ -178,6 +131,53 @@ class ReportSection extends Equatable {
 
   @override
   List<Object> get props => [section_title, groups, grand_total];
+}
+
+// report entity
+class Report extends Equatable {
+  final String report_id;
+  final DateTime generated_at;
+  final Map<String, DateTime> fiscal_period;
+  final ReportType report_type;
+  final String member_id;
+
+  const Report({
+    required this.report_id,
+    required this.generated_at,
+    required this.fiscal_period,
+    required this.report_type,
+    required this.member_id,
+  });
+
+  Report copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+  }) {
+    return Report(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Report(ID: $report_id, Type: $report_type, Period: ${fiscal_period['startDate']} - ${fiscal_period['endDate']})';
+  }
+
+  @override
+  List<Object> get props => [
+    report_id,
+    generated_at,
+    fiscal_period,
+    member_id,
+    report_type,
+  ];
 }
 
 // profit & loss report entity
@@ -305,5 +305,215 @@ class BalanceSheet extends Report {
   ];
 }
 
+// report invoice line
+class AccountLineItem extends Equatable {
+  final String account_line_id;
+  final DateTime date_issued;
+  final DateTime due_date;
+  final double amount_due;
+  final bool isReceivable;
+  final bool isOverdue;
+
+  const AccountLineItem({
+    required this.account_line_id,
+    required this.date_issued,
+    required this.due_date,
+    required this.amount_due,
+    required this.isReceivable,
+    this.isOverdue = false,
+  });
+
+  AccountLineItem copyWith({
+    String? account_line_id,
+    DateTime? date_issued,
+    DateTime? due_date,
+    double? amount_due,
+    bool? isReceivable,
+    bool? isOverdue,
+  }) {
+    return AccountLineItem(
+      account_line_id: account_line_id ?? this.account_line_id,
+      date_issued: date_issued ?? this.date_issued,
+      due_date: due_date ?? this.due_date,
+      amount_due: amount_due ?? this.amount_due,
+      isReceivable: isReceivable ?? this.isReceivable,
+      isOverdue: isOverdue ?? this.isOverdue,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    account_line_id,
+    date_issued,
+    due_date,
+    amount_due,
+    isReceivable,
+    isOverdue,
+  ];
+}
+
+// customer model for receivables
+class Customer extends Equatable {
+  final String customer_name;
+  final String customer_contact;
+  final List<AccountLineItem> invoices;
+
+  const Customer({
+    required this.customer_name,
+    required this.customer_contact,
+    required this.invoices,
+  });
+
+  Customer copyWith({
+    String? customer_name,
+    String? customer_contact,
+    List<AccountLineItem>? invoices,
+  }) {
+    return Customer(
+      customer_name: customer_name ?? this.customer_name,
+      customer_contact: customer_contact ?? this.customer_contact,
+      invoices: invoices ?? this.invoices,
+    );
+  }
+
+  @override
+  List<Object> get props => [customer_name, customer_contact, invoices];
+}
+
+// supplier model for payables
+class Supplier extends Equatable {
+  final String supplier_name;
+  final String supplier_contact;
+  final List<AccountLineItem> bills;
+
+  const Supplier({
+    required this.supplier_name,
+    required this.supplier_contact,
+    required this.bills,
+  });
+
+  Supplier copyWith({
+    String? supplier_name,
+    String? email,
+    String? supplier_contact,
+    List<AccountLineItem>? bills,
+  }) {
+    return Supplier(
+      supplier_name: supplier_name ?? this.supplier_name,
+      supplier_contact: supplier_contact ?? this.supplier_contact,
+      bills: bills ?? this.bills,
+    );
+  }
+
+  @override
+  List<Object> get props => [supplier_name, supplier_contact, bills];
+}
+
 // accounts receivable entity
+class AccountsReceivable extends Report {
+  final List<Customer> customers;
+  final double total_receivable;
+  final double total_overdue;
+  final int overdue_invoice_count;
+
+  const AccountsReceivable({
+    required super.report_id,
+    required super.generated_at,
+    required super.fiscal_period,
+    required super.report_type,
+    required super.member_id,
+    required this.customers,
+    required this.total_receivable,
+    required this.total_overdue,
+    required this.overdue_invoice_count,
+  });
+
+  @override
+  AccountsReceivable copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Customer>? customers,
+    double? total_receivable,
+    double? total_overdue,
+    int? overdue_invoice_count,
+  }) {
+    return AccountsReceivable(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+      customers: customers ?? this.customers,
+      total_receivable: total_receivable ?? this.total_receivable,
+      total_overdue: total_overdue ?? this.total_overdue,
+      overdue_invoice_count:
+          overdue_invoice_count ?? this.overdue_invoice_count,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    ...super.props,
+    customers,
+    total_receivable,
+    total_overdue,
+    overdue_invoice_count,
+  ];
+}
+
 // accounts payable entity
+class AccountsPayable extends Report {
+  final List<Supplier> suppliers;
+  final double total_payable;
+  final double total_overdue;
+  final int overdue_bill_count;
+
+  const AccountsPayable({
+    required super.report_id,
+    required super.generated_at,
+    required super.fiscal_period,
+    required super.report_type,
+    required super.member_id,
+    required this.suppliers,
+    required this.total_payable,
+    required this.total_overdue,
+    required this.overdue_bill_count,
+  });
+
+  @override
+  AccountsPayable copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Supplier>? suppliers,
+    double? total_payable,
+    double? total_overdue,
+    int? overdue_bill_count,
+  }) {
+    return AccountsPayable(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+      suppliers: suppliers ?? this.suppliers,
+      total_payable: total_payable ?? this.total_payable,
+      total_overdue: total_overdue ?? this.total_overdue,
+      overdue_bill_count: overdue_bill_count ?? this.overdue_bill_count,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    ...super.props,
+    suppliers,
+    total_payable,
+    total_overdue,
+    overdue_bill_count,
+  ];
+}
