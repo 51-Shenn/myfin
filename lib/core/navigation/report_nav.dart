@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/presentation/pages/accounts_payable_report.dart';
+import 'package:myfin/features/report/presentation/pages/accounts_receivable_report.dart';
+import 'package:myfin/features/report/presentation/pages/balance_sheet_report.dart';
+import 'package:myfin/features/report/presentation/pages/cash_flow_report.dart';
+import 'package:myfin/features/report/presentation/pages/profitloss_report.dart';
 import 'package:myfin/features/report/presentation/pages/report_history.dart';
 import 'package:myfin/features/report/presentation/pages/report_main.dart';
 
@@ -25,10 +31,27 @@ class _ReportsNavState extends State<ReportsNav> {
               return const ReportHistoryScreen(); // report history screen
             } 
 
-            // use in button
-            // onPressed: () => Navigator.pushNamed(context, '/report_details'),
+            if (settings.name == '/report_${ReportType.profitLoss.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+              return const ProfitAndLossReportScreen(); // profit & loss report screen
+            }
 
-            return const ReportScreen(); // report screen
+            if (settings.name == '/report_${ReportType.cashFlow.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+              return const CashFlowStatementScreen(); // cash flow report screen
+            }
+
+            if (settings.name == '/report_${ReportType.balanceSheet.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+              return const BalanceSheetReportScreen(); // balance sheet report screen
+            }
+            
+            if (settings.name == '/report_${ReportType.accountsPayable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+              return const AccountsPayableReportScreen(); // accounts payable report screen
+            }
+
+            if (settings.name == '/report_${ReportType.accountsReceivable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+              return const AccountsReceivableReportScreen(); // accounts receivable report screen
+            }
+
+            return const MainReportScreen(); // main report screen
           }
         );
       },

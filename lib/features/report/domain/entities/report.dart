@@ -1,6 +1,10 @@
-// concrete data models
-
 import 'package:equatable/equatable.dart';
+import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
+import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';
+import 'package:myfin/features/report/services/generator/balance_sheet_generator.dart';
+import 'package:myfin/features/report/services/generator/cash_flow_generator.dart';
+import 'package:myfin/features/report/services/generator/profitloss_generator.dart';
+import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 // report types
 enum ReportType {
@@ -45,53 +49,6 @@ ReportType stringToReportType(String type) {
     default:
       throw Exception('Unknown report type: $type');
   }
-}
-
-// report entity
-class Report extends Equatable {
-  final String report_id;
-  final DateTime generated_at;
-  final Map<String, DateTime> fiscal_period;
-  final ReportType report_type;
-  final String member_id;
-
-  const Report({
-    required this.report_id,
-    required this.generated_at,
-    required this.fiscal_period,
-    required this.report_type,
-    required this.member_id,
-  });
-
-  Report copyWith({
-    String? report_id,
-    DateTime? generated_at,
-    Map<String, DateTime>? fiscal_period,
-    ReportType? report_type,
-    String? member_id,
-  }) {
-    return Report(
-      report_id: report_id ?? this.report_id,
-      generated_at: generated_at ?? this.generated_at,
-      fiscal_period: fiscal_period ?? this.fiscal_period,
-      report_type: report_type ?? this.report_type,
-      member_id: member_id ?? this.member_id,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'Report(ID: $report_id, Type: $report_type, Period: ${fiscal_period['startDate']} - ${fiscal_period['endDate']})';
-  }
-
-  @override
-  List<Object> get props => [
-    report_id,
-    generated_at,
-    fiscal_period,
-    member_id,
-    report_type,
-  ];
 }
 
 // report line item entity
@@ -182,6 +139,68 @@ class ReportSection extends Equatable {
   List<Object> get props => [section_title, groups, grand_total];
 }
 
+// report entity
+class Report extends Equatable {
+  final String report_id;
+  final DateTime generated_at;
+  final Map<String, DateTime> fiscal_period;
+  final ReportType report_type;
+  final String member_id;
+
+  const Report({
+    required this.report_id,
+    required this.generated_at,
+    required this.fiscal_period,
+    required this.report_type,
+    required this.member_id,
+  });
+
+  factory Report.initial() => Report(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    report_type: ReportType.profitLoss,
+    member_id: '',
+  );
+
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    return Report.initial();
+  }
+
+  Report copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+  }) {
+    return Report(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Report(ID: $report_id, Type: $report_type, Period: ${fiscal_period['startDate']} - ${fiscal_period['endDate']})';
+  }
+
+  @override
+  List<Object> get props => [
+    report_id,
+    generated_at,
+    fiscal_period,
+    member_id,
+    report_type,
+  ];
+}
+
 // profit & loss report entity
 class ProfitAndLossReport extends Report {
   final List<ReportSection> sections;
@@ -204,13 +223,63 @@ class ProfitAndLossReport extends Report {
     required this.net_income,
   }) : super(report_type: ReportType.profitLoss);
 
+  factory ProfitAndLossReport.initial() => ProfitAndLossReport(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    gross_profit: 0,
+    operating_income: 0,
+    income_before_tax: 0,
+    income_tax_expense: 0,
+    net_income: 0,
+  );
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = ProfitLossGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
   @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Gross Profit: $gross_profit, '
         'Operating Income: $operating_income, '
         'Net Income: $net_income';
+  }
+
+  @override
+  ProfitAndLossReport copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<ReportSection>? sections,
+    double? gross_profit,
+    double? operating_income,
+    double? income_before_tax,
+    double? income_tax_expense,
+    double? net_income,
+  }) {
+    return ProfitAndLossReport(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections ?? this.sections,
+      gross_profit: gross_profit ?? this.gross_profit,
+      operating_income: operating_income ?? this.operating_income,
+      income_before_tax: income_before_tax ?? this.income_before_tax,
+      income_tax_expense: income_tax_expense ?? this.income_tax_expense,
+      net_income: net_income ?? this.net_income,
+    );
   }
 
   @override
@@ -243,16 +312,66 @@ class CashFlowStatement extends Report {
     required this.total_investing_cash_flow,
     required this.total_financing_cash_flow,
     required this.cash_balance,
-  }) : super(report_type: ReportType.profitLoss);
+  }) : super(report_type: ReportType.cashFlow);
+
+  factory CashFlowStatement.initial() => CashFlowStatement(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    total_operating_cash_flow: 0,
+    total_investing_cash_flow: 0,
+    total_financing_cash_flow: 0,
+    cash_balance: 0,
+  );
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = CashFlowGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
 
   @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Total Operating Cash Flow: $total_operating_cash_flow, '
         'Total Investing Cash Flow: $total_investing_cash_flow, '
         'Total Financing Cash Flow: $total_financing_cash_flow, '
         'Cash Balance: $cash_balance';
+  }
+
+  @override
+  CashFlowStatement copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<ReportSection>? sections,
+    double? total_operating_cash_flow,
+    double? total_investing_cash_flow,
+    double? total_financing_cash_flow,
+    double? cash_balance,
+  }) {
+    return CashFlowStatement(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections ?? this.sections,
+      total_operating_cash_flow:
+          total_operating_cash_flow ?? this.total_operating_cash_flow,
+      total_investing_cash_flow:
+          total_investing_cash_flow ?? this.total_investing_cash_flow,
+      total_financing_cash_flow:
+          total_financing_cash_flow ?? this.total_financing_cash_flow,
+      cash_balance: cash_balance ?? this.cash_balance,
+    );
   }
 
   @override
@@ -284,16 +403,64 @@ class BalanceSheet extends Report {
     required this.total_liabilities,
     required this.total_equity,
     required this.total_liabilities_and_equity,
-  }) : super(report_type: ReportType.profitLoss);
+  }) : super(report_type: ReportType.balanceSheet);
+
+  factory BalanceSheet.initial() => BalanceSheet(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    total_assets: 0,
+    total_liabilities: 0,
+    total_equity: 0,
+    total_liabilities_and_equity: 0,
+  );
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = BalanceSheetGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
 
   @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Total Assets: $total_assets, '
         'Total Liabilities: $total_liabilities, '
         'Total Equity: $total_equity, '
         'Total Liabilities + Equity: $total_liabilities_and_equity';
+  }
+
+  @override
+  BalanceSheet copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<ReportSection>? sections,
+    double? total_assets,
+    double? total_liabilities,
+    double? total_equity,
+    double? total_liabilities_and_equity,
+  }) {
+    return BalanceSheet(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections ?? this.sections,
+      total_assets: total_assets ?? this.total_assets,
+      total_liabilities: total_liabilities ?? this.total_liabilities,
+      total_equity: total_equity ?? this.total_equity,
+      total_liabilities_and_equity:
+          total_liabilities_and_equity ?? this.total_liabilities_and_equity,
+    );
   }
 
   @override
@@ -307,5 +474,269 @@ class BalanceSheet extends Report {
   ];
 }
 
+// report invoice line
+class AccountLineItem extends Equatable {
+  final String account_line_id;
+  final DateTime date_issued;
+  final DateTime due_date;
+  final double amount_due;
+  final bool isReceivable;
+  final bool isOverdue;
+
+  const AccountLineItem({
+    required this.account_line_id,
+    required this.date_issued,
+    required this.due_date,
+    required this.amount_due,
+    required this.isReceivable,
+    this.isOverdue = false,
+  });
+
+  AccountLineItem copyWith({
+    String? account_line_id,
+    DateTime? date_issued,
+    DateTime? due_date,
+    double? amount_due,
+    bool? isReceivable,
+    bool? isOverdue,
+  }) {
+    return AccountLineItem(
+      account_line_id: account_line_id ?? this.account_line_id,
+      date_issued: date_issued ?? this.date_issued,
+      due_date: due_date ?? this.due_date,
+      amount_due: amount_due ?? this.amount_due,
+      isReceivable: isReceivable ?? this.isReceivable,
+      isOverdue: isOverdue ?? this.isOverdue,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    account_line_id,
+    date_issued,
+    due_date,
+    amount_due,
+    isReceivable,
+    isOverdue,
+  ];
+}
+
+// customer model for receivables
+class Customer extends Equatable {
+  final String customer_name;
+  final String customer_contact;
+  final List<AccountLineItem> invoices;
+
+  const Customer({
+    required this.customer_name,
+    required this.customer_contact,
+    required this.invoices,
+  });
+
+  Customer copyWith({
+    String? customer_name,
+    String? customer_contact,
+    List<AccountLineItem>? invoices,
+  }) {
+    return Customer(
+      customer_name: customer_name ?? this.customer_name,
+      customer_contact: customer_contact ?? this.customer_contact,
+      invoices: invoices ?? this.invoices,
+    );
+  }
+
+  @override
+  List<Object> get props => [customer_name, customer_contact, invoices];
+}
+
+// supplier model for payables
+class Supplier extends Equatable {
+  final String supplier_name;
+  final String supplier_contact;
+  final List<AccountLineItem> bills;
+
+  const Supplier({
+    required this.supplier_name,
+    required this.supplier_contact,
+    required this.bills,
+  });
+
+  Supplier copyWith({
+    String? supplier_name,
+    String? email,
+    String? supplier_contact,
+    List<AccountLineItem>? bills,
+  }) {
+    return Supplier(
+      supplier_name: supplier_name ?? this.supplier_name,
+      supplier_contact: supplier_contact ?? this.supplier_contact,
+      bills: bills ?? this.bills,
+    );
+  }
+
+  @override
+  List<Object> get props => [supplier_name, supplier_contact, bills];
+}
+
 // accounts receivable entity
+class AccountsReceivable extends Report {
+  final List<Customer> customers;
+  final double total_receivable;
+  final double total_overdue;
+  final int overdue_invoice_count;
+
+  const AccountsReceivable({
+    required super.report_id,
+    required super.generated_at,
+    required super.fiscal_period,
+    required super.member_id,
+    required this.customers,
+    required this.total_receivable,
+    required this.total_overdue,
+    required this.overdue_invoice_count,
+  }) : super(report_type: ReportType.accountsReceivable);
+
+  factory AccountsReceivable.initial() => AccountsReceivable(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    customers: List.empty(),
+    total_receivable: 0,
+    total_overdue: 0,
+    overdue_invoice_count: 0,
+  );
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = AccReceivableGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}: '
+        'Total Receivable: $total_receivable, '
+        'Total Overdue: $total_overdue, '
+        'Overdue Invoice Count: $overdue_invoice_count';
+  }
+
+  @override
+  AccountsReceivable copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Customer>? customers,
+    double? total_receivable,
+    double? total_overdue,
+    int? overdue_invoice_count,
+  }) {
+    return AccountsReceivable(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      customers: customers ?? this.customers,
+      total_receivable: total_receivable ?? this.total_receivable,
+      total_overdue: total_overdue ?? this.total_overdue,
+      overdue_invoice_count:
+          overdue_invoice_count ?? this.overdue_invoice_count,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    ...super.props,
+    customers,
+    total_receivable,
+    total_overdue,
+    overdue_invoice_count,
+  ];
+}
+
 // accounts payable entity
+class AccountsPayable extends Report {
+  final List<Supplier> suppliers;
+  final double total_payable;
+  final double total_overdue;
+  final int overdue_bill_count;
+
+  const AccountsPayable({
+    required super.report_id,
+    required super.generated_at,
+    required super.fiscal_period,
+    required super.member_id,
+    required this.suppliers,
+    required this.total_payable,
+    required this.total_overdue,
+    required this.overdue_bill_count,
+  }) : super(report_type: ReportType.accountsPayable);
+
+  factory AccountsPayable.initial() => AccountsPayable(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    suppliers: List.empty(),
+    total_payable: 0,
+    total_overdue: 0,
+    overdue_bill_count: 0,
+  );
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = AccPayableGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}: '
+        'Total Payable: $total_payable, '
+        'Total Overdue: $total_overdue, '
+        'Overdue Bill Count: $overdue_bill_count';
+  }
+
+  @override
+  AccountsPayable copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Supplier>? suppliers,
+    double? total_payable,
+    double? total_overdue,
+    int? overdue_bill_count,
+  }) {
+    return AccountsPayable(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      suppliers: suppliers ?? this.suppliers,
+      total_payable: total_payable ?? this.total_payable,
+      total_overdue: total_overdue ?? this.total_overdue,
+      overdue_bill_count: overdue_bill_count ?? this.overdue_bill_count,
+    );
+  }
+
+  @override
+  List<Object> get props => [
+    ...super.props,
+    suppliers,
+    total_payable,
+    total_overdue,
+    overdue_bill_count,
+  ];
+}

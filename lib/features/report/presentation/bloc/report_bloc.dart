@@ -1,9 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
-import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
+import 'package:myfin/features/report/services/generator/report_factory.dart';
 
 class ReportBLoC extends Bloc<ReportEvent, ReportState> {
   final ReportRepository repo;
@@ -14,32 +13,29 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     on<LoadReportsEvent>(_onLoadReports);
     on<ClearErrorEvent>(_onClearError);
     on<GenerateReportEvent>(_onGenerateReport);
+    on<LoadReportDetailsEvent>(_onLoadReportDetails);
+    on<LoadReportDetailsFailure>(_onLoadReporDetailsFail);
   }
 
   Future<void> _onLoadReports(
     LoadReportsEvent event,
     Emitter<ReportState> emit,
   ) async {
-    emit(state.copyWith(loading: true, generating: false, error: null));
+    emit(
+      state.copyWith(
+        loadingReports: true,
+        error: null,
+      ),
+    );
 
     try {
       final reports = await repo.fetchReportsForMember(event.member_id);
 
-      final uiReports = reports.map((report) {
-        final dateRange = _toDateRange(report.fiscal_period);
-
-        return ReportUiModel(
-          report_id: report.report_id,
-          report_type: report.report_type.reportTypeToString,
-          dateRange: dateRange,
-        );
-      }).toList();
-
-      emit(ReportState(loading: false, generating: false, reports: uiReports));
+      emit(state.copyWith(loadingReports: false, loadedReports: reports));
     } catch (e) {
       emit(
         state.copyWith(
-          loading: false,
+          loadingReports: false,
           error: "Failed to load reports: ${e.toString()}",
         ),
       );
@@ -54,50 +50,90 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     GenerateReportEvent event,
     Emitter<ReportState> emit,
   ) async {
-    emit(state.copyWith(generating: true, error: null));
+    emit(
+      state.copyWith(
+        generatingReport: true,
+        loadingReports: false,
+        error: null,
+      ),
+    );
 
     try {
-      Report report = Report(
-        member_id: event.member_id,
-        report_type: stringToReportType(event.reportType),
-        fiscal_period: {'startDate': event.startDate, 'endDate': event.endDate},
-        report_id: 'RPT-001',
-        generated_at: DateTime.now(),
+      // Build report from event data
+      final report = ReportFactory.createReportFromEvent(
+        event.reportType,
+        event.member_id,
+        event.startDate,
+        event.endDate,
       );
 
-      // create report
-      report = await repo.createReport(report);
+      final generatedReport = await repo.createReport(report);
 
-      emit(state.copyWith(generating: false));
+      if (generatedReport.report_id.isEmpty) {
+        emit(
+          state.copyWith(
+            loadingReports: false,
+            generatingReport: false,
+            error: 'Failed to generate report id',
+          ),
+        );
+      }
 
-      // TODO: display generated report after report creation
+      emit(state.copyWith(generatingReport: false));
+
+      if (generatedReport.report_id.isNotEmpty) {
+        // TODO: display generated report after report creation
+        print("Generated Report: $generatedReport");
+      }
 
       // reload reports list
       await _onLoadReports(LoadReportsEvent(event.member_id), emit);
     } catch (e) {
       emit(
         state.copyWith(
-          generating: false,
+          generatingReport: false,
           error: "Failed to generate report: ${e.toString()}",
         ),
       );
     }
   }
 
-  // format fiscal period to date range
-  String _toDateRange(Map<String, DateTime> period) {
-    final startDate = period['startDate'];
-    final endDate = period['endDate'];
+  Future<void> _onLoadReportDetails(
+    LoadReportDetailsEvent event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        loadingReportDetails: true,
+        loadingReports: false,
+        generatingReport: false,
+        error: null,
+      ),
+    );
 
-    final formatter = DateFormat('dd/MM/yyyy');
+    try {
+      final report = await repo.getReportByReportId(event.reportCard.report_id);
 
-    if (startDate != null && endDate != null) {
-      final startStr = formatter.format(startDate);
-      final endStr = formatter.format(endDate);
-      return '$startStr - $endStr';
+      emit(state.copyWith(loadingReports: false, loadedReportDetails: report));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          loadingReports: false,
+          error: "Failed to load reports: ${e.toString()}",
+        ),
+      );
     }
+  }
 
-    return 'Invalid Date';
+  Future<void> _onLoadReporDetailsFail(
+    LoadReportDetailsFailure event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        error: "Failed to load report details",
+      ),
+    );
   }
 
   // format startDate and endDate to fiscal period

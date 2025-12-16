@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:myfin/features/document_uploader/presentation/pages/doc_details.dart';
-import 'package:myfin/features/document_uploader/presentation/pages/upload_main.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_main.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_history.dart'; 
 
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
@@ -21,14 +22,23 @@ class _UploadNavState extends State<UploadNav> {
           settings: settings,
           builder: (BuildContext context) {
             // routes for upload navigation
-            if (settings.name == '/upload_doc_details') {
-              return DocumentDetailsScreen(); // upload doc details screen
+            if (settings.name == '/doc_details') {
+              final args = settings.arguments as DocDetailsArguments?;
+
+              return DocumentDetailsScreen(
+                existingDocument: args?.existingDocument,
+                existingLineItems: args?.existingLineItems,
+                documentId: args?.documentId,
+              );
             } 
+            else if (settings.name == '/upload_history') {
+              return const UploadHistoryScreen();
+            }
 
             // use in button
             // onPressed: () => Navigator.pushNamed(context, '/upload_doc_details'),
 
-            return UploadScreen(); // upload screen
+            return const UploadScreen(); // upload screen
           }
         );
       },
