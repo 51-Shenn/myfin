@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/services/generator/report_factory.dart';
+import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 // repo implementation
 class ReportRepository {
@@ -27,38 +28,34 @@ class ReportRepository {
     await Future.delayed(Duration(milliseconds: 1000));
   }
 
-  Report _toReport(Map<String, dynamic> json) {
-    _delay();
-    return Report(
-      report_id: json["report_id"],
-      generated_at: DateTime.parse(json["generated_at"]),
-      fiscal_period: {
-        "startDate": DateTime.parse(json["fiscal_period"]["startDate"]),
-        "endDate": DateTime.parse(json["fiscal_period"]["endDate"]),
-      },
-      report_type: json["report_type"],
-      member_id: json["member_id"],
-    );
-  }
-
   Future<List<Report>> fetchReportsForMember(String memberId) async {
     await _delay();
     final memberReports = _exampleCollection
         .where((doc) => doc["member_id"] == memberId)
-        .map(_toReport)
+        .map(ReportFactory.createReportFromJson)
         .toList();
     return memberReports;
   }
 
   // generate report
   Future<Report> createReport(Report report) async {
-    ReportFactory reportFactory = ReportFactory();
     Report generatedReport = report;
-    List<Map<dynamic, dynamic>> reportData = [];
+    String generatedReportId = '';
+    List<DocumentLineItem> reportData = [];
 
-    // TODO: saveReportLog(report); - repo function
-    // TODO: reportData = await getReportData(report); - repo function
-    generatedReport = await reportFactory.generateReport(report, reportData);
+    try {
+      // TODO: saveReportLog(report); - return report id
+      report.copyWith(report_id: generatedReportId);
+
+      // TODO: reportData = await getReportData(report); - repo function
+
+      // TODO: get business profile
+      String businessName = "ABC Corp Sdn. Bhd.";
+
+      generatedReport = await report.generateReport(businessName, reportData);
+    } on Exception catch (e) {
+      print("Error generating report: $e");
+    }
 
     return generatedReport;
   }

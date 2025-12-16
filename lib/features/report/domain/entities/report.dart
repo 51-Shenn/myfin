@@ -1,6 +1,10 @@
-// concrete data models
-
 import 'package:equatable/equatable.dart';
+import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
+import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';
+import 'package:myfin/features/report/services/generator/balance_sheet_generator.dart';
+import 'package:myfin/features/report/services/generator/cash_flow_generator.dart';
+import 'package:myfin/features/report/services/generator/profitloss_generator.dart';
+import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 // report types
 enum ReportType {
@@ -136,7 +140,7 @@ class ReportSection extends Equatable {
 }
 
 // report entity
-class Report extends Equatable {
+abstract class Report extends Equatable {
   final String report_id;
   final DateTime generated_at;
   final Map<String, DateTime> fiscal_period;
@@ -151,21 +155,18 @@ class Report extends Equatable {
     required this.member_id,
   });
 
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  );
+
   Report copyWith({
     String? report_id,
     DateTime? generated_at,
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-  }) {
-    return Report(
-      report_id: report_id ?? this.report_id,
-      generated_at: generated_at ?? this.generated_at,
-      fiscal_period: fiscal_period ?? this.fiscal_period,
-      report_type: report_type ?? this.report_type,
-      member_id: member_id ?? this.member_id,
-    );
-  }
+  });
 
   @override
   String toString() {
@@ -205,12 +206,47 @@ class ProfitAndLossReport extends Report {
   }) : super(report_type: ReportType.profitLoss);
 
   @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = ProfitLossGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
+  @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Gross Profit: $gross_profit, '
         'Operating Income: $operating_income, '
         'Net Income: $net_income';
+  }
+
+  @override
+  ProfitAndLossReport copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Supplier>? suppliers,
+    double? total_payable,
+    double? total_overdue,
+    int? overdue_bill_count,
+  }) {
+    return ProfitAndLossReport(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections,
+      gross_profit: gross_profit,
+      operating_income: operating_income,
+      income_before_tax: income_before_tax,
+      income_tax_expense: income_tax_expense,
+      net_income: net_income,
+    );
   }
 
   @override
@@ -243,16 +279,50 @@ class CashFlowStatement extends Report {
     required this.total_investing_cash_flow,
     required this.total_financing_cash_flow,
     required this.cash_balance,
-  }) : super(report_type: ReportType.profitLoss);
+  }) : super(report_type: ReportType.cashFlow);
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = CashFlowGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
 
   @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Total Operating Cash Flow: $total_operating_cash_flow, '
         'Total Investing Cash Flow: $total_investing_cash_flow, '
         'Total Financing Cash Flow: $total_financing_cash_flow, '
         'Cash Balance: $cash_balance';
+  }
+
+  @override
+  CashFlowStatement copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Supplier>? suppliers,
+    double? total_payable,
+    double? total_overdue,
+    int? overdue_bill_count,
+  }) {
+    return CashFlowStatement(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections,
+      total_operating_cash_flow: total_operating_cash_flow,
+      total_investing_cash_flow: total_investing_cash_flow,
+      total_financing_cash_flow: total_financing_cash_flow,
+      cash_balance: cash_balance,
+    );
   }
 
   @override
@@ -284,16 +354,50 @@ class BalanceSheet extends Report {
     required this.total_liabilities,
     required this.total_equity,
     required this.total_liabilities_and_equity,
-  }) : super(report_type: ReportType.profitLoss);
+  }) : super(report_type: ReportType.balanceSheet);
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = BalanceSheetGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
 
   @override
   String toString() {
-    // Use existing fields for revenue and net income.
     return '${super.toString()}: '
         'Total Assets: $total_assets, '
         'Total Liabilities: $total_liabilities, '
         'Total Equity: $total_equity, '
         'Total Liabilities + Equity: $total_liabilities_and_equity';
+  }
+
+  @override
+  BalanceSheet copyWith({
+    String? report_id,
+    DateTime? generated_at,
+    Map<String, DateTime>? fiscal_period,
+    ReportType? report_type,
+    String? member_id,
+    List<Supplier>? suppliers,
+    double? total_payable,
+    double? total_overdue,
+    int? overdue_bill_count,
+  }) {
+    return BalanceSheet(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      member_id: member_id ?? this.member_id,
+      sections: sections,
+      total_assets: total_assets,
+      total_liabilities: total_liabilities,
+      total_equity: total_equity,
+      total_liabilities_and_equity: total_liabilities_and_equity,
+    );
   }
 
   @override
@@ -422,13 +526,30 @@ class AccountsReceivable extends Report {
     required super.report_id,
     required super.generated_at,
     required super.fiscal_period,
-    required super.report_type,
     required super.member_id,
     required this.customers,
     required this.total_receivable,
     required this.total_overdue,
     required this.overdue_invoice_count,
-  });
+  }) : super(report_type: ReportType.accountsReceivable);
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = AccReceivableGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}: '
+        'Total Receivable: $total_receivable, '
+        'Total Overdue: $total_overdue, '
+        'Overdue Invoice Count: $overdue_invoice_count';
+  }
 
   @override
   AccountsReceivable copyWith({
@@ -446,7 +567,6 @@ class AccountsReceivable extends Report {
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
-      report_type: report_type ?? this.report_type,
       member_id: member_id ?? this.member_id,
       customers: customers ?? this.customers,
       total_receivable: total_receivable ?? this.total_receivable,
@@ -477,13 +597,30 @@ class AccountsPayable extends Report {
     required super.report_id,
     required super.generated_at,
     required super.fiscal_period,
-    required super.report_type,
     required super.member_id,
     required this.suppliers,
     required this.total_payable,
     required this.total_overdue,
     required this.overdue_bill_count,
-  });
+  }) : super(report_type: ReportType.accountsPayable);
+
+  @override
+  Future<Report> generateReport(
+    String businessName,
+    List<DocumentLineItem> reportData,
+  ) async {
+    final generator = AccPayableGenerator();
+    return generator.generateFullReport(this, businessName, reportData)
+        as ProfitAndLossReport;
+  }
+
+  @override
+  String toString() {
+    return '${super.toString()}: '
+        'Total Payable: $total_payable, '
+        'Total Overdue: $total_overdue, '
+        'Overdue Bill Count: $overdue_bill_count';
+  }
 
   @override
   AccountsPayable copyWith({
@@ -501,7 +638,6 @@ class AccountsPayable extends Report {
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
-      report_type: report_type ?? this.report_type,
       member_id: member_id ?? this.member_id,
       suppliers: suppliers ?? this.suppliers,
       total_payable: total_payable ?? this.total_payable,
