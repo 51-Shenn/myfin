@@ -263,22 +263,24 @@ class ProfitAndLossReport extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? gross_profit,
+    double? operating_income,
+    double? income_before_tax,
+    double? income_tax_expense,
+    double? net_income,
   }) {
     return ProfitAndLossReport(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      gross_profit: gross_profit,
-      operating_income: operating_income,
-      income_before_tax: income_before_tax,
-      income_tax_expense: income_tax_expense,
-      net_income: net_income,
+      sections: sections ?? this.sections,
+      gross_profit: gross_profit ?? this.gross_profit,
+      operating_income: operating_income ?? this.operating_income,
+      income_before_tax: income_before_tax ?? this.income_before_tax,
+      income_tax_expense: income_tax_expense ?? this.income_tax_expense,
+      net_income: net_income ?? this.net_income,
     );
   }
 
@@ -352,21 +354,25 @@ class CashFlowStatement extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? total_operating_cash_flow,
+    double? total_investing_cash_flow,
+    double? total_financing_cash_flow,
+    double? cash_balance,
   }) {
     return CashFlowStatement(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      total_operating_cash_flow: total_operating_cash_flow,
-      total_investing_cash_flow: total_investing_cash_flow,
-      total_financing_cash_flow: total_financing_cash_flow,
-      cash_balance: cash_balance,
+      sections: sections ?? this.sections,
+      total_operating_cash_flow:
+          total_operating_cash_flow ?? this.total_operating_cash_flow,
+      total_investing_cash_flow:
+          total_investing_cash_flow ?? this.total_investing_cash_flow,
+      total_financing_cash_flow:
+          total_financing_cash_flow ?? this.total_financing_cash_flow,
+      cash_balance: cash_balance ?? this.cash_balance,
     );
   }
 
@@ -439,21 +445,23 @@ class BalanceSheet extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? total_assets,
+    double? total_liabilities,
+    double? total_equity,
+    double? total_liabilities_and_equity,
   }) {
     return BalanceSheet(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      total_assets: total_assets,
-      total_liabilities: total_liabilities,
-      total_equity: total_equity,
-      total_liabilities_and_equity: total_liabilities_and_equity,
+      sections: sections ?? this.sections,
+      total_assets: total_assets ?? this.total_assets,
+      total_liabilities: total_liabilities ?? this.total_liabilities,
+      total_equity: total_equity ?? this.total_equity,
+      total_liabilities_and_equity:
+          total_liabilities_and_equity ?? this.total_liabilities_and_equity,
     );
   }
 

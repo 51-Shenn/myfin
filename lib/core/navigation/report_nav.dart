@@ -4,7 +4,7 @@ import 'package:myfin/features/report/presentation/pages/accounts_payable_report
 import 'package:myfin/features/report/presentation/pages/accounts_receivable_report.dart';
 import 'package:myfin/features/report/presentation/pages/balance_sheet_report.dart';
 import 'package:myfin/features/report/presentation/pages/cash_flow_report.dart';
-import 'package:myfin/features/report/presentation/pages/profit&loss_report.dart';
+import 'package:myfin/features/report/presentation/pages/profitloss_report.dart';
 import 'package:myfin/features/report/presentation/pages/report_history.dart';
 import 'package:myfin/features/report/presentation/pages/report_main.dart';
 
