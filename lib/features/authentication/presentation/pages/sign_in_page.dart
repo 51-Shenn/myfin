@@ -5,6 +5,7 @@ import 'package:myfin/features/authentication/presentation/widgets/social_login_
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/core/validators/auth_validator.dart';
+import 'package:myfin/core/utils/ui_helpers.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -21,6 +22,15 @@ class _SignInPageState extends State<SignInPage> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Use post-frame callback to ensure BlocConsumer listener is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthBloc>().add(AuthCheckSavedEmailRequested());
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -31,6 +41,23 @@ class _SignInPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        // Auto-fill email if savedEmail exists in state
+        if (state is AuthUnauthenticated && state.savedEmail != null) {
+          if (state.savedEmail!.isNotEmpty) {
+            // Use post-frame callback to avoid setState during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_emailController.text != state.savedEmail) {
+                _emailController.text = state.savedEmail!;
+                if (mounted) {
+                  setState(() {
+                    _rememberMe = true;
+                  });
+                }
+              }
+            });
+          }
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -110,7 +137,7 @@ class _SignInPageState extends State<SignInPage> {
                       );
 
                       if (emailError != null) {
-                        showError(context, emailError);
+                        UiHelpers.showError(context, emailError);
                         return;
                       }
 
@@ -120,7 +147,7 @@ class _SignInPageState extends State<SignInPage> {
                       );
 
                       if (passwordError != null) {
-                        showError(context, passwordError);
+                        UiHelpers.showError(context, passwordError);
                         return;
                       }
 
@@ -129,6 +156,7 @@ class _SignInPageState extends State<SignInPage> {
                         AuthLoginRequested(
                           _emailController.text.trim(),
                           _passwordController.text.trim(),
+                          rememberMe: _rememberMe,
                         ),
                       );
                     },
@@ -161,56 +189,18 @@ class _SignInPageState extends State<SignInPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Google Sign-In
-                SocialLoginButton(
-                  iconPath: 'assets/google.png',
-                  onTap: state is AuthLoading
-                      ? null
-                      : () {
-                          context.read<AuthBloc>().add(
-                            AuthGoogleSignInRequested(),
-                          );
-                        },
-                ),
-                // Facebook Login
-                SocialLoginButton(
-                  iconPath: 'assets/facebook.png',
-                  onTap: state is AuthLoading
-                      ? null
-                      : () {
-                          context.read<AuthBloc>().add(
-                            AuthFacebookSignInRequested(),
-                          );
-                        },
-                ),
-                // Apple Sign-In
-                SocialLoginButton(
-                  iconPath: 'assets/apple.png',
-                  onTap: state is AuthLoading
-                      ? null
-                      : () {
-                          context.read<AuthBloc>().add(
-                            AuthAppleSignInRequested(),
-                          );
-                        },
-                ),
-                // More options (Phone Auth)
-                SocialLoginButton(
-                  iconPath: 'assets/more.png',
-                  onTap: state is AuthLoading
-                      ? null
-                      : () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.phoneAuth,
-                            arguments: context.read<AuthBloc>(),
-                          );
-                        },
-                ),
-              ],
+            Center(
+              // Google Sign-In
+              child: SocialLoginButton(
+                iconPath: 'assets/google.png',
+                onTap: state is AuthLoading
+                    ? null
+                    : () {
+                        context.read<AuthBloc>().add(
+                          AuthGoogleSignInRequested(),
+                        );
+                      },
+              ),
             ),
           ],
         );

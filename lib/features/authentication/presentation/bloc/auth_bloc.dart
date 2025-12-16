@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -9,9 +10,8 @@ import 'package:myfin/features/authentication/domain/usecases/sign_out_usecase.d
 import 'package:myfin/features/authentication/domain/usecases/sign_up_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/reset_password_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_in_with_google_usecase.dart';
-import 'package:myfin/features/authentication/domain/usecases/sign_in_with_facebook_usecase.dart';
-import 'package:myfin/features/authentication/domain/usecases/sign_in_with_apple_usecase.dart';
-import 'package:myfin/features/authentication/domain/usecases/phone_auth_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/save_email_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/get_saved_email_usecase.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -23,9 +23,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignOutUseCase signOut;
   final ResetPasswordUseCase resetPassword;
   final SignInWithGoogleUseCase signInWithGoogle;
-  final SignInWithFacebookUseCase signInWithFacebook;
-  final SignInWithAppleUseCase signInWithApple;
-  final PhoneAuthUseCase phoneAuth;
+  final SaveEmailUseCase saveEmail;
+  final GetSavedEmailUseCase getSavedEmail;
 
   AuthBloc({
     required this.signIn,
@@ -34,9 +33,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.signOut,
     required this.resetPassword,
     required this.signInWithGoogle,
-    required this.signInWithFacebook,
-    required this.signInWithApple,
-    required this.phoneAuth,
+    required this.saveEmail,
+    required this.getSavedEmail,
   }) : super(AuthInitial()) {
     on<AuthCheckRequested>(onAuthCheck);
     on<AuthLoginRequested>(onLogin);
@@ -45,67 +43,61 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterAdminRequested>(onAdminRegister);
     on<AuthResetPasswordRequested>(onResetPassword);
     on<AuthPageChanged>(onPageChanged);
-    // Social authentication handlers
+    on<AuthCheckSavedEmailRequested>(onCheckSavedEmail);
     on<AuthGoogleSignInRequested>(onGoogleSignIn);
-    on<AuthFacebookSignInRequested>(onFacebookSignIn);
-    on<AuthAppleSignInRequested>(onAppleSignIn);
-    // Phone authentication handlers
-    on<AuthPhoneVerificationRequested>(onPhoneVerification);
-    on<AuthPhoneOTPVerificationRequested>(onPhoneOTPVerification);
   }
 
-  /// Converts technical exception messages to user-friendly error messages
   String _getFriendlyErrorMessage(dynamic error) {
+    const firebaseAuthMessages = {
+      'invalid-verification-code':
+          'Invalid verification code. Please try again.',
+      'code-expired':
+          'Verification code has expired. Please request a new one.',
+      'credential-already-in-use':
+          'This phone number is already linked to another account.',
+      'provider-already-linked':
+          'This phone number is already linked to your account.',
+      'too-many-requests': 'Too many attempts. Please try again later.',
+      'invalid-phone-number': 'The phone number entered is invalid.',
+      'operation-not-allowed':
+          'Phone authentication is not enabled on this project.',
+    };
+
+    const genericErrorMessages = {
+      'user-not-found':
+          'No account found with this email. Please sign up first.',
+      'wrong-password': 'Invalid email or password. Please try again.',
+      'invalid-credential': 'Invalid email or password. Please try again.',
+      'auth credential is incorrect':
+          'Invalid email or password. Please try again.',
+      'too-many-requests': 'Too many failed attempts. Please try again later.',
+      'user-disabled':
+          'This account has been disabled. Please contact support.',
+      'email-already-in-use':
+          'This email is already registered. Please sign in instead.',
+      'weak-password': 'Password is too weak. Please use a stronger password.',
+      'invalid-email': 'Invalid email address. Please check and try again.',
+      'network': 'Network error. Please check your connection and try again.',
+      'user profile not found': 'User not found. Please complete registration.',
+    };
+
+    if (error is FirebaseAuthException) {
+      return firebaseAuthMessages[error.code] ??
+          error.message ??
+          'Something went wrong. Please try again.';
+    }
+
     final errorMessage = error.toString().toLowerCase();
-
-    // Login/Sign-in errors
-    if (errorMessage.contains('user-not-found')) {
-      return 'No account found with this email. Please sign up first.';
-    }
-    if (errorMessage.contains('wrong-password') ||
-        errorMessage.contains('invalid-credential') ||
-        errorMessage.contains('auth credential is incorrect')) {
-      return 'Invalid email or password. Please try again.';
-    }
-    if (errorMessage.contains('too-many-requests')) {
-      return 'Too many failed attempts. Please try again later.';
-    }
-    if (errorMessage.contains('user-disabled')) {
-      return 'This account has been disabled. Please contact support.';
+    for (final entry in genericErrorMessages.entries) {
+      if (errorMessage.contains(entry.key)) {
+        return entry.value;
+      }
     }
 
-    // Registration errors
-    if (errorMessage.contains('email-already-in-use')) {
-      return 'This email is already registered. Please sign in instead.';
-    }
-    if (errorMessage.contains('weak-password')) {
-      return 'Password is too weak. Please use a stronger password.';
-    }
-    if (errorMessage.contains('invalid-email')) {
-      return 'Invalid email address. Please check and try again.';
-    }
-
-    // Password reset errors
-    if (errorMessage.contains('user-not-found')) {
-      return 'No account found with this email address.';
-    }
-
-    // Network errors
-    if (errorMessage.contains('network')) {
-      return 'Network error. Please check your connection and try again.';
-    }
-
-    if (errorMessage.contains('user profile not found')) {
-      return 'User not found. Please complete registration.';
-    }
-
-    // Generic fallback
     return 'Something went wrong. Please try again.';
   }
 
   void onPageChanged(AuthPageChanged event, Emitter<AuthState> emit) {
-    // When switching pages, clear any error/success states to prevent
-    // error messages from reappearing
     if (state is AuthFailure ||
         state is AuthRegisterFailure ||
         state is AuthRegisterSuccess ||
@@ -115,7 +107,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    // For other states, preserve them with the new page number
     if (state is AuthInitial) {
       emit(AuthInitial(currentPage: event.page));
     } else if (state is AuthLoading) {
@@ -135,7 +126,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } else if (state is AuthUnauthenticated) {
-      emit(AuthUnauthenticated(currentPage: event.page));
+      final savedEmail = (state as AuthUnauthenticated).savedEmail;
+      emit(
+        AuthUnauthenticated(currentPage: event.page, savedEmail: savedEmail),
+      );
     } else {
       emit(AuthInitial(currentPage: event.page));
     }
@@ -146,9 +140,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     final result = await getCurrentUser();
+    final savedEmail = await getSavedEmail();
 
     if (result == null) {
-      emit(AuthUnauthenticated());
+      emit(AuthUnauthenticated(savedEmail: savedEmail));
       return;
     }
 
@@ -159,6 +154,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> onCheckSavedEmail(
+    AuthCheckSavedEmailRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final savedEmail = await getSavedEmail();
+    emit(
+      AuthUnauthenticated(
+        savedEmail: savedEmail,
+        currentPage: state.currentPage,
+      ),
+    );
+  }
+
   Future<void> onLogin(
     AuthLoginRequested event,
     Emitter<AuthState> emit,
@@ -167,6 +175,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       final result = await signIn(event.email, event.password);
+
+      if (event.rememberMe) {
+        await saveEmail(event.email);
+      } else {
+        await saveEmail('');
+      }
 
       if (result.userType == UserType.admin) {
         emit(AuthAuthenticatedAsAdmin(result.userData as Admin));
@@ -184,7 +198,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     try {
       await signOut();
-      emit(AuthUnauthenticated());
+      final savedEmail = await getSavedEmail();
+      emit(AuthUnauthenticated(savedEmail: savedEmail));
     } catch (e) {
       emit(AuthFailure(_getFriendlyErrorMessage(e)));
     }
@@ -197,6 +212,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
 
     try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
+
       await signUp.signUpMember(
         email: event.email,
         password: event.password,
@@ -252,7 +272,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // Social authentication handlers
   Future<void> onGoogleSignIn(
     AuthGoogleSignInRequested event,
     Emitter<AuthState> emit,
@@ -261,88 +280,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       final result = await signInWithGoogle();
-
-      if (result.userType == UserType.admin) {
-        emit(AuthAuthenticatedAsAdmin(result.userData as Admin));
-      } else {
-        emit(AuthAuthenticatedAsMember(result.userData as Member));
-      }
-    } catch (e) {
-      emit(AuthFailure(_getFriendlyErrorMessage(e)));
-    }
-  }
-
-  Future<void> onFacebookSignIn(
-    AuthFacebookSignInRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-
-    try {
-      final result = await signInWithFacebook();
-
-      if (result.userType == UserType.admin) {
-        emit(AuthAuthenticatedAsAdmin(result.userData as Admin));
-      } else {
-        emit(AuthAuthenticatedAsMember(result.userData as Member));
-      }
-    } catch (e) {
-      emit(AuthFailure(_getFriendlyErrorMessage(e)));
-    }
-  }
-
-  Future<void> onAppleSignIn(
-    AuthAppleSignInRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-
-    try {
-      final result = await signInWithApple();
-
-      if (result.userType == UserType.admin) {
-        emit(AuthAuthenticatedAsAdmin(result.userData as Admin));
-      } else {
-        emit(AuthAuthenticatedAsMember(result.userData as Member));
-      }
-    } catch (e) {
-      emit(AuthFailure(_getFriendlyErrorMessage(e)));
-    }
-  }
-
-  // Phone authentication handlers
-  Future<void> onPhoneVerification(
-    AuthPhoneVerificationRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-
-    try {
-      await phoneAuth.verifyPhoneNumber(
-        phoneNumber: event.phoneNumber,
-        onCodeSent: (verificationId) {
-          emit(AuthPhoneCodeSent(verificationId, event.phoneNumber));
-        },
-        onVerificationFailed: (error) {
-          emit(AuthFailure(error));
-        },
-      );
-    } catch (e) {
-      emit(AuthFailure(_getFriendlyErrorMessage(e)));
-    }
-  }
-
-  Future<void> onPhoneOTPVerification(
-    AuthPhoneOTPVerificationRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-
-    try {
-      final result = await phoneAuth.verifyOTP(
-        verificationId: event.verificationId,
-        otp: event.otp,
-      );
 
       if (result.userType == UserType.admin) {
         emit(AuthAuthenticatedAsAdmin(result.userData as Admin));

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "985128793202-rkbt0ciu993pf5vif68el72tpmb29u7t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.myfin",
+            "certificate_hash": "a338434fcbc2466229b98b6d341e405de6368055"
+          }
+        },
+        {
           "client_id": "985128793202-v5s2jrouvmsa2lol7rfum3901oql4c9i.apps.googleusercontent.com",
           "client_type": 3
         }

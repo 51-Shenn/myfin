@@ -18,12 +18,12 @@ class AuthValidator {
       return "Phone number cannot be empty";
     }
 
-    final cleaned = phone.replaceAll(RegExp(r'\s|-'), '');
+    final cleaned = phone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
 
-    final regex = RegExp(r'^(?:\+?60|0)1[0-9]{8,9}$');
+    final regex = RegExp(r'^\+?[1-9]\d{6,14}$');
 
     if (!regex.hasMatch(cleaned)) {
-      return "Invalid Malaysian phone number";
+      return "Invalid phone number format";
     }
 
     return null;
@@ -43,5 +43,8 @@ class AuthValidator {
     return null;
   }
 
-  
+  static bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
 }

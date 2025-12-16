@@ -40,7 +40,6 @@ class _AuthMainPageState extends State<AuthMainPage> {
               Navigator.pushReplacementNamed(context, AppRoutes.home);
             }
 
-            // Handle all failure states with red snackbar
             if (state is AuthFailure) {
               if (state.message.contains('User not found')) {
                 context.read<AuthBloc>().add(const AuthPageChanged(1));
@@ -81,7 +80,6 @@ class _AuthMainPageState extends State<AuthMainPage> {
                 );
             }
 
-            // Handle password reset success with green snackbar
             if (state is AuthResetPasswordSuccess) {
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
@@ -116,8 +114,6 @@ class _AuthMainPageState extends State<AuthMainPage> {
                       color: const Color(0xFF2B46F9),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    // Placeholder for the mountain icon in the UI
-                    // If you have the asset, replace Icon with Image.asset
                     child: Image.asset(
                       'assets/logo.png',
                       height: 48,

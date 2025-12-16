@@ -31,7 +31,11 @@ final class AuthAuthenticatedAsAdmin extends AuthState {
 }
 
 final class AuthUnauthenticated extends AuthState {
-  const AuthUnauthenticated({super.currentPage = 0});
+  final String? savedEmail;
+  const AuthUnauthenticated({super.currentPage = 0, this.savedEmail});
+
+  @override
+  List<Object> get props => [currentPage, if (savedEmail != null) savedEmail!];
 }
 
 final class AuthFailure extends AuthState {
@@ -67,29 +71,4 @@ final class AuthResetPasswordFailure extends AuthState {
   const AuthResetPasswordFailure(this.message, {super.currentPage});
   @override
   List<Object> get props => [message, currentPage];
-}
-
-// Phone authentication state
-final class AuthPhoneCodeSent extends AuthState {
-  final String verificationId;
-  final String phoneNumber;
-  const AuthPhoneCodeSent(
-    this.verificationId,
-    this.phoneNumber, {
-    super.currentPage,
-  });
-  @override
-  List<Object> get props => [verificationId, phoneNumber, currentPage];
-}
-
-void showError(BuildContext context, String message) {
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
 }

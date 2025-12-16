@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:myfin/core/utils/ui_helpers.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:myfin/core/validators/auth_validator.dart';
 import 'package:myfin/features/authentication/presentation/widgets/custom_text_field.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -117,6 +119,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              // Phone Number with Country Code Picker
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -129,48 +132,42 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        height: 50, // Match TextField height roughly
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: IntlPhoneField(
+                      controller: _phoneController,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                        child: Row(
-                          children: [
-                            Image.asset('assets/flag.png', width: 25),
-                            const Icon(
-                              Icons.keyboard_arrow_down,
-                              color: Colors.grey,
-                            ),
-                          ],
-                        ),
+                        hintText: '',
+                        counterText: '', // Remove counter text
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: TextField(
-                            controller: _phoneController,
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                            ),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                      initialCountryCode: 'MY', // Malaysia default
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
                       ),
-                    ],
+                      dropdownIconPosition: IconPosition.trailing,
+                      dropdownTextStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                      flagsButtonPadding: const EdgeInsets.only(left: 8),
+                      disableLengthCheck:
+                          true, // Disable length validation counter
+                      onChanged: (phone) {
+                        // The complete phone number with country code is in phone.completeNumber
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -255,42 +252,42 @@ class _SignUpPageState extends State<SignUpPage> {
                             );
 
                         if (firstNameError != null) {
-                          showError(context, firstNameError);
+                          UiHelpers.showError(context, firstNameError);
                           return;
                         }
 
                         if (lastNameError != null) {
-                          showError(context, lastNameError);
+                          UiHelpers.showError(context, lastNameError);
                           return;
                         }
 
                         if (emailError != null) {
-                          showError(context, emailError);
+                          UiHelpers.showError(context, emailError);
                           return;
                         }
 
                         if (dateOfBirthError != null) {
-                          showError(context, dateOfBirthError);
+                          UiHelpers.showError(context, dateOfBirthError);
                           return;
                         }
 
                         if (phoneNumError != null) {
-                          showError(context, phoneNumError);
+                          UiHelpers.showError(context, phoneNumError);
                           return;
                         }
 
                         if (addressError != null) {
-                          showError(context, addressError);
+                          UiHelpers.showError(context, addressError);
                           return;
                         }
 
                         if (passwordError != null) {
-                          showError(context, passwordError);
+                          UiHelpers.showError(context, passwordError);
                           return;
                         }
 
                         if (confirmPasswordError != null) {
-                          showError(context, confirmPasswordError);
+                          UiHelpers.showError(context, confirmPasswordError);
                           return;
                         }
 

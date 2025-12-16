@@ -2,6 +2,7 @@ import 'package:myfin/features/authentication/domain/repositories/auth_repositor
 import 'package:myfin/features/authentication/domain/repositories/admin_repository.dart';
 import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_in_usecase.dart';
+
 class GetCurrentUserUseCase {
   final AuthRepository authRepository;
   final AdminRepository adminRepository;

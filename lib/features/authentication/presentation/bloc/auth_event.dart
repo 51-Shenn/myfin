@@ -12,11 +12,16 @@ final class AuthCheckRequested extends AuthEvent {}
 final class AuthLoginRequested extends AuthEvent {
   final String email;
   final String password;
+  final bool rememberMe;
 
-  const AuthLoginRequested(this.email, this.password);
+  const AuthLoginRequested(
+    this.email,
+    this.password, {
+    this.rememberMe = false,
+  });
 
   @override
-  List<Object> get props => [email, password];
+  List<Object> get props => [email, password, rememberMe];
 }
 
 final class AuthLogoutRequested extends AuthEvent {}
@@ -87,25 +92,6 @@ final class AuthPageChanged extends AuthEvent {
   List<Object> get props => [page];
 }
 
-// Social authentication events
 final class AuthGoogleSignInRequested extends AuthEvent {}
 
-final class AuthFacebookSignInRequested extends AuthEvent {}
-
-final class AuthAppleSignInRequested extends AuthEvent {}
-
-// Phone authentication events
-final class AuthPhoneVerificationRequested extends AuthEvent {
-  final String phoneNumber;
-  const AuthPhoneVerificationRequested(this.phoneNumber);
-  @override
-  List<Object> get props => [phoneNumber];
-}
-
-final class AuthPhoneOTPVerificationRequested extends AuthEvent {
-  final String verificationId;
-  final String otp;
-  const AuthPhoneOTPVerificationRequested(this.verificationId, this.otp);
-  @override
-  List<Object> get props => [verificationId, otp];
-}
+final class AuthCheckSavedEmailRequested extends AuthEvent {}
