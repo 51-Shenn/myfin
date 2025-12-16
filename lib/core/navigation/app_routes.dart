@@ -29,7 +29,6 @@ class AppRoutes {
   static const String home = '/home';
   static const String forgetPassword = '/forget-password';
 
-  /// Creates and initializes the AuthBloc with all required dependencies
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
     // 1. Initialize External Services
     final firebaseAuth = FirebaseAuth.instance;
@@ -87,7 +86,6 @@ class AppRoutes {
   ) {
     switch (settings.name) {
       case auth:
-        // AuthBloc is now provided at the root level in main.dart
         return MaterialPageRoute(builder: (_) => const AuthMainPage());
       case home:
         return MaterialPageRoute(builder: (_) => const BottomNavBar());
