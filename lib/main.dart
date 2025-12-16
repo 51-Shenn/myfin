@@ -50,13 +50,10 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: true,
       theme: ThemeData(useMaterial3: true),
-      home: const BottomNavBar(),
+      // home: const BottomNavBar(),
 
       initialRoute: AppRoutes.home,
       onGenerateRoute: AppRoutes.onGenerateRoute,
-      routes: {'/admin_dashboard': (context) => const AdminMainScreen()},
-      // initialRoute: AppRoutes.auth,
-      // onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

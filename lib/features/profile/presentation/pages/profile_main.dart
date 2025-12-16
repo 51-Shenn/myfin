@@ -6,45 +6,58 @@ import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
+import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:myfin/core/navigation/app_routes.dart'; // Import AppRoutes
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    String memberId = "M123";
+    if (authState is AuthAuthenticatedAsMember) {
+      memberId = authState.member.member_id;
+    }
+
     return BlocProvider(
       create: (_) => ProfileBloc(
         ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
-      )..add(const LoadProfileEvent("M123")),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: BlocBuilder<ProfileBloc, ProfileState>(
-            builder: (context, state) {
-              // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
-              if (state.isLoading && state.member == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
+      )..add(LoadProfileEvent(memberId)),
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          // Listen for Logout Success
+          if (state is AuthUnauthenticated) {
+            // Navigate to Auth Screen and remove all previous routes
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pushNamedAndRemoveUntil(AppRoutes.auth, (route) => false);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: BlocBuilder<ProfileBloc, ProfileState>(
+              builder: (context, state) {
+                // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
+                if (state.isLoading && state.member == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              // 2. Check for Error
-              if (state.error != null) {
-                return Center(child: Text(state.error!));
-              }
+                // 2. Check for Error
+                if (state.error != null) {
+                  return Center(child: Text(state.error!));
+                }
 
-              // 3. Show Content
-              if (state.member != null) {
-                // If loading is true here (reloading), you could show a linear progress bar at the top
-                return Stack(
-                  children: [
-                    _buildContent(context, state.member!),
-                    if (state.isLoading)
-                      const LinearProgressIndicator(), // Optional: Indication that it's refreshing
-                  ],
-                );
-              }
+                // 3. Show Content
+                if (state.member != null) {
+                  return _buildContent(context, state.member!);
+                }
 
-              return const SizedBox();
-            },
+                return const SizedBox();
+              },
+            ),
           ),
         ),
       ),
@@ -297,7 +310,10 @@ class UserProfileScreen extends StatelessWidget {
                   "Admin Dashboard",
                   hasArrow: true,
                   onTap: () {
-                    Navigator.of(context, rootNavigator: true).pushNamed('/admin_dashboard');
+                    Navigator.of(
+                      context,
+                      rootNavigator: true,
+                    ).pushNamed('/admin_dashboard');
                   },
                 ),
                 Divider(
@@ -310,7 +326,10 @@ class UserProfileScreen extends StatelessWidget {
                 _buildActionRow(
                   Icons.logout_outlined,
                   "Log Out",
-                  onTap: () => context.read<ProfileBloc>().add(LogoutEvent()),
+                  onTap: () {
+                    context.read<ProfileBloc>().add(LogoutEvent());
+                    context.read<AuthBloc>().add(AuthLogoutRequested());
+                  },
                 ),
                 Divider(
                   height: 1,

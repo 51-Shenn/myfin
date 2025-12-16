@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 
-class ReportScreen extends StatefulWidget {
-  const ReportScreen({super.key});
+class MainReportScreen extends StatefulWidget {
+  const MainReportScreen({super.key});
 
   @override
-  State<ReportScreen> createState() => _ReportScreenState();
+  State<MainReportScreen> createState() => _MainReportScreenState();
 }
 
-class _ReportScreenState extends State<ReportScreen> {
+class _MainReportScreenState extends State<MainReportScreen> {
   String? selectedReportType;
   DateTime? startDate;
   DateTime? endDate;
@@ -86,7 +88,7 @@ class _ReportScreenState extends State<ReportScreen> {
           },
           child: BlocBuilder<ReportBLoC, ReportState>(
             builder: (context, state) {
-              final reports = state.reports;
+              final reports = state.loadedReports;
 
               return SingleChildScrollView(
                 child: Column(
@@ -96,14 +98,14 @@ class _ReportScreenState extends State<ReportScreen> {
                     _buildReportFunctions(),
                     const SizedBox(height: 16),
 
-                    if (state.loading && state.reports.isEmpty)
+                    if (state.loadingReports && state.loadedReports.isEmpty)
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.all(48.0),
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                    
+
                     if (state.error != null)
                       Center(
                         child: Text(
@@ -113,7 +115,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       ),
 
                     // Recent Reports List
-                    if (!state.loading && state.reports.isEmpty)
+                    if (!state.loadingReports && state.loadedReports.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Center(
@@ -148,7 +150,7 @@ class _ReportScreenState extends State<ReportScreen> {
                         ),
                       ),
 
-                    if (state.reports.isNotEmpty)
+                    if (state.loadedReports.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: ListView.separated(
@@ -484,7 +486,7 @@ class _ReportScreenState extends State<ReportScreen> {
 }
 
 class RecentReportCard extends StatelessWidget {
-  final ReportCardUiModel report;
+  final Report report;
 
   const RecentReportCard({super.key, required this.report});
 
@@ -518,7 +520,7 @@ class RecentReportCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          report.report_type,
+          report.report_type.reportTypeToString,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -526,16 +528,38 @@ class RecentReportCard extends StatelessWidget {
           ),
         ),
         subtitle: Text(
-          report.dateRange,
+          _toDateRange(report.fiscal_period),
           style: TextStyle(fontSize: 13, color: Colors.grey[800]),
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
-          // TODO: navigate to report details
-          // Navigator.pushNamed(context, '/report_details', arguments: report);
-          print('Navigate report details: ${report.report_type} ${report.report_id}');
+          NavBarController.of(context)?.toggleNavBar();
+          Navigator.pushNamed(
+            context,
+            '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',
+            arguments: report,
+          );
+          print(
+            'Navigate report details: ${report.report_type} ${report.report_id}',
+          );
         },
       ),
     );
   }
+}
+
+// format fiscal period to date range
+String _toDateRange(Map<String, DateTime> period) {
+  final startDate = period['startDate'];
+  final endDate = period['endDate'];
+
+  final formatter = DateFormat('dd/MM/yyyy');
+
+  if (startDate != null && endDate != null) {
+    final startStr = formatter.format(startDate);
+    final endStr = formatter.format(endDate);
+    return '$startStr - $endStr';
+  }
+
+  return 'Invalid Date';
 }

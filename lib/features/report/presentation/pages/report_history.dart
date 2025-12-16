@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
@@ -56,7 +58,7 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
         ),
         body: BlocListener<ReportBLoC, ReportState>(
           listener: (context, state) {
-            if (state.error != null && mounted) {
+            if (state.error != null) {
               _showErrorSnackBar(context, state.error!);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
@@ -67,7 +69,7 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
           },
           child: BlocBuilder<ReportBLoC, ReportState>(
             builder: (context, state) {
-              if (state.loading && state.reports.isEmpty) {
+              if (state.loadingReports && state.loadedReports.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
 
@@ -80,14 +82,14 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
                 );
               }
 
-              final reports = state.reports;
+              final reports = state.loadedReports;
 
               return Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (!state.loading && state.reports.isEmpty)
+                    if (!state.loadingReports && state.loadedReports.isEmpty)
                       Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Center(
@@ -109,11 +111,9 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
                               const SizedBox(height: 8),
                               ElevatedButton(
                                 onPressed: () {
-                                  if (mounted) {
-                                    context.read<ReportBLoC>().add(
-                                      LoadReportsEvent(member_id),
-                                    );
-                                  }
+                                  context.read<ReportBLoC>().add(
+                                    LoadReportsEvent(member_id),
+                                  );
                                 },
                                 child: const Text('Refresh'),
                               ),
@@ -122,14 +122,17 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
                         ),
                       ),
 
-                    if (state.reports.isNotEmpty)
-                      ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: reports.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          return ReportCard(report: reports[index]);
-                        },
+                    if (state.loadedReports.isNotEmpty && !state.loadingReports)
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: reports.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            return ReportCard(report: reports[index]);
+                          },
+                        ),
                       ),
                   ],
                 ),
@@ -143,7 +146,7 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
 }
 
 class ReportCard extends StatelessWidget {
-  final ReportCardUiModel report;
+  final Report report;
 
   const ReportCard({super.key, required this.report});
 
@@ -177,7 +180,7 @@ class ReportCard extends StatelessWidget {
           ),
         ),
         title: Text(
-          report.report_type,
+          report.report_type.reportTypeToString,
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -187,16 +190,35 @@ class ReportCard extends StatelessWidget {
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            report.dateRange,
+            _toDateRange(report.fiscal_period),
             style: TextStyle(fontSize: 13, color: Colors.grey[800]),
           ),
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
-          // TODO: navigate to report details
-          print('Navigate report details: ${report.report_type}');
+          Navigator.pushNamed(
+            context,
+            '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',
+            arguments: report,
+          );
         },
       ),
     );
   }
+}
+
+// format fiscal period to date range
+String _toDateRange(Map<String, DateTime> period) {
+  final startDate = period['startDate'];
+  final endDate = period['endDate'];
+
+  final formatter = DateFormat('dd/MM/yyyy');
+
+  if (startDate != null && endDate != null) {
+    final startStr = formatter.format(startDate);
+    final endStr = formatter.format(endDate);
+    return '$startStr - $endStr';
+  }
+
+  return 'Invalid Date';
 }

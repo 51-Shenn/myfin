@@ -140,7 +140,7 @@ class ReportSection extends Equatable {
 }
 
 // report entity
-abstract class Report extends Equatable {
+class Report extends Equatable {
   final String report_id;
   final DateTime generated_at;
   final Map<String, DateTime> fiscal_period;
@@ -155,10 +155,20 @@ abstract class Report extends Equatable {
     required this.member_id,
   });
 
+  factory Report.initial() => Report(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    report_type: ReportType.profitLoss,
+    member_id: '',
+  );
+
   Future<Report> generateReport(
     String businessName,
     List<DocumentLineItem> reportData,
-  );
+  ) async {
+    return Report.initial();
+  }
 
   Report copyWith({
     String? report_id,
@@ -166,7 +176,15 @@ abstract class Report extends Equatable {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-  });
+  }) {
+    return Report(
+      report_id: report_id ?? this.report_id,
+      generated_at: generated_at ?? this.generated_at,
+      fiscal_period: fiscal_period ?? this.fiscal_period,
+      report_type: report_type ?? this.report_type,
+      member_id: member_id ?? this.member_id,
+    );
+  }
 
   @override
   String toString() {
@@ -205,6 +223,19 @@ class ProfitAndLossReport extends Report {
     required this.net_income,
   }) : super(report_type: ReportType.profitLoss);
 
+  factory ProfitAndLossReport.initial() => ProfitAndLossReport(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    gross_profit: 0,
+    operating_income: 0,
+    income_before_tax: 0,
+    income_tax_expense: 0,
+    net_income: 0,
+  );
+
   @override
   Future<Report> generateReport(
     String businessName,
@@ -230,22 +261,24 @@ class ProfitAndLossReport extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? gross_profit,
+    double? operating_income,
+    double? income_before_tax,
+    double? income_tax_expense,
+    double? net_income,
   }) {
     return ProfitAndLossReport(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      gross_profit: gross_profit,
-      operating_income: operating_income,
-      income_before_tax: income_before_tax,
-      income_tax_expense: income_tax_expense,
-      net_income: net_income,
+      sections: sections ?? this.sections,
+      gross_profit: gross_profit ?? this.gross_profit,
+      operating_income: operating_income ?? this.operating_income,
+      income_before_tax: income_before_tax ?? this.income_before_tax,
+      income_tax_expense: income_tax_expense ?? this.income_tax_expense,
+      net_income: net_income ?? this.net_income,
     );
   }
 
@@ -281,6 +314,18 @@ class CashFlowStatement extends Report {
     required this.cash_balance,
   }) : super(report_type: ReportType.cashFlow);
 
+  factory CashFlowStatement.initial() => CashFlowStatement(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    total_operating_cash_flow: 0,
+    total_investing_cash_flow: 0,
+    total_financing_cash_flow: 0,
+    cash_balance: 0,
+  );
+
   @override
   Future<Report> generateReport(
     String businessName,
@@ -307,21 +352,25 @@ class CashFlowStatement extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? total_operating_cash_flow,
+    double? total_investing_cash_flow,
+    double? total_financing_cash_flow,
+    double? cash_balance,
   }) {
     return CashFlowStatement(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      total_operating_cash_flow: total_operating_cash_flow,
-      total_investing_cash_flow: total_investing_cash_flow,
-      total_financing_cash_flow: total_financing_cash_flow,
-      cash_balance: cash_balance,
+      sections: sections ?? this.sections,
+      total_operating_cash_flow:
+          total_operating_cash_flow ?? this.total_operating_cash_flow,
+      total_investing_cash_flow:
+          total_investing_cash_flow ?? this.total_investing_cash_flow,
+      total_financing_cash_flow:
+          total_financing_cash_flow ?? this.total_financing_cash_flow,
+      cash_balance: cash_balance ?? this.cash_balance,
     );
   }
 
@@ -356,6 +405,18 @@ class BalanceSheet extends Report {
     required this.total_liabilities_and_equity,
   }) : super(report_type: ReportType.balanceSheet);
 
+  factory BalanceSheet.initial() => BalanceSheet(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    sections: List.empty(),
+    total_assets: 0,
+    total_liabilities: 0,
+    total_equity: 0,
+    total_liabilities_and_equity: 0,
+  );
+
   @override
   Future<Report> generateReport(
     String businessName,
@@ -382,21 +443,23 @@ class BalanceSheet extends Report {
     Map<String, DateTime>? fiscal_period,
     ReportType? report_type,
     String? member_id,
-    List<Supplier>? suppliers,
-    double? total_payable,
-    double? total_overdue,
-    int? overdue_bill_count,
+    List<ReportSection>? sections,
+    double? total_assets,
+    double? total_liabilities,
+    double? total_equity,
+    double? total_liabilities_and_equity,
   }) {
     return BalanceSheet(
       report_id: report_id ?? this.report_id,
       generated_at: generated_at ?? this.generated_at,
       fiscal_period: fiscal_period ?? this.fiscal_period,
       member_id: member_id ?? this.member_id,
-      sections: sections,
-      total_assets: total_assets,
-      total_liabilities: total_liabilities,
-      total_equity: total_equity,
-      total_liabilities_and_equity: total_liabilities_and_equity,
+      sections: sections ?? this.sections,
+      total_assets: total_assets ?? this.total_assets,
+      total_liabilities: total_liabilities ?? this.total_liabilities,
+      total_equity: total_equity ?? this.total_equity,
+      total_liabilities_and_equity:
+          total_liabilities_and_equity ?? this.total_liabilities_and_equity,
     );
   }
 
@@ -533,6 +596,17 @@ class AccountsReceivable extends Report {
     required this.overdue_invoice_count,
   }) : super(report_type: ReportType.accountsReceivable);
 
+  factory AccountsReceivable.initial() => AccountsReceivable(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    customers: List.empty(),
+    total_receivable: 0,
+    total_overdue: 0,
+    overdue_invoice_count: 0,
+  );
+
   @override
   Future<Report> generateReport(
     String businessName,
@@ -603,6 +677,17 @@ class AccountsPayable extends Report {
     required this.total_overdue,
     required this.overdue_bill_count,
   }) : super(report_type: ReportType.accountsPayable);
+
+  factory AccountsPayable.initial() => AccountsPayable(
+    report_id: '',
+    generated_at: DateTime.now(),
+    fiscal_period: {'': DateTime.now()},
+    member_id: '',
+    suppliers: List.empty(),
+    total_payable: 0,
+    total_overdue: 0,
+    overdue_bill_count: 0,
+  );
 
   @override
   Future<Report> generateReport(

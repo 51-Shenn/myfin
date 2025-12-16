@@ -10,6 +10,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     // Register Event Handlers
     on<LoadProfileEvent>(_onLoadProfile);
     on<UpdateBusinessProfileEvent>(_onUpdateBusinessProfile);
+    on<UpdateMemberProfileEvent>(_onUpdateMemberProfile);
     on<LogoutEvent>(_onLogout);
     // Register the handler for ChangePasswordEvent
     on<ChangePasswordEvent>(_onChangePassword);
@@ -60,6 +61,20 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       emit(
         state.copyWith(isLoading: false, error: "Failed to save profile: $e"),
       );
+    }
+  }
+
+  Future<void> _onUpdateMemberProfile(
+    UpdateMemberProfileEvent event,
+    Emitter<ProfileState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      await _repo.updateMemberProfile(event.member);
+      // Update local state immediately
+      emit(state.copyWith(isLoading: false, member: event.member));
+    } catch (e) {
+      emit(state.copyWith(isLoading: false, error: "Failed to update member: $e"));
     }
   }
 

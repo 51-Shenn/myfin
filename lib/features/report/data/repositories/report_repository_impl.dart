@@ -7,34 +7,36 @@ import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 class ReportRepository {
   // testing
   final List<Map<String, dynamic>> _exampleCollection = [
-    // {
-    //   "report_id": "RPT-001",
-    //   "generated_at": "2024-11-10T08:30:00Z",
-    //   "fiscal_period": {"startDate": "2024-01-01T00:00:00Z", "endDate": "2024-12-31T23:59:59Z"},
-    //   "report_type": "Balance Sheet",
-    //   "member_id": "M123",
-    // },
-    // {
-    //   "report_id": "RPT-002",
-    //   "generated_at": "2024-10-02T12:00:00Z",
-    //   "fiscal_period": {"startDate": "2025-01-01T00:00:00Z", "endDate": "2025-12-31T23:59:59Z"},
-    //   "report_type": "P & L Report",
-    //   "member_id": "M123",
-    // },
+    {
+      "report_id": "RPT-001",
+      "generated_at": "2024-11-10T08:30:00Z",
+      "fiscal_period": {"startDate": "2024-01-01T00:00:00Z", "endDate": "2024-12-31T23:59:59Z"},
+      "report_type": "Balance Sheet",
+      "member_id": "M123",
+    },
+    {
+      "report_id": "RPT-002",
+      "generated_at": "2024-10-02T12:00:00Z",
+      "fiscal_period": {"startDate": "2025-01-01T00:00:00Z", "endDate": "2025-12-31T23:59:59Z"},
+      "report_type": "Profit & Loss Report",
+      "member_id": "M123",
+    },
   ];
 
-  // fake delay
-  Future<void> _delay() async {
-    await Future.delayed(Duration(milliseconds: 1000));
-  }
-
   Future<List<Report>> fetchReportsForMember(String memberId) async {
-    await _delay();
     final memberReports = _exampleCollection
         .where((doc) => doc["member_id"] == memberId)
         .map(ReportFactory.createReportFromJson)
         .toList();
     return memberReports;
+  }
+
+  Future<Report> getReportByReportId(String reportId) async {
+    final report = _exampleCollection
+        .where((doc) => doc["report_id"] == reportId)
+        .map(ReportFactory.createReportFromJson)
+        .first;
+    return report;
   }
 
   // generate report
