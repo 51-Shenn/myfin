@@ -94,4 +94,52 @@ class GeminiOCRDataSource {
       throw Exception("OCR Extraction Failed: $e");
     }
   }
+
+  Future<Map<String, String>> categorizeDescriptions(List<String> descriptions) async {
+    if (descriptions.isEmpty) return {};
+
+    final String dynamicCategoryList = _getDynamicCategories();
+    final String itemsToCategorize = descriptions.join(", ");
+
+    final prompt = """
+    You are an expert accountant. 
+    Map the following transaction descriptions to the most appropriate category from the allowed list.
+    
+    ALLOWED CATEGORIES:
+    $dynamicCategoryList
+    
+    DESCRIPTIONS TO MAP:
+    $itemsToCategorize
+
+    If a description is vague, make your best guess based on standard accounting practices.
+    If it is impossible to categorize, use "Miscellaneous Expenses".
+
+    Return strictly valid JSON format where key is the description and value is the category:
+    {
+      "Uber ride to airport": "Travel & Entertainment (Sales)",
+      "Dell Monitor": "Office Supplies"
+    }
+    """;
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
+      final responseText = response.text;
+
+      if (responseText == null) return {};
+
+      String cleanJson = responseText
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+
+      Map<String, dynamic> decoded = jsonDecode(cleanJson);
+      
+      // Ensure values are strings
+      return decoded.map((key, value) => MapEntry(key, value.toString()));
+    } catch (e) {
+      print("Gemini Categorization Error: $e");
+      return {};
+    }
+  }
 }

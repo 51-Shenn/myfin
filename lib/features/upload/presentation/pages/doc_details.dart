@@ -29,11 +29,11 @@ class DocumentDetailsScreen extends StatelessWidget {
           docRepository: context.read<DocumentRepository>(),
           lineItemRepository: context.read<DocumentLineItemRepository>(),
         );
-        
+
         // 1. If objects are passed directly (e.g. from File Upload/OCR), use them.
         if (existingDocument != null) {
           cubit.initializeWithData(existingDocument!, existingLineItems);
-        } 
+        }
         // 2. Otherwise, if an ID is passed, load from DB
         else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
@@ -42,7 +42,7 @@ class DocumentDetailsScreen extends StatelessWidget {
         else {
           cubit.loadDocument(null);
         }
-        
+
         return cubit;
       },
       child: const DocDetailsView(),
@@ -53,7 +53,11 @@ class DocumentDetailsScreen extends StatelessWidget {
 class DocDetailsView extends StatelessWidget {
   const DocDetailsView({super.key});
 
-  Future<void> _pickDate(BuildContext context, DateTime initialDate, Function(DateTime) onDatePicked) async {
+  Future<void> _pickDate(
+    BuildContext context,
+    DateTime initialDate,
+    Function(DateTime) onDatePicked,
+  ) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -104,7 +108,13 @@ class DocDetailsView extends StatelessWidget {
               if (state.isSaving)
                 const Padding(
                   padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 )
               else
                 IconButton(
@@ -128,7 +138,10 @@ class DocDetailsView extends StatelessWidget {
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -146,7 +159,9 @@ class DocDetailsView extends StatelessWidget {
                                     Expanded(
                                       child: Text(
                                         'Creating new document. Fill in the details below.',
-                                        style: TextStyle(color: Colors.blue[700]),
+                                        style: TextStyle(
+                                          color: Colors.blue[700],
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -197,8 +212,11 @@ class DocDetailsView extends StatelessWidget {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.image,
-                                        size: 40, color: Colors.grey[500]),
+                                    Icon(
+                                      Icons.image,
+                                      size: 40,
+                                      color: Colors.grey[500],
+                                    ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'Add Image',
@@ -230,16 +248,27 @@ class DocDetailsView extends StatelessWidget {
                                 context,
                                 DocFieldHeader.postingDate,
                                 value: state.document != null
-                                    ? DateFormat('yyyy-MM-dd').format(state.document!.postingDate)
+                                    ? DateFormat(
+                                        'yyyy-MM-dd',
+                                      ).format(state.document!.postingDate)
                                     : '',
                                 isDate: true,
                                 onTap: () {
                                   if (state.document != null) {
-                                    _pickDate(context, state.document!.postingDate, (pickedDate) {
-                                      context.read<DocDetailCubit>().updateDocumentField('postingDate', pickedDate);
-                                    });
+                                    _pickDate(
+                                      context,
+                                      state.document!.postingDate,
+                                      (pickedDate) {
+                                        context
+                                            .read<DocDetailCubit>()
+                                            .updateDocumentField(
+                                              'postingDate',
+                                              pickedDate,
+                                            );
+                                      },
+                                    );
                                   }
-                                }
+                                },
                               ),
                             ),
                           ],
@@ -250,10 +279,16 @@ class DocDetailsView extends StatelessWidget {
                             return DynamicKeyValueSection(
                               title: 'Additional Information',
                               rows: state.rows,
-                              onAdd: () => context.read<DocDetailCubit>().addNewRow(),
-                              onUpdateKey: (idx, val) => context.read<DocDetailCubit>().updateRowKey(idx, val),
-                              onUpdateValue: (idx, val) => context.read<DocDetailCubit>().updateRowValue(idx, val),
-                              onDelete: (idx) => context.read<DocDetailCubit>().deleteRow(idx),
+                              onAdd: () =>
+                                  context.read<DocDetailCubit>().addNewRow(),
+                              onUpdateKey: (idx, val) => context
+                                  .read<DocDetailCubit>()
+                                  .updateRowKey(idx, val),
+                              onUpdateValue: (idx, val) => context
+                                  .read<DocDetailCubit>()
+                                  .updateRowValue(idx, val),
+                              onDelete: (idx) =>
+                                  context.read<DocDetailCubit>().deleteRow(idx),
                             );
                           },
                         ),
@@ -272,7 +307,9 @@ class DocDetailsView extends StatelessWidget {
                                 context.read<DocDetailCubit>().addNewLineItem();
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
                                 alignment: Alignment.center,
                                 child: const Text(
                                   '+ Add New Line Item',
@@ -305,7 +342,7 @@ class DocDetailsView extends StatelessWidget {
     void Function(String)? onChanged,
     bool multiLine = false,
     VoidCallback? onTap,
-    bool isDate = false
+    bool isDate = false,
   }) {
     return Padding(
       padding: const EdgeInsets.all(5.0),
@@ -323,21 +360,26 @@ class DocDetailsView extends StatelessWidget {
             ),
           const SizedBox(height: 5),
           TextFormField(
-            key: isDate? ValueKey(value) : null,
+            key: isDate ? ValueKey(value) : null,
             initialValue: value,
             readOnly: readOnly || isDate,
             onTap: onTap,
             onChanged: onChanged,
             minLines: multiLine ? 3 : 1,
             maxLines: multiLine ? 5 : 1,
-            keyboardType:
-                multiLine ? TextInputType.multiline : TextInputType.text,
+            keyboardType: multiLine
+                ? TextInputType.multiline
+                : TextInputType.text,
             decoration: InputDecoration(
-              suffixIcon: isDate ? const Icon(Icons.calendar_today, size: 20) : null,
+              suffixIcon: isDate
+                  ? const Icon(Icons.calendar_today, size: 20)
+                  : null,
               filled: true,
               fillColor: readOnly ? Colors.grey[100] : Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
                 borderSide: const BorderSide(
@@ -347,10 +389,7 @@ class DocDetailsView extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(
-                  color: Colors.blue,
-                  width: 1.5,
-                ),
+                borderSide: const BorderSide(color: Colors.blue, width: 1.5),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
@@ -387,8 +426,9 @@ class DocDetailsView extends StatelessWidget {
                 ),
               ),
             ),
-            ...state.lineItems
-                .map((lineItem) => _buildLineItem(context, lineItem)),
+            ...state.lineItems.map(
+              (lineItem) => _buildLineItem(context, lineItem),
+            ),
           ],
         );
       },
@@ -424,7 +464,8 @@ class DocDetailsView extends StatelessWidget {
                   builder: (dialogContext) => AlertDialog(
                     title: const Text('Delete Line Item'),
                     content: const Text(
-                        'Are you sure you want to delete this line item?'),
+                      'Are you sure you want to delete this line item?',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
@@ -435,8 +476,10 @@ class DocDetailsView extends StatelessWidget {
                           cubit.deleteLineItem(lineItem.lineItemId);
                           Navigator.pop(dialogContext);
                         },
-                        child: const Text('Delete',
-                            style: TextStyle(color: Colors.red)),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
                       ),
                     ],
                   ),
@@ -458,7 +501,11 @@ class DocDetailsView extends StatelessWidget {
                 onTap: () {
                   final initialDate = lineItem.lineDate ?? DateTime.now();
                   _pickDate(context, initialDate, (pickedDate) {
-                    cubit.updateLineItemField(lineItem.lineItemId, 'date', pickedDate);
+                    cubit.updateLineItemField(
+                      lineItem.lineItemId,
+                      'date',
+                      pickedDate,
+                    );
                   });
                 },
               ),
@@ -470,7 +517,11 @@ class DocDetailsView extends StatelessWidget {
                 DocFieldHeader.category,
                 value: lineItem.categoryCode,
                 onChanged: (value) {
-                  cubit.updateLineItemField(lineItem.lineItemId, 'category', value);
+                  cubit.updateLineItemField(
+                    lineItem.lineItemId,
+                    'category',
+                    value,
+                  );
                 },
               ),
             ),
@@ -482,7 +533,11 @@ class DocDetailsView extends StatelessWidget {
           value: lineItem.description ?? '',
           multiLine: true,
           onChanged: (value) {
-            cubit.updateLineItemField(lineItem.lineItemId, 'description', value);
+            cubit.updateLineItemField(
+              lineItem.lineItemId,
+              'description',
+              value,
+            );
           },
         ),
         _buildTextFormField(
@@ -491,18 +546,18 @@ class DocDetailsView extends StatelessWidget {
           value: lineItem.total.toStringAsFixed(2),
           onChanged: (value) {
             cubit.updateLineItemField(lineItem.lineItemId, 'amount', value);
-          }
+          },
         ),
         const SizedBox(height: 10),
         DynamicKeyValueSection(
           title: 'Line Item Attributes',
           rows: lineItem.attribute,
           onAdd: () => cubit.addLineItemAttribute(lineItem.lineItemId),
-          onUpdateKey: (idx, val) => 
+          onUpdateKey: (idx, val) =>
               cubit.updateLineItemAttributeKey(lineItem.lineItemId, idx, val),
-          onUpdateValue: (idx, val) => 
+          onUpdateValue: (idx, val) =>
               cubit.updateLineItemAttributeValue(lineItem.lineItemId, idx, val),
-          onDelete: (idx) => 
+          onDelete: (idx) =>
               cubit.deleteLineItemAttribute(lineItem.lineItemId, idx),
         ),
       ],
@@ -569,21 +624,32 @@ class DynamicKeyValueSection extends StatelessWidget {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Color(0xFFCCCCCC), width: 1),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCCCCCC),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              const Text(':',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+              const Text(
+                ':',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
               Expanded(
                 flex: 2,
                 child: Padding(
@@ -594,14 +660,23 @@ class DynamicKeyValueSection extends StatelessWidget {
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Color(0xFFCCCCCC), width: 1),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCCCCCC),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -625,7 +700,10 @@ class DynamicKeyValueSection extends StatelessWidget {
                             onDelete(index);
                             Navigator.pop(dContext);
                           },
-                          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),

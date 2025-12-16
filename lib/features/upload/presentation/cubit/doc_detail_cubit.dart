@@ -4,10 +4,12 @@ import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
+import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.dart';
 
 class DocDetailCubit extends Cubit<DocDetailState> {
   final DocumentRepository _docRepository;
   final DocumentLineItemRepository _lineItemRepository;
+  final GeminiOCRDataSource _aiDataSource = GeminiOCRDataSource();
 
   DocDetailCubit({
     required DocumentRepository docRepository,
@@ -16,28 +18,35 @@ class DocDetailCubit extends Cubit<DocDetailState> {
        _lineItemRepository = lineItemRepository,
        super(const DocDetailState());
 
-  Future<void> initializeWithData(Document document, List<DocumentLineItem>? lineItems) async {
-    emit(state.copyWith(
-      isLoading: false,
-      document: document,
-      // Fills the "Additional Info" section from the Document's metadata
-      rows: document.metadata ?? [], 
-      // Fills the "Line Items" section (including their attributes)
-      lineItems: lineItems ?? [],
-    ));
+  Future<void> initializeWithData(
+    Document document,
+    List<DocumentLineItem>? lineItems,
+  ) async {
+    emit(
+      state.copyWith(
+        isLoading: false,
+        document: document,
+        // Fills the "Additional Info" section from the Document's metadata
+        rows: document.metadata ?? [],
+        // Fills the "Line Items" section (including their attributes)
+        lineItems: lineItems ?? [],
+      ),
+    );
 
     if (document.id.isNotEmpty && (lineItems == null || lineItems.isEmpty)) {
       try {
-        final fetchedItems = await _lineItemRepository.getLineItemsByDocumentId(document.id);
-        
-        emit(state.copyWith(
-          lineItems: fetchedItems,
-        ));
+        final fetchedItems = await _lineItemRepository.getLineItemsByDocumentId(
+          document.id,
+        );
+
+        emit(state.copyWith(lineItems: fetchedItems));
       } catch (e) {
-        emit(state.copyWith(
-          isLoading: false,
-          errorMessage: 'Failed to load line items: $e',
-        ));
+        emit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: 'Failed to load line items: $e',
+          ),
+        );
       }
     }
   }
@@ -61,29 +70,37 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           metadata: [],
         );
 
-        emit(state.copyWith(
-          document: document,
-          isLoading: false,
-          rows: [],
-          lineItems: [],
-        ));
+        emit(
+          state.copyWith(
+            document: document,
+            isLoading: false,
+            rows: [],
+            lineItems: [],
+          ),
+        );
         return;
       }
 
       final document = await _docRepository.getDocumentById(documentId);
-      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(documentId);
+      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(
+        documentId,
+      );
 
-      emit(state.copyWith(
-        document: document,
-        rows: document.metadata,
-        lineItems: lineItems,
-        isLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          document: document,
+          rows: document.metadata,
+          lineItems: lineItems,
+          isLoading: false,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isLoading: false,
-        errorMessage: 'Error loading document: $e',
-      ));
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'Error loading document: $e',
+        ),
+      );
     }
   }
 
@@ -119,9 +136,47 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     try {
       emit(state.copyWith(isSaving: true));
 
+      // --- 1. AUTO-CATEGORIZATION STEP ---
+
+      // Filter items that have a description but NO category
+      final itemsToCategorize = state.lineItems
+          .where(
+            (item) => item.description != null && item.description!.isNotEmpty,
+          )
+          .toList();
+
+      if (itemsToCategorize.isNotEmpty) {
+        // Extract descriptions
+        final descriptions = itemsToCategorize
+            .map((e) => e.description!)
+            .toSet() // Remove duplicates to save tokens
+            .toList();
+
+        // Call AI
+        final categoryMap = await _aiDataSource.categorizeDescriptions(
+          descriptions,
+        );
+
+        // Update the list of line items with new categories
+        final updatedLineItems = state.lineItems.map((item) {
+          // If this item needed categorization and we got a result
+          if (item.categoryCode.isEmpty &&
+              item.description != null &&
+              categoryMap.containsKey(item.description)) {
+            return item.copyWith(categoryCode: categoryMap[item.description]!);
+          }
+          return item;
+        }).toList();
+
+        // Update local state before saving to DB
+        emit(state.copyWith(lineItems: updatedLineItems));
+      }
+
+      // --- 2. EXISTING SAVE LOGIC (Database) ---
+
       Document docToSave = state.document!.copyWith(
         metadata: state.rows,
-        updatedAt: DateTime.now()
+        updatedAt: DateTime.now(),
       );
 
       String docId = docToSave.id;
@@ -130,81 +185,69 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         final createdDoc = await _docRepository.createDocument(docToSave);
         docId = createdDoc.id;
         docToSave = createdDoc;
-      }
-      else {
+      } else {
         await _docRepository.updateDocument(docToSave);
       }
 
+      // Save Line Items to Firestore (Now with categories filled in)
       for (var item in state.lineItems) {
+        // Note: using state.lineItems which we just updated
+
+        bool isEmpty =
+            (item.description == null || item.description!.trim().isEmpty) &&
+            item.total == 0 &&
+            item.debit == 0 &&
+            item.credit == 0 &&
+            item.categoryCode.isEmpty;
+
+        if (isEmpty) continue;
+
         final itemToSave = item.copyWith(documentId: docId);
 
-        // check prefix 'TEMP_'
-        if (itemToSave.lineItemId.isEmpty || itemToSave.lineItemId.startsWith('TEMP_')) {
-          if (itemToSave.lineItemId.length > 15 && int.tryParse(itemToSave.lineItemId) != null) {
-            // identified as new item so pass empty id for firestore to generate one
-            await _lineItemRepository.createLineItem(itemToSave.copyWith(lineItemId: ''));
-          }
-          else {
-            // it already exists
-            await _lineItemRepository.updateLineItem(itemToSave);
-          }
-        }
-        else {
+        // Handle Temp IDs vs Firestore IDs
+        bool isNewItem =
+            itemToSave.lineItemId.isEmpty ||
+            itemToSave.lineItemId.startsWith('TEMP_') ||
+            itemToSave.lineItemId.length > 20; // Basic check
+
+        if (isNewItem) {
+          await _lineItemRepository.createLineItem(
+            itemToSave.copyWith(lineItemId: ''),
+          );
+        } else {
           await _lineItemRepository.updateLineItem(itemToSave);
         }
       }
 
-      List<DocumentLineItem> savedLineItems = [];
-
-      for (var item in state.lineItems) {
-        bool isEmpty = (item.description == null ||
-          item.description!.trim().isEmpty) &&
-          item.total == 0 &&
-          item.debit == 0 &&
-          item.credit == 0 &&
-          item.categoryCode.isEmpty;
-
-        if (isEmpty) {
-          continue;
-        }
-
-        final itemToSave = item.copyWith(documentId: docId);
-        DocumentLineItem resultItem;
-
-        bool isNewItem = itemToSave.lineItemId.isEmpty ||
-          itemToSave.lineItemId.length > 20 ||
-          itemToSave.lineItemId.startsWith('TEMP_');
-        
-        if (isNewItem) {
-           // Create new
-           resultItem = await _lineItemRepository.createLineItem(itemToSave.copyWith(lineItemId: ''));
-        } else {
-           // Update existing
-           resultItem = await _lineItemRepository.updateLineItem(itemToSave);
-        }
-        
-        savedLineItems.add(resultItem);
-      }
-
-      emit(state.copyWith(
-        document: docToSave,
-        isSaving: false,
-        successMessage: 'Document saved successfully',
-      ));
+      emit(
+        state.copyWith(
+          document: docToSave,
+          isSaving: false,
+          successMessage:
+              'Document categorized & saved successfully', // Updated message
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to save document: $e',
-      ));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          errorMessage: 'Failed to save document: $e',
+        ),
+      );
     }
   }
 
   // --- Row Management ---
   void addNewRow() {
     final uniqueId = 'TEMP_${DateTime.now().microsecondsSinceEpoch.toString()}';
-    emit(state.copyWith(
-      rows: [...state.rows, AdditionalInfoRow(id: uniqueId, key: '', value: '')]
-    ));
+    emit(
+      state.copyWith(
+        rows: [
+          ...state.rows,
+          AdditionalInfoRow(id: uniqueId, key: '', value: ''),
+        ],
+      ),
+    );
   }
 
   void updateRowKey(int index, String key) {
@@ -254,7 +297,10 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     final updatedItems = state.lineItems.map((item) {
       if (item.lineItemId == lineItemId) {
         return item.copyWith(
-          attribute: [...item.attribute, AdditionalInfoRow(id: uniqueId, key: '', value: '')]
+          attribute: [
+            ...item.attribute,
+            AdditionalInfoRow(id: uniqueId, key: '', value: ''),
+          ],
         );
       }
       return item;
@@ -274,7 +320,11 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     emit(state.copyWith(lineItems: updatedItems));
   }
 
-  void updateLineItemAttributeValue(String lineItemId, int index, String newValue) {
+  void updateLineItemAttributeValue(
+    String lineItemId,
+    int index,
+    String newValue,
+  ) {
     final updatedItems = state.lineItems.map((item) {
       if (item.lineItemId == lineItemId) {
         final newAttributes = List<AdditionalInfoRow>.from(item.attribute);
@@ -308,8 +358,8 @@ class DocDetailCubit extends Cubit<DocDetailState> {
             return item.copyWith(categoryCode: value as String);
           case 'amount':
             final doubleVal = double.tryParse(value.toString()) ?? 0.0;
-            return item.copyWith(total: doubleVal); 
-          case 'date': 
+            return item.copyWith(total: doubleVal);
+          case 'date':
             return item.copyWith(lineDate: value as DateTime);
           default:
             return item;
