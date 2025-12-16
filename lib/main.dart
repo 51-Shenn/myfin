@@ -3,9 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:myfin/core/components/bottom_nav_bar.dart';
-import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
-import 'package:myfin/features/admin/presentation/pages/admin_main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
@@ -23,6 +21,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final firestore = FirebaseFirestore.instance;
+  final sharedPreferences = await SharedPreferences.getInstance();
 
   runApp(
     MultiRepositoryProvider(
@@ -36,25 +35,30 @@ Future<void> main() async {
           create: (context) => DocumentLineItemRepositoryImpl(
             FirestoreDocumentLineItemDataSource(firestore: firestore),
           ),
-        )
+        ),
       ],
-      child: const MainApp(),
-    )
+      child: BlocProvider(
+        create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
+        child: MainApp(sharedPreferences: sharedPreferences),
+      ),
+    ),
   );
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final SharedPreferences sharedPreferences;
+  const MainApp({super.key, required this.sharedPreferences});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: true,
       theme: ThemeData(useMaterial3: true),
-      // home: const BottomNavBar(),
 
-      initialRoute: AppRoutes.home,
-      onGenerateRoute: AppRoutes.onGenerateRoute,
+      // home: const BottomNavBar(),
+      initialRoute: AppRoutes.auth,
+      onGenerateRoute: (settings) =>
+          AppRoutes.onGenerateRoute(settings, sharedPreferences),
     );
   }
 }

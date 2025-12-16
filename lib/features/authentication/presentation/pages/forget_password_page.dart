@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/components/custom_text_field.dart';
+import 'package:myfin/features/authentication/presentation/widgets/custom_text_field.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 
 class ForgetPasswordPage extends StatefulWidget {
@@ -34,14 +34,7 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthResetPasswordSuccess) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
             Navigator.pop(context);
-          } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: Padding(

@@ -2,16 +2,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/authentication/data/datasources/admin_remote_data_source.dart';
+import 'package:myfin/features/authentication/data/datasources/auth_local_data_source.dart';
 import 'package:myfin/features/authentication/data/datasources/auth_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/datasources/member_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/repositories/admin_repository_impl.dart';
 import 'package:myfin/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:myfin/features/authentication/data/repositories/member_repository_impl.dart';
 import 'package:myfin/features/authentication/domain/usecases/get_current_user_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/get_saved_email_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/reset_password_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/save_email_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_in_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/sign_in_with_google_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_up_usecase.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -23,54 +29,66 @@ class AppRoutes {
   static const String home = '/home';
   static const String forgetPassword = '/forget-password';
 
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+  /// Creates and initializes the AuthBloc with all required dependencies
+  static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
+    // 1. Initialize External Services
+    final firebaseAuth = FirebaseAuth.instance;
+    final firestore = FirebaseFirestore.instance;
+    final googleSignIn = GoogleSignIn();
+
+    // 2. Initialize Data Sources
+    final authRemote = AuthRemoteDataSourceImpl(
+      firebaseAuth: firebaseAuth,
+      googleSignIn: googleSignIn,
+    );
+    final authLocal = AuthLocalDataSourceImpl(
+      sharedPreferences: sharedPreferences,
+    );
+    final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
+    final adminRemote = AdminRemoteDataSourceImpl(firestore: firestore);
+
+    // 3. Initialize Repositories
+    final authRepo = AuthRepositoryImpl(authRemote, authLocal);
+    final memberRepo = MemberRepositoryImpl(memberRemote);
+    final adminRepo = AdminRepositoryImpl(adminRemote);
+
+    // 4. Create and return AuthBloc
+    return AuthBloc(
+      signIn: SignInUseCase(
+        authRepository: authRepo,
+        adminRepository: adminRepo,
+        memberRepository: memberRepo,
+      ),
+      signUp: SignUpUseCase(
+        authRepository: authRepo,
+        adminRepository: adminRepo,
+        memberRepository: memberRepo,
+      ),
+      getCurrentUser: GetCurrentUserUseCase(
+        authRepository: authRepo,
+        adminRepository: adminRepo,
+        memberRepository: memberRepo,
+      ),
+      signOut: SignOutUseCase(authRepository: authRepo),
+      resetPassword: ResetPasswordUseCase(authRepository: authRepo),
+      signInWithGoogle: SignInWithGoogleUseCase(
+        authRepository: authRepo,
+        adminRepository: adminRepo,
+        memberRepository: memberRepo,
+      ),
+      saveEmail: SaveEmailUseCase(authRepository: authRepo),
+      getSavedEmail: GetSavedEmailUseCase(authRepository: authRepo),
+    )..add(AuthCheckRequested());
+  }
+
+  static Route<dynamic> onGenerateRoute(
+    RouteSettings settings,
+    SharedPreferences sharedPreferences,
+  ) {
     switch (settings.name) {
       case auth:
-        return MaterialPageRoute(
-          builder: (context) {
-            // 1. Initialize External Services
-            final firebaseAuth = FirebaseAuth.instance;
-            final firestore = FirebaseFirestore.instance;
-
-            // 2. Initialize Data Sources
-            final authRemote = AuthRemoteDataSourceImpl(
-              firebaseAuth: firebaseAuth,
-            );
-            final memberRemote = MemberRemoteDataSourceImpl(
-              firestore: firestore,
-            );
-            final adminRemote = AdminRemoteDataSourceImpl(firestore: firestore);
-
-            // 3. Initialize Repositories
-            final authRepo = AuthRepositoryImpl(authRemote);
-            final memberRepo = MemberRepositoryImpl(memberRemote);
-            final adminRepo = AdminRepositoryImpl(adminRemote);
-
-            // 4. Initialize Use Cases & Bloc
-            return BlocProvider<AuthBloc>(
-              create: (context) => AuthBloc(
-                signIn: SignInUseCase(
-                  authRepository: authRepo,
-                  adminRepository: adminRepo,
-                  memberRepository: memberRepo,
-                ),
-                signUp: SignUpUseCase(
-                  authRepository: authRepo,
-                  adminRepository: adminRepo,
-                  memberRepository: memberRepo,
-                ),
-                getCurrentUser: GetCurrentUserUseCase(
-                  authRepository: authRepo,
-                  adminRepository: adminRepo,
-                  memberRepository: memberRepo,
-                ),
-                signOut: SignOutUseCase(authRepository: authRepo),
-                resetPassword: ResetPasswordUseCase(authRepository: authRepo),
-              ),
-              child: const AuthMainPage(),
-            );
-          },
-        );
+        // AuthBloc is now provided at the root level in main.dart
+        return MaterialPageRoute(builder: (_) => const AuthMainPage());
       case home:
         return MaterialPageRoute(builder: (_) => const BottomNavBar());
       case forgetPassword:

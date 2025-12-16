@@ -1,4 +1,5 @@
 import 'package:myfin/features/authentication/domain/repositories/auth_repository.dart';
+import 'package:myfin/core/validators/auth_validator.dart';
 
 class ResetPasswordUseCase {
   final AuthRepository authRepository;
@@ -10,15 +11,11 @@ class ResetPasswordUseCase {
       throw Exception('Email cannot be empty');
     }
 
-    if (!isValidEmail(email)) {
+    if (!AuthValidator.isValidEmail(email)) {
       throw Exception('Please enter a valid email address');
     }
 
     await authRepository.resetPassword(email);
   }
 
-  bool isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
 }

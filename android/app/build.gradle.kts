@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -31,6 +33,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { localProperties.load(it) }
+        }
+
+        val fbAppId = localProperties.getProperty("facebook.app.id") ?: ""
+        val fbClientToken = localProperties.getProperty("facebook.client.token") ?: ""
+
+        resValue("string", "facebook_app_id", fbAppId)
+        resValue("string", "facebook_client_token", fbClientToken)
+        resValue("string", "fb_login_protocol_scheme", "fb$fbAppId")
     }
 
     buildTypes {

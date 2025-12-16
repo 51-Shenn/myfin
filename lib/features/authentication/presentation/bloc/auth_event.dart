@@ -12,11 +12,16 @@ final class AuthCheckRequested extends AuthEvent {}
 final class AuthLoginRequested extends AuthEvent {
   final String email;
   final String password;
+  final bool rememberMe;
 
-  const AuthLoginRequested(this.email, this.password);
+  const AuthLoginRequested(
+    this.email,
+    this.password, {
+    this.rememberMe = false,
+  });
 
   @override
-  List<Object> get props => [email, password];
+  List<Object> get props => [email, password, rememberMe];
 }
 
 final class AuthLogoutRequested extends AuthEvent {}
@@ -86,3 +91,7 @@ final class AuthPageChanged extends AuthEvent {
   @override
   List<Object> get props => [page];
 }
+
+final class AuthGoogleSignInRequested extends AuthEvent {}
+
+final class AuthCheckSavedEmailRequested extends AuthEvent {}

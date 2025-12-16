@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/components/custom_text_field.dart';
-import 'package:myfin/core/components/social_login_button.dart';
+import 'package:myfin/features/authentication/presentation/widgets/custom_text_field.dart';
+import 'package:myfin/features/authentication/presentation/widgets/social_login_button.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
+import 'package:myfin/core/validators/auth_validator.dart';
+import 'package:myfin/core/utils/ui_helpers.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -20,6 +22,15 @@ class _SignInPageState extends State<SignInPage> {
   bool _rememberMe = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Use post-frame callback to ensure BlocConsumer listener is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthBloc>().add(AuthCheckSavedEmailRequested());
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -30,6 +41,23 @@ class _SignInPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
+        // Auto-fill email if savedEmail exists in state
+        if (state is AuthUnauthenticated && state.savedEmail != null) {
+          if (state.savedEmail!.isNotEmpty) {
+            // Use post-frame callback to avoid setState during build
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_emailController.text != state.savedEmail) {
+                _emailController.text = state.savedEmail!;
+                if (mounted) {
+                  setState(() {
+                    _rememberMe = true;
+                  });
+                }
+              }
+            });
+          }
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -104,10 +132,31 @@ class _SignInPageState extends State<SignInPage> {
               onPressed: state is AuthLoading
                   ? null
                   : () {
+                      final emailError = AuthValidator.validateEmail(
+                        _emailController.text.trim(),
+                      );
+
+                      if (emailError != null) {
+                        UiHelpers.showError(context, emailError);
+                        return;
+                      }
+
+                      final passwordError = AuthValidator.validateRequired(
+                        _passwordController.text.trim(),
+                        "Password",
+                      );
+
+                      if (passwordError != null) {
+                        UiHelpers.showError(context, passwordError);
+                        return;
+                      }
+
+                      // All validation passed → dispatch login event
                       context.read<AuthBloc>().add(
                         AuthLoginRequested(
                           _emailController.text.trim(),
                           _passwordController.text.trim(),
+                          rememberMe: _rememberMe,
                         ),
                       );
                     },
@@ -120,22 +169,10 @@ class _SignInPageState extends State<SignInPage> {
                 ),
                 elevation: 0,
               ),
-              child: state is AuthLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text(
-                      'Log In',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              child: const Text(
+                'Log In',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(height: 32),
             Row(
@@ -152,16 +189,18 @@ class _SignInPageState extends State<SignInPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                SocialLoginButton(iconPath: 'assets/google.png'),
-                SocialLoginButton(iconPath: 'assets/facebook.png'),
-                SocialLoginButton(iconPath: 'assets/apple.png'),
-                // The 4th icon looks like a phone/mobile icon in the image but user had 'more.png'
-                // Reusing 'more.png' as per previous code if available, or just a placeholder
-                SocialLoginButton(iconPath: 'assets/more.png'),
-              ],
+            Center(
+              // Google Sign-In
+              child: SocialLoginButton(
+                iconPath: 'assets/google.png',
+                onTap: state is AuthLoading
+                    ? null
+                    : () {
+                        context.read<AuthBloc>().add(
+                          AuthGoogleSignInRequested(),
+                        );
+                      },
+              ),
             ),
           ],
         );
