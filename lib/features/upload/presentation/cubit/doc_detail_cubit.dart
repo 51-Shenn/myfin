@@ -59,11 +59,11 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       if (documentId == null || documentId.isEmpty) {
         final document = Document(
           id: '',
-          memberId: '',
+          memberId: '',  // await memberRepo.getCurrentUserId();
           name: '',
           type: '',
           status: '',
-          createdBy: 'Current User',
+          createdBy: 'CURRENT USER', 
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           postingDate: DateTime.now(),
@@ -82,9 +82,7 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       }
 
       final document = await _docRepository.getDocumentById(documentId);
-      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(
-        documentId,
-      );
+      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(documentId);
 
       emit(
         state.copyWith(
