@@ -26,6 +26,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
+  String _completePhoneNumber = ''; // Store full international phone number
 
   @override
   void dispose() {
@@ -165,7 +166,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       disableLengthCheck:
                           true, // Disable length validation counter
                       onChanged: (phone) {
-                        // The complete phone number with country code is in phone.completeNumber
+                        _completePhoneNumber = phone.completeNumber;
                       },
                     ),
                   ),
@@ -233,7 +234,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         );
 
                         final phoneNumError = AuthValidator.validatePhone(
-                          _phoneController.text,
+                          _completePhoneNumber,
                         );
                         final addressError = AuthValidator.validateRequired(
                           _addressController.text,
@@ -299,7 +300,9 @@ class _SignUpPageState extends State<SignUpPage> {
                             _lastNameController.text,
                             _emailController.text,
                             _passwordController.text,
-                            _phoneController.text,
+                            _completePhoneNumber.isNotEmpty
+                                ? _completePhoneNumber
+                                : _phoneController.text,
                             _addressController.text,
                           ),
                         );
