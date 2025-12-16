@@ -51,6 +51,7 @@ class UploadView extends StatelessWidget {
             '/doc_details',
             arguments: DocDetailsArguments(
               existingDocument: state.selectedDocument,
+              existingLineItems: state.extractedLineItems, 
             ),
           ).then((_) {
             if (!context.mounted) return; 

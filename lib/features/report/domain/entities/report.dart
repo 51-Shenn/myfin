@@ -1,5 +1,3 @@
-// concrete data models
-
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
 import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';

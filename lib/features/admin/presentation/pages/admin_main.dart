@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
+
+// Placeholder for Tax Regulations
+class AdminTaxScreen extends StatelessWidget {
+  const AdminTaxScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Tax Regulations"), centerTitle: true),
+      body: const Center(child: Text("Tax Regulations Content")),
+    );
+  }
+}
+
+// Placeholder for Admin Profile
+class AdminProfileScreen extends StatelessWidget {
+  const AdminProfileScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Admin Profile"), centerTitle: true),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
+          child: const Text("Exit Admin Mode"),
+        ),
+      ),
+    );
+  }
+}
+
+class AdminMainScreen extends StatefulWidget {
+  const AdminMainScreen({super.key});
+
+  @override
+  State<AdminMainScreen> createState() => _AdminMainScreenState();
+}
+
+class _AdminMainScreenState extends State<AdminMainScreen> {
+  int _selectedIndex = 0;
+
+  // List of screens for the admin navigation
+  final List<Widget> _pages = [
+    const UserManagementScreen(), // Tab 0
+    const AdminTaxScreen(),       // Tab 1
+    const AdminProfileScreen(),   // Tab 2
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(0xFF2B46F9),
+          unselectedItemColor: Colors.black,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+          items: [
+            BottomNavigationBarItem(
+              icon: _buildIcon(Icons.people_alt_outlined, 0),
+              activeIcon: _buildIcon(Icons.people_alt, 0, isActive: true),
+              label: 'Manage User',
+            ),
+            BottomNavigationBarItem(
+              icon: _buildIcon(Icons.description_outlined, 1),
+              activeIcon: _buildIcon(Icons.description, 1, isActive: true),
+              label: 'Tax Regulations',
+            ),
+            BottomNavigationBarItem(
+              icon: _buildIcon(Icons.person_outline, 2),
+              activeIcon: _buildIcon(Icons.person, 2, isActive: true),
+              label: 'Profile',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper to create the styled icon background shown in your image
+  Widget _buildIcon(IconData icon, int index, {bool isActive = false}) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: isActive
+          ? const BoxDecoration(
+              color: Color(0xFF2B46F9), // Blue background for active
+              shape: BoxShape.circle,
+            )
+          : null,
+      child: Icon(
+        icon,
+        color: isActive ? Colors.white : Colors.black,
+        size: 24,
+      ),
+    );
+  }
+}
