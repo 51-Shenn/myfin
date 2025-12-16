@@ -14,23 +14,29 @@ class UserProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        if (state is AuthUnauthenticated) {
-          Navigator.of(
-            context,
-            rootNavigator: true,
-          ).pushNamedAndRemoveUntil(AppRoutes.auth, (route) => false);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: BlocBuilder<ProfileBloc, ProfileState>(
-            builder: (context, state) {
-              if (state.isLoading && state.member == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
+    return BlocProvider(
+      create: (_) => ProfileBloc(
+        ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
+      )..add(const LoadProfileEvent("M123")),
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, authState) {
+          if (authState is AuthUnauthenticated) {
+            // Navigate to auth screen when logged out
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pushNamedAndRemoveUntil('/auth', (route) => false);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: BlocBuilder<ProfileBloc, ProfileState>(
+              builder: (context, state) {
+                // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
+                if (state.isLoading && state.member == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
               if (state.error != null) {
                 return Center(
@@ -64,8 +70,9 @@ class UserProfileScreen extends StatelessWidget {
                 return _buildContent(context, state.member!);
               }
 
-              return const SizedBox();
-            },
+                return const SizedBox();
+              },
+            ),
           ),
         ),
       ),
@@ -315,10 +322,12 @@ class UserProfileScreen extends StatelessWidget {
                   Icons.admin_panel_settings_outlined,
                   "Admin Dashboard",
                   hasArrow: true,
-                  onTap: () => Navigator.of(
-                    context,
-                    rootNavigator: true,
-                  ).pushNamed('/admin_dashboard'),
+                  onTap: () {
+                    Navigator.of(
+                      context,
+                      rootNavigator: true,
+                    ).pushNamed('/admin_dashboard');
+                  },
                 ),
                 Divider(
                   height: 1,

@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/authentication/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/datasources/auth_remote_data_source.dart';
@@ -99,17 +100,19 @@ Future<void> main() async {
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final SharedPreferences sharedPreferences;
+  const MainApp({super.key, required this.sharedPreferences});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
-      // Determine initial route based on Auth State if needed, 
-      // but AppRoutes.onGenerateRoute handles the flow nicely via AuthMainPage listeners.
+
+      // home: const BottomNavBar(),
       initialRoute: AppRoutes.auth,
-      onGenerateRoute: AppRoutes.onGenerateRoute,
+      onGenerateRoute: (settings) =>
+          AppRoutes.onGenerateRoute(settings, sharedPreferences),
     );
   }
 }
