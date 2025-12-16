@@ -86,3 +86,26 @@ final class AuthPageChanged extends AuthEvent {
   @override
   List<Object> get props => [page];
 }
+
+// Social authentication events
+final class AuthGoogleSignInRequested extends AuthEvent {}
+
+final class AuthFacebookSignInRequested extends AuthEvent {}
+
+final class AuthAppleSignInRequested extends AuthEvent {}
+
+// Phone authentication events
+final class AuthPhoneVerificationRequested extends AuthEvent {
+  final String phoneNumber;
+  const AuthPhoneVerificationRequested(this.phoneNumber);
+  @override
+  List<Object> get props => [phoneNumber];
+}
+
+final class AuthPhoneOTPVerificationRequested extends AuthEvent {
+  final String verificationId;
+  final String otp;
+  const AuthPhoneOTPVerificationRequested(this.verificationId, this.otp);
+  @override
+  List<Object> get props => [verificationId, otp];
+}

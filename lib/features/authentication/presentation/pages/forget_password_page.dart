@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/components/custom_text_field.dart';
+import 'package:myfin/features/authentication/presentation/widgets/custom_text_field.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 
 class ForgetPasswordPage extends StatefulWidget {

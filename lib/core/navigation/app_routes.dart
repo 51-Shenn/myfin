@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/authentication/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/datasources/auth_remote_data_source.dart';
@@ -14,14 +15,20 @@ import 'package:myfin/features/authentication/domain/usecases/reset_password_use
 import 'package:myfin/features/authentication/domain/usecases/sign_in_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_up_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/sign_in_with_google_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/sign_in_with_facebook_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/sign_in_with_apple_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/phone_auth_usecase.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/features/authentication/presentation/pages/auth_main.dart';
 import 'package:myfin/features/authentication/presentation/pages/forget_password_page.dart';
+import 'package:myfin/features/authentication/presentation/pages/phone_auth_page.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
   static const String home = '/home';
   static const String forgetPassword = '/forget-password';
+  static const String phoneAuth = '/phone-auth';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -32,9 +39,12 @@ class AppRoutes {
             final firebaseAuth = FirebaseAuth.instance;
             final firestore = FirebaseFirestore.instance;
 
+            final GoogleSignIn googleSignIn = GoogleSignIn();
+
             // 2. Initialize Data Sources
             final authRemote = AuthRemoteDataSourceImpl(
               firebaseAuth: firebaseAuth,
+              googleSignIn: googleSignIn,
             );
             final memberRemote = MemberRemoteDataSourceImpl(
               firestore: firestore,
@@ -66,6 +76,26 @@ class AppRoutes {
                 ),
                 signOut: SignOutUseCase(authRepository: authRepo),
                 resetPassword: ResetPasswordUseCase(authRepository: authRepo),
+                signInWithGoogle: SignInWithGoogleUseCase(
+                  authRepository: authRepo,
+                  adminRepository: adminRepo,
+                  memberRepository: memberRepo,
+                ),
+                signInWithFacebook: SignInWithFacebookUseCase(
+                  authRepository: authRepo,
+                  adminRepository: adminRepo,
+                  memberRepository: memberRepo,
+                ),
+                signInWithApple: SignInWithAppleUseCase(
+                  authRepository: authRepo,
+                  adminRepository: adminRepo,
+                  memberRepository: memberRepo,
+                ),
+                phoneAuth: PhoneAuthUseCase(
+                  authRepository: authRepo,
+                  adminRepository: adminRepo,
+                  memberRepository: memberRepo,
+                ),
               ),
               child: const AuthMainPage(),
             );
@@ -80,6 +110,12 @@ class AppRoutes {
             value: authBloc,
             child: const ForgetPasswordPage(),
           ),
+        );
+      case phoneAuth:
+        final authBloc = settings.arguments as AuthBloc;
+        return MaterialPageRoute(
+          builder: (_) =>
+              BlocProvider.value(value: authBloc, child: const PhoneAuthPage()),
         );
 
       default:

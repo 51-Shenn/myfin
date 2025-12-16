@@ -68,3 +68,28 @@ final class AuthResetPasswordFailure extends AuthState {
   @override
   List<Object> get props => [message, currentPage];
 }
+
+// Phone authentication state
+final class AuthPhoneCodeSent extends AuthState {
+  final String verificationId;
+  final String phoneNumber;
+  const AuthPhoneCodeSent(
+    this.verificationId,
+    this.phoneNumber, {
+    super.currentPage,
+  });
+  @override
+  List<Object> get props => [verificationId, phoneNumber, currentPage];
+}
+
+void showError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+}

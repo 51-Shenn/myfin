@@ -39,11 +39,61 @@ class _AuthMainPageState extends State<AuthMainPage> {
                 state is AuthAuthenticatedAsAdmin) {
               Navigator.pushReplacementNamed(context, AppRoutes.home);
             }
+
+            // Handle all failure states with red snackbar
             if (state is AuthFailure) {
+              if (state.message.contains('User not found')) {
+                context.read<AuthBloc>().add(const AuthPageChanged(1));
+              }
+
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(content: Text(state.message)));
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
             }
+
+            if (state is AuthRegisterFailure) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+            }
+
+            if (state is AuthResetPasswordFailure) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+            }
+
+            // Handle password reset success with green snackbar
+            if (state is AuthResetPasswordSuccess) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.green,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+            }
+
             if (_pageController.hasClients &&
                 _pageController.page?.round() != state.currentPage) {
               _pageController.animateToPage(
@@ -112,7 +162,6 @@ class _AuthMainPageState extends State<AuthMainPage> {
                   },
                 ),
                 const SizedBox(height: 32),
-
 
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
