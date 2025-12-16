@@ -48,6 +48,10 @@ class UploadNavigateToDocDetails extends UploadState {
   List<Object> get props => [selectedDocument, if (extractedLineItems != null) extractedLineItems!];
 }
 
+class UploadNavigateToHistory extends UploadState {
+  const UploadNavigateToHistory(super.document);
+}
+
 class UploadImagePicked extends UploadState {
   final String imagePath;
 

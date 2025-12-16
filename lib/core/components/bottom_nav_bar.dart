@@ -20,6 +20,7 @@ class _TabItemBuilder extends DelegateBuilder {
   Widget build(BuildContext context, int index, bool active) {
     final item = items[index];
     final itemColor = active ? activeColor : color;
+    final double padding = index == 2 ? 12 : 8;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -29,7 +30,7 @@ class _TabItemBuilder extends DelegateBuilder {
             shape: BoxShape.circle,
             color: active ? itemColor : Colors.white,
           ),
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(padding),
           child: active ? (item.activeIcon ?? item.icon) : item.icon,
         ),
         if (index == 2)
@@ -105,31 +106,31 @@ class _BottomNavBarState extends State<BottomNavBar> {
     ),
     TabItem(
       activeIcon: Icon(
-        Icons.chat_bubble,
+        Icons.smart_toy,
         color: white,
         size: 30.0,
         opticalSize: 30.0,
       ),
       icon: Icon(
-        Icons.chat_bubble_outline,
+        Icons.smart_toy_outlined,
         color: blue,
         size: 30.0,
         opticalSize: 30.0,
       ),
-      title: 'AI Chatbot',
+      title: 'FinAI',
     ),
     TabItem(
       activeIcon: Icon(
         Icons.file_upload_outlined,
         color: Colors.white,
-        size: 50.0,
-        opticalSize: 50.0,
+        size: 45.0,
+        opticalSize: 10.0,
       ),
       icon: Icon(
         Icons.file_upload_outlined,
         color: blue,
-        size: 50.0,
-        opticalSize: 50.0,
+        size: 40.0,
+        opticalSize: 10.0,
       ),
       title: '',
     ),
@@ -211,11 +212,11 @@ class _BottomNavBarState extends State<BottomNavBar> {
           children: [IndexedStack(index: _selectedIndex, children: _pages)],
         ),
         // TODO: remove later
-        floatingActionButton: FloatingActionButton(
-          onPressed: toggleNavBar,
-          child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: toggleNavBar,
+        //   child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
+        // ),
+        // floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       ),
     );
   }
