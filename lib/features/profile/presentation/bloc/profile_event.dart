@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/authentication/domain/entities/member.dart'; // Import
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
@@ -26,9 +27,11 @@ class UpdateBusinessProfileEvent extends ProfileEvent {
 // Added: Update Member Event
 class UpdateMemberProfileEvent extends ProfileEvent {
   final Member member;
-  const UpdateMemberProfileEvent(this.member);
+  final File? newImageFile; 
+  const UpdateMemberProfileEvent(this.member, {this.newImageFile});
+
   @override
-  List<Object?> get props => [member];
+  List<Object?> get props => [member, newImageFile];
 }
 
 class ChangePasswordEvent extends ProfileEvent {

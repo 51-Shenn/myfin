@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 
 class EditBusinessProfileScreen extends StatefulWidget {
   final BusinessProfile? existingProfile;
@@ -65,9 +66,11 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
     }
   }
 
@@ -107,211 +110,234 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   void _saveProfile() {
     // 1. Create updated object
     final updatedProfile = BusinessProfile(
-      // If editing, keep ID. If new, use memberId or generate new UUID
+      // If editing, keep ID. If new, use memberId (simplification) or empty string for repo to handle
       profileId: widget.existingProfile?.profileId ?? widget.memberId,
-      name: _companyNameController.text,
-      registrationNo: _regNoController.text,
-      contactNo: _contactController.text,
-      email: _emailController.text,
-      address: _addressController.text,
+      name: _companyNameController.text.trim(),
+      registrationNo: _regNoController.text.trim(),
+      contactNo: _contactController.text.trim(),
+      email: _emailController.text.trim(),
+      address: _addressController.text.trim(),
       memberId: widget.memberId,
     );
 
     // 2. Call Bloc to save
     context.read<ProfileBloc>().add(UpdateBusinessProfileEvent(updatedProfile));
-
-    // 3. Go back
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return BlocListener<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (!state.isLoading && state.error == null) {
+          // Success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Business profile saved successfully"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else if (state.error != null) {
+          // Failure
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
+            onPressed: () => Navigator.pop(context),
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Inter',
+          centerTitle: true,
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Logo Section ---
-            Center(
-              child: GestureDetector(
-                onTap: _showImageSourceModal,
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            border: Border.all(color: Colors.grey.shade200),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                            image: _selectedImage != null
-                                ? DecorationImage(
-                                    image: FileImage(_selectedImage!),
-                                    fit: BoxFit.cover,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Logo Section ---
+              Center(
+                child: GestureDetector(
+                  onTap: _showImageSourceModal,
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              border: Border.all(color: Colors.grey.shade200),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                              image: _selectedImage != null
+                                  ? DecorationImage(
+                                      image: FileImage(_selectedImage!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: _selectedImage == null
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: const [
+                                        Icon(
+                                          Icons.layers_outlined,
+                                          size: 30,
+                                          color: Color(0xFF2B46F9),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          "COMPANY\nSLOGAN HERE",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   )
                                 : null,
                           ),
-                          child: _selectedImage == null
-                              ? Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: const [
-                                      Icon(
-                                        Icons.layers_outlined,
-                                        size: 30,
-                                        color: Color(0xFF2B46F9),
-                                      ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        "COMPANY\nSLOGAN HERE",
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF2B46F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.white,
-                              size: 16,
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF2B46F9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_outlined,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // --- Details Header ---
+              const Text(
+                'COMPANY DETAILS',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Inter',
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // --- Fields ---
+              _buildTextField(
+                label: 'Company Name',
+                hint: 'Company Inc.',
+                controller: _companyNameController,
+              ),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: 'Registration Number',
+                hint: '202301005921',
+                controller: _regNoController,
+              ),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: 'Email Address',
+                hint: 'company@gmail.com',
+                controller: _emailController,
+                inputType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: 'Contact Number',
+                hint: '+60 123456789',
+                controller: _contactController,
+                inputType: TextInputType.phone,
+              ),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: 'Registered Address',
+                hint: 'Level 23, Menara 1, KL Eco City...',
+                controller: _addressController,
+                maxLines: 4,
+              ),
+
+              const SizedBox(height: 40),
+
+              // --- Save Button ---
+              BlocBuilder<ProfileBloc, ProfileState>(
+                builder: (context, state) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: state.isLoading ? null : _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2B46F9),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
+                      ),
+                      child: state.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
-            ),
-            const SizedBox(height: 30),
-
-            // --- Details Header ---
-            const Text(
-              'COMPANY DETAILS',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // --- Fields ---
-            _buildTextField(
-              label: 'Company Name',
-              hint: 'Company Inc.',
-              controller: _companyNameController,
-            ),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: 'Registration Number',
-              hint: '202301005921',
-              controller: _regNoController,
-            ),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: 'Email Address',
-              hint: 'company@gmail.com',
-              controller: _emailController,
-              inputType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: 'Contact Number',
-              hint: '+60 123456789',
-              controller: _contactController,
-              inputType: TextInputType.phone,
-            ),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: 'Registered Address',
-              hint: 'Level 23, Menara 1, KL Eco City...',
-              controller: _addressController,
-              maxLines: 4,
-            ),
-
-            const SizedBox(height: 40),
-
-            // --- Save Button ---
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: _saveProfile,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2B46F9),
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save Changes',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );

@@ -1,4 +1,7 @@
-import 'package:myfin/features/authentication/data/models/member_model.dart'; // Import
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:myfin/features/authentication/data/models/member_model.dart';
 import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/profile/data/models/business_profile.dart';
@@ -18,13 +21,11 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<BusinessProfile> getBusinessProfile(String memberId) async {
-    // Fetches real data now
     return await remoteDataSource.fetchBusinessProfile(memberId);
   }
 
   @override
   Future<void> updateMemberProfile(Member member) async {
-    // Convert Entity to Model
     final model = MemberModel(
       member_id: member.member_id,
       username: member.username,
@@ -41,24 +42,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<Member> getMemberProfile(String memberId) async {
-    // Note: Ideally you should fetch this from Firestore in RemoteDataSource
-    // Keeping mock for now based on your previous code, or ensure logic exists
-    await Future.delayed(const Duration(milliseconds: 500));
-    return Member(
-      member_id: memberId,
-      username: "Username",
-      first_name: "User",
-      last_name: "Name",
-      email: "username@gmail.com",
-      phone_number: "+60 123456789",
-      address: "12, Jalan Danau Saujana",
-      created_at: DateTime.now(),
-      status: "Active",
-    );
+    // Now fetches actual data from Firestore
+    return await remoteDataSource.fetchMemberProfile(memberId);
   }
 
   @override
   Future<void> changePassword(String currentPassword, String newPassword) async {
-    await Future.delayed(const Duration(seconds: 1));
+    // This usually requires FirebaseAuth interaction which might belong in AuthRepository,
+    // but if you keep it here for UI convenience:
+    // await FirebaseAuth.instance.currentUser?.reauthenticateWithCredential(...)
+    // await FirebaseAuth.instance.currentUser?.updatePassword(newPassword);
+    await Future.delayed(const Duration(seconds: 1)); // Placeholder logic kept
+  }
+
+  @override
+  Future<void> uploadProfileImage(String memberId, File imageFile) async {
+    await remoteDataSource.uploadProfileImage(memberId, imageFile);
+  }
+
+  @override
+  Future<Uint8List?> getProfileImage(String memberId) async {
+    final base64String = await remoteDataSource.fetchProfileImageBase64(memberId);
+    if (base64String == null) return null;
+    return base64Decode(base64String);
   }
 }
