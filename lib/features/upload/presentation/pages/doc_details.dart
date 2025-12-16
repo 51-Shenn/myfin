@@ -30,15 +30,12 @@ class DocumentDetailsScreen extends StatelessWidget {
           lineItemRepository: context.read<DocumentLineItemRepository>(),
         );
         
-        // 1. If objects are passed directly (e.g. from File Upload/OCR), use them.
         if (existingDocument != null) {
           cubit.initializeWithData(existingDocument!, existingLineItems);
         } 
-        // 2. Otherwise, if an ID is passed, load from DB
         else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
         }
-        // 3. Otherwise, initialize as a blank new document
         else {
           cubit.loadDocument(null);
         }
@@ -77,6 +74,12 @@ class DocDetailsView extends StatelessWidget {
               duration: const Duration(seconds: 2),
             ),
           );
+
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (context.mounted) {
+              Navigator.of(context).pop(); 
+            }
+          });
         }
         if (state.errorMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +98,7 @@ class DocDetailsView extends StatelessWidget {
               'Document Details',
               style: const TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -107,20 +110,57 @@ class DocDetailsView extends StatelessWidget {
                   child: CircularProgressIndicator(),
                 )
               else
-                IconButton(
-                  icon: const Icon(Icons.save),
-                  onPressed: () {
-                    if (state.document != null) {
-                      context.read<DocDetailCubit>().saveDocument();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please fill in required fields'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
-                  },
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.save, color: Color(0xFF2B46F9)),
+                      onPressed: () {
+                        if (state.document != null) {
+                          context.read<DocDetailCubit>().saveDocument();
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill in required fields'),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_forever, color: Colors.red),
+                      onPressed: () {
+                        // check if document exists before trying to delete
+                        if (state.document == null) return;
+
+                        // ask for permission
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Delete Document'),
+                            content: const Text(
+                                'Are you sure you want to delete this document permanently? This action cannot be undone.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext), // close dialog
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(dialogContext);
+                                  context.read<DocDetailCubit>().deleteDocument();
+                                },
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
             ],
           ),

@@ -199,6 +199,34 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     }
   }
 
+  Future<void> deleteDocument() async {
+    // if new doc, just discard and close the ui
+    if (state.document == null || state.document!.id.isEmpty) {
+      emit(state.copyWith(successMessage: 'Draft discarded'));
+      return;
+    }
+
+    try {
+      emit(state.copyWith(isSaving: true));
+
+      final docId = state.document!.id;
+
+      await _lineItemRepository.deleteLineItemsByDocumentId(docId);
+
+      await _docRepository.deleteDocument(docId);
+
+      emit(state.copyWith(
+        isSaving: false,
+        successMessage: 'Document deleted successfully',
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isSaving: false,
+        errorMessage: 'Failed to delete: $e',
+      ));
+    }
+  }
+
   // --- Row Management ---
   void addNewRow() {
     final uniqueId = 'TEMP_${DateTime.now().microsecondsSinceEpoch.toString()}';

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/upload/domain/entities/document.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/domain/usecases/get_recent_doc_use_case.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/option.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
 import 'package:myfin/features/upload/presentation/widgets/document_card.dart';
 import 'package:myfin/features/upload/presentation/widgets/upload_option_card.dart';
 
@@ -36,23 +37,40 @@ class UploadView extends StatelessWidget {
     return BlocListener<UploadCubit, UploadState>(
       listener: (context, state) async {
         if (state is UploadNavigateToManual) {
-          Navigator.pushNamed(context, '/doc_details');
-          if (context.mounted) context.read<UploadCubit>().fetchDocument();
+          NavBarController.of(context)?.toggleNavBar();
+          Navigator.pushNamed(context, '/doc_details').then((_) {
+            if (!context.mounted) return;
+            context.read<UploadCubit>().fetchDocument();
+            NavBarController.of(context)?.toggleNavBar();
+          });
         }
         else if (state is UploadNavigateToDocDetails) {
+          NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(
-            context,
+            context, 
             '/doc_details',
             arguments: DocDetailsArguments(
               existingDocument: state.selectedDocument,
             ),
-          );
-          if (context.mounted) context.read<UploadCubit>().fetchDocument();
+          ).then((_) {
+            if (!context.mounted) return; 
+            context.read<UploadCubit>().fetchDocument();
+            NavBarController.of(context)?.toggleNavBar();
+          });
         }
         else if (state is UploadImagePicked) {
           uploadCubit.processPickedImage(state.imagePath);
-        } else if (state is UploadFilePicked) {
+        } 
+        else if (state is UploadFilePicked) {
           uploadCubit.processPickedFile(state.filePath, state.fileName);
+        }
+        else if (state is UploadNavigateToHistory) {
+          NavBarController.of(context)?.toggleNavBar();
+          Navigator.pushNamed(context, '/upload_history').then((_) {
+            if (!context.mounted) return;
+            context.read<UploadCubit>().fetchDocument();
+            NavBarController.of(context)?.toggleNavBar();
+          });
         }
       },
       child: Scaffold(
@@ -114,7 +132,7 @@ class UploadView extends StatelessWidget {
                             if (state.document.isNotEmpty && state.document.length > 2)
                               TextButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/upload_history');
+                                  uploadCubit.viewAllClicked();
                                 },
                                 style: TextButton.styleFrom(
                                   splashFactory: NoSplash.splashFactory,
