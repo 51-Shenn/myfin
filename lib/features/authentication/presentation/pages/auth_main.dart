@@ -173,7 +173,7 @@ class _AuthMainPageState extends State<AuthMainPage> {
                       child: PageView(
                         controller: _pageController,
                         physics:
-                            const NeverScrollableScrollPhysics(), // Disable swipe for better UX with height change
+                            const NeverScrollableScrollPhysics(),
                         onPageChanged: (page) =>
                             context.read<AuthBloc>().add(AuthPageChanged(page)),
                         children: const [SignInPage(), SignUpPage()],
