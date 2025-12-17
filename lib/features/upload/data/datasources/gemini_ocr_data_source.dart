@@ -5,18 +5,70 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:myfin/features/report/services/generator/report_template.dart';
 
 class GeminiOCRDataSource {
-  late final GenerativeModel _model;
+  GeminiOCRDataSource();
 
-  GeminiOCRDataSource() {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? "";
-    _model = GenerativeModel(model: 'gemini-2.5-flash-lite', apiKey: apiKey);
+  List<String> _getApiKeys() {
+    final envVarNames = [
+      'GEMINI_API_KEY',
+      'GEMINI_API_KEY_2',
+      'GEMINI_API_KEY_3',
+      'GEMINI_API_KEY_4',
+    ];
+
+    final List<String> validKeys = [];
+
+    for (var name in envVarNames) {
+      final key = dotenv.env[name];
+      if (key != null && key.trim().isNotEmpty) {
+        validKeys.add(key.trim());
+      }
+    }
+
+    return validKeys;
   }
 
-  // 2. Helper function to flatten your nested Template Map into a String list
+  final List<String> _modelsToTry = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+
+  Future<GenerateContentResponse> _generateContentWithFallback(List<Content> content) async {
+    final keys = _getApiKeys();
+    
+    if (keys.isEmpty) throw Exception("No API keys found in .env (Checked for GEMINI_API_KEY 1-4)");
+
+    Object? lastError;
+
+    // Loop through Keys
+    for (String apiKey in keys) {
+      // Loop through Models
+      for (String modelName in _modelsToTry) {
+        try {
+          // Identify which key we are using (last 4 chars) for debugging
+          final keyId = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : "short-key";
+          print("Attempting AI request | Key: ...$keyId | Model: $modelName");
+          
+          final model = GenerativeModel(model: modelName, apiKey: apiKey);
+          final response = await model.generateContent(content);
+          
+          return response; // Success! Return immediately.
+
+        } catch (e) {
+          print("Failed ($modelName). Error: $e");
+          
+          // Store error and continue to the next combination
+          lastError = e;
+          continue; 
+        }
+      }
+    }
+
+    // If we reach here, 8 attempts (4 keys * 2 models) failed.
+    throw Exception("All AI models and 4 API keys failed. Last error: $lastError");
+  }
+
+  // --- STANDARD EXTRACTION LOGIC (UNCHANGED) ---
+
   String _getDynamicCategories() {
     final Set<String> categories = {};
 
-    // Helper to recursively dig through the Map/List structure
     void extract(dynamic data) {
       if (data is Map) {
         for (var value in data.values) {
@@ -33,13 +85,9 @@ class GeminiOCRDataSource {
       }
     }
 
-    // Extract from P&L (Expenses/Revenue)
     extract(ProfitAndLossTemplate.structure);
-    
-    // Optional: Extract from Balance Sheet (Assets) if you want to track equipment purchases
     extract(BalanceSheetTemplate.structure['Assets']); 
 
-    // Convert to a clean bulleted string
     return categories.map((e) => "- $e").join("\n");
   }
 
@@ -48,7 +96,6 @@ class GeminiOCRDataSource {
     if (!await file.exists()) throw Exception("File does not exist");
     final imageBytes = await file.readAsBytes();
     
-    // 3. Generate the list dynamically
     final String dynamicCategoryList = _getDynamicCategories();
 
     final prompt = """
@@ -78,7 +125,8 @@ class GeminiOCRDataSource {
         ])
       ];
 
-      final response = await _model.generateContent(content);
+      // Calls the fallback logic
+      final response = await _generateContentWithFallback(content);
       final responseText = response.text;
 
       if (responseText == null) throw Exception("No response from AI");
@@ -90,8 +138,8 @@ class GeminiOCRDataSource {
       
       return jsonDecode(cleanJson);
     } catch (e) {
-      print("Gemini Error: $e");
-      throw Exception("OCR Extraction Failed: $e");
+      print("Final Extraction Error: $e");
+      throw Exception("OCR Extraction Failed after all retries: $e");
     }
   }
 
@@ -123,7 +171,9 @@ class GeminiOCRDataSource {
 
     try {
       final content = [Content.text(prompt)];
-      final response = await _model.generateContent(content);
+
+      // Calls the fallback logic
+      final response = await _generateContentWithFallback(content);
       final responseText = response.text;
 
       if (responseText == null) return {};
@@ -135,10 +185,9 @@ class GeminiOCRDataSource {
 
       Map<String, dynamic> decoded = jsonDecode(cleanJson);
       
-      // Ensure values are strings
       return decoded.map((key, value) => MapEntry(key, value.toString()));
     } catch (e) {
-      print("Gemini Categorization Error: $e");
+      print("Final Categorization Error: $e");
       return {};
     }
   }
