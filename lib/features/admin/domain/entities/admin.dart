@@ -17,6 +17,7 @@ class Admin {
 }
 
 class AdminUserView {
+  // ... (Keep existing AdminUserView as is)
   final String userId;
   final String name;
   final String email;

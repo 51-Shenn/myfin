@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/admin/domain/entities/admin.dart';
 
@@ -48,4 +49,32 @@ class EditUserEvent extends AdminEvent {
 
   @override
   List<Object?> get props => [userId, firstName, lastName, email, phoneNumber, status];
+}
+
+class UpdateAdminProfileEvent extends AdminEvent {
+  final String firstName;
+  final String lastName;
+  final File? imageFile;
+
+  UpdateAdminProfileEvent({
+    required this.firstName,
+    required this.lastName,
+    this.imageFile,
+  });
+
+  @override
+  List<Object?> get props => [firstName, lastName, imageFile];
+}
+
+class AdminChangePasswordEvent extends AdminEvent {
+  final String currentPassword;
+  final String newPassword;
+
+  AdminChangePasswordEvent({
+    required this.currentPassword,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [currentPassword, newPassword];
 }

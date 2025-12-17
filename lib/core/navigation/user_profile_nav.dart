@@ -12,6 +12,7 @@ import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/edit_business_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/change_password.dart';
+import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
 
 class ProfileNav extends StatefulWidget {
   const ProfileNav({super.key});
@@ -33,15 +34,21 @@ class _ProfileNavState extends State<ProfileNav> {
     // 2. Initialize Bloc
     return BlocProvider(
       create: (_) {
-        final bloc = ProfileBloc(
-          ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
+        final profileRepo = ProfileRepositoryImpl(
+          remoteDataSource: ProfileRemoteDataSourceImpl(),
         );
 
-        // Only load if we have a valid ID
+        final memberRepo = context.read<MemberRepository>();
+
+        final bloc = ProfileBloc(
+          profileRepo: profileRepo,
+          memberRepo: memberRepo, // Injecting it here
+        );
+
         if (memberId.isNotEmpty) {
           bloc.add(LoadProfileEvent(memberId));
         }
-        
+
         return bloc;
       },
       child: Navigator(
@@ -54,14 +61,16 @@ class _ProfileNavState extends State<ProfileNav> {
               if (settings.name == '/profile_details') {
                 // Get the current state to pass the image bytes
                 final profileState = context.read<ProfileBloc>().state;
-                
+
                 // We create a map or a custom argument class to pass both member and image
                 final args = {
                   'member': settings.arguments as Member?,
                   'imageBytes': profileState.profileImageBytes,
                 };
-                
-                return EditProfileScreen(arguments: args); // Updated Constructor usage
+
+                return EditProfileScreen(
+                  arguments: args,
+                ); // Updated Constructor usage
               }
 
               // --- View Business Profile ---
@@ -82,7 +91,7 @@ class _ProfileNavState extends State<ProfileNav> {
               if (settings.name == '/change_password') {
                 return const ChangePasswordScreen();
               }
-              
+
               // --- Main Profile Screen ---
               return const UserProfileScreen();
             },

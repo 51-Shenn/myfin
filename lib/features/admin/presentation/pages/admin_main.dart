@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
+import 'package:myfin/features/admin/presentation/pages/admin_profile_screen.dart'; // Import the new file
 
 // Placeholder for Tax Regulations
 class AdminTaxScreen extends StatelessWidget {
@@ -10,31 +11,9 @@ class AdminTaxScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Tax Regulations"), 
         centerTitle: true,
-        automaticallyImplyLeading: false, // Removes back button
+        automaticallyImplyLeading: false, 
       ),
       body: const Center(child: Text("Tax Regulations Content")),
-    );
-  }
-}
-
-// Placeholder for Admin Profile
-class AdminProfileScreen extends StatelessWidget {
-  const AdminProfileScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Admin Profile"), 
-        centerTitle: true,
-        automaticallyImplyLeading: false, // Removes back button
-      ),
-      body: Center(
-        child: ElevatedButton(
-          // This allows the user to explicitly log out/exit
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-          child: const Text("Exit Admin Mode"),
-        ),
-      ),
     );
   }
 }
@@ -53,7 +32,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Widget> _pages = [
     const UserManagementScreen(), // Tab 0
     const AdminTaxScreen(),       // Tab 1
-    const AdminProfileScreen(),   // Tab 2
+    const AdminProfileScreen(),   // Tab 2: Replaced the placeholder
   ];
 
   @override

@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:myfin/features/report/services/generator/report_template.dart';
+import 'package:myfin/features/upload/presentation/widgets/doc_line_item_field.dart'; 
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 
 class GeminiOCRDataSource {
   GeminiOCRDataSource();
+
+  // --- API LOGIC ---
 
   List<String> _getApiKeys() {
     final envVarNames = [
@@ -64,31 +67,14 @@ class GeminiOCRDataSource {
     throw Exception("All AI models and 4 API keys failed. Last error: $lastError");
   }
 
-  // --- STANDARD EXTRACTION LOGIC (UNCHANGED) ---
+  // Uses the 'lineCategory' list imported from doc_line_item_field.dart
+  String _getFormattedCategories() {
+    return lineCategory.map((e) => "- $e").join("\n");
+  }
 
-  String _getDynamicCategories() {
-    final Set<String> categories = {};
-
-    void extract(dynamic data) {
-      if (data is Map) {
-        for (var value in data.values) {
-          extract(value);
-        }
-      } else if (data is List) {
-        for (var item in data) {
-          if (item is String) {
-            categories.add(item);
-          } else {
-            extract(item);
-          }
-        }
-      }
-    }
-
-    extract(ProfitAndLossTemplate.structure);
-    extract(BalanceSheetTemplate.structure['Assets']); 
-
-    return categories.map((e) => "- $e").join("\n");
+  // Uses the 'docType' list imported from doc_details.dart
+  String _getFormattedDocTypes() {
+    return docType.map((e) => "- $e").join("\n");
   }
 
   Future<Map<String, dynamic>> extractDataFromImage(String imagePath) async {
@@ -96,20 +82,28 @@ class GeminiOCRDataSource {
     if (!await file.exists()) throw Exception("File does not exist");
     final imageBytes = await file.readAsBytes();
     
-    final String dynamicCategoryList = _getDynamicCategories();
+    // Dynamically build the prompts from the existing project lists
+    final String categoryList = _getFormattedCategories();
+    final String docTypeList = _getFormattedDocTypes();
 
     final prompt = """
     You are an expert accountant. Analyze this image.
     
-    Extract data and categorize every line item using ONLY the list below. 
-    You MUST pick the exact string from this list. Do not invent new categories.
+    1. Extract document details. 
+       - For "type", you MUST pick the exact string from the DOCUMENT TYPE LIST below.
+    2. Extract line items.
+       - For "category", you MUST pick the exact string from the CATEGORY LIST below.
+       - Do not invent new categories or types.
 
-    VALID CATEGORY LIST:
-    $dynamicCategoryList
+    DOCUMENT TYPE LIST:
+    $docTypeList
+
+    CATEGORY LIST:
+    $categoryList
 
     Return strictly valid JSON:
     {
-      "document": { "name": "Vendor", "type": "Invoice", "date": "YYYY-MM-DD", "total": 0.00 },
+      "document": { "name": "Vendor/Company Name", "type": "EXACT_TYPE_FROM_LIST", "date": "YYYY-MM-DD", "total": 0.00 },
       "line_items": [
         { "description": "Item Name", "category": "EXACT_CATEGORY_FROM_LIST", "amount": 0.00 }
       ],
@@ -146,7 +140,7 @@ class GeminiOCRDataSource {
   Future<Map<String, String>> categorizeDescriptions(List<String> descriptions) async {
     if (descriptions.isEmpty) return {};
 
-    final String dynamicCategoryList = _getDynamicCategories();
+    final String categoryList = _getFormattedCategories();
     final String itemsToCategorize = descriptions.join(", ");
 
     final prompt = """
@@ -154,17 +148,17 @@ class GeminiOCRDataSource {
     Map the following transaction descriptions to the most appropriate category from the allowed list.
     
     ALLOWED CATEGORIES:
-    $dynamicCategoryList
+    $categoryList
     
     DESCRIPTIONS TO MAP:
     $itemsToCategorize
 
     If a description is vague, make your best guess based on standard accounting practices.
-    If it is impossible to categorize, use "Miscellaneous Expenses".
+    If it is impossible to categorize, use "Other Expenses".
 
     Return strictly valid JSON format where key is the description and value is the category:
     {
-      "Uber ride to airport": "Travel & Entertainment (Sales)",
+      "Uber ride to airport": "Travel & Entertainment",
       "Dell Monitor": "Office Supplies"
     }
     """;

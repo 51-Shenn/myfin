@@ -7,24 +7,74 @@ import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
+// Add this import
+import 'package:myfin/features/profile/presentation/pages/change_email_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final String currentUserId = user?.uid ?? "";
+    return MultiBlocListener(
+      // Use MultiBlocListener to listen to both blocs
+      listeners: [
+        // Existing AuthBloc listener
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, authState) {
+            if (authState is AuthUnauthenticated) {
+              Navigator.of(
+                context,
+                rootNavigator: true,
+              ).pushNamedAndRemoveUntil('/auth', (route) => false);
+            }
+          },
+        ),
+        // NEW: ProfileBloc listener to catch token expiration
+        BlocListener<ProfileBloc, ProfileState>(
+          listener: (context, state) {
+            if (state.error != null &&
+                (state.error!.contains('user-token-expired') ||
+                    state.error!.contains('user-disabled') ||
+                    state.error!.contains('user-not-found'))) {
+              // 1. Clear the error so it doesn't loop
+              // (Optional, depending on your Bloc logic, but good practice)
 
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, authState) {
-        if (authState is AuthUnauthenticated) {
-          Navigator.of(
-            context,
-            rootNavigator: true,
-          ).pushNamedAndRemoveUntil('/auth', (route) => false);
-        }
-      },
+              // 2. Trigger the Logout event in AuthBloc
+              context.read<AuthBloc>().add(AuthLogoutRequested());
+
+              // 3. Show a snackbar explaining why
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Session expired due to account changes. Please log in again.',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            if (state.deleteStatus == FormStatus.submissionSuccess) {
+              // Trigger AuthBloc to clean up session and go to login
+              context.read<AuthBloc>().add(AuthLogoutRequested());
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Account deleted successfully.'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+            
+            // Listen for Account Deletion Failure
+            if (state.deleteStatus == FormStatus.submissionFailure && state.error != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.error!),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            };
+          },
+        ),
+      ],
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
@@ -33,7 +83,6 @@ class UserProfileScreen extends StatelessWidget {
               if (state.isLoading && state.member == null) {
                 return const Center(child: CircularProgressIndicator());
               }
-
               if (state.error != null) {
                 return Center(
                   child: Column(
@@ -79,11 +128,9 @@ Widget _buildContent(BuildContext context, Member member) {
   final List<BoxShadow> commonShadow = [
     const BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
   ];
-
   // Access the ProfileBloc state to get the image bytes
   final state = context.read<ProfileBloc>().state;
   final Uint8List? imageBytes = state.profileImageBytes;
-
   // Determine which image provider to use
   final ImageProvider avatarImage = (imageBytes != null)
       ? MemoryImage(imageBytes)
@@ -91,14 +138,12 @@ Widget _buildContent(BuildContext context, Member member) {
               'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
             )
             as ImageProvider;
-
   // Get business profile from state to display in the card
   final businessProfile = context.read<ProfileBloc>().state.businessProfile;
   final companyName =
       (businessProfile != null && businessProfile.name.isNotEmpty)
       ? businessProfile.name
       : "No Company Set";
-
   return SingleChildScrollView(
     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
     child: Column(
@@ -116,7 +161,6 @@ Widget _buildContent(BuildContext context, Member member) {
           ),
         ),
         const SizedBox(height: 30),
-
         // Profile Info Card
         Container(
           decoration: BoxDecoration(
@@ -201,7 +245,6 @@ Widget _buildContent(BuildContext context, Member member) {
             ],
           ),
         ),
-
         const SizedBox(height: 30),
 
         // SETTINGS
@@ -282,6 +325,20 @@ Widget _buildContent(BuildContext context, Member member) {
                 hasArrow: true,
                 onTap: () => Navigator.pushNamed(context, '/change_password'),
               ),
+              _buildActionRow(
+                Icons.email_outlined,
+                "Change Email",
+                hasArrow: true,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider.value(
+                      value: context.read<ProfileBloc>(),
+                      child: const ChangeEmailScreen(),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -310,23 +367,6 @@ Widget _buildContent(BuildContext context, Member member) {
           child: Column(
             children: [
               _buildActionRow(
-                Icons.admin_panel_settings_outlined,
-                "Admin Dashboard",
-                hasArrow: true,
-                onTap: () {
-                  Navigator.of(
-                    context,
-                    rootNavigator: true,
-                  ).pushNamed('/admin_dashboard');
-                },
-              ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.grey.shade200,
-                indent: 50,
-              ),
-              _buildActionRow(
                 Icons.logout_outlined,
                 "Log Out",
                 onTap: () {
@@ -340,7 +380,11 @@ Widget _buildContent(BuildContext context, Member member) {
                 color: Colors.grey.shade200,
                 indent: 50,
               ),
-              _buildActionRow(Icons.delete_outline, "Delete Account"),
+              _buildActionRow(
+                Icons.delete_outline, 
+                "Delete Account",
+                onTap: () => _showDeleteConfirmationDialog(context), // Call Dialog
+              ),
             ],
           ),
         ),
@@ -401,5 +445,93 @@ Widget _buildActionRow(
         ],
       ),
     ),
+  );
+}
+
+void _showDeleteConfirmationDialog(BuildContext context) {
+  final passwordController = TextEditingController();
+  final profileBloc = context.read<ProfileBloc>(); // Capture bloc context
+
+  showDialog(
+    context: context,
+    builder: (dialogContext) {
+      bool isDeleting = false;
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text(
+              "Delete Account",
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "This action is permanent and cannot be undone. All your data will be erased.",
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Please enter your password to confirm:",
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: isDeleting
+                    ? null
+                    : () {
+                        if (passwordController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Password is required")),
+                          );
+                          return;
+                        }
+                        
+                        setState(() => isDeleting = true);
+                        
+                        // Fire event
+                        profileBloc.add(
+                          DeleteAccountEvent(passwordController.text),
+                        );
+                        
+                        Navigator.pop(dialogContext); // Close dialog
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: isDeleting 
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white))
+                  : const Text("Delete"),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 }
