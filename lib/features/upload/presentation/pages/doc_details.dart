@@ -227,14 +227,13 @@ class DocDetailsView extends StatelessWidget {
                                           .updateDocumentField('name', value);
                                     },
                                   ),
-                                  _buildTextFormField(
+                                  _buildAutocompleteField(
                                     context,
                                     DocFieldHeader.type,
-                                    value: state.document?.type ?? '',
+                                    value: state.document?.type,
+                                    items: docType,
                                     onChanged: (value) {
-                                      context
-                                          .read<DocDetailCubit>()
-                                          .updateDocumentField('type', value);
+                                      context.read<DocDetailCubit>().updateDocumentField('type', value);
                                     },
                                   ),
                                 ],
@@ -382,6 +381,7 @@ class DocDetailsView extends StatelessWidget {
     bool readOnly = false,
     bool isAdditional = false,
     void Function(String)? onChanged,
+    String? Function(String?)? validator,
     bool multiLine = false,
     VoidCallback? onTap,
     bool isDate = false,
@@ -407,6 +407,7 @@ class DocDetailsView extends StatelessWidget {
             readOnly: readOnly || isDate,
             onTap: onTap,
             onChanged: onChanged,
+            validator: validator,
             minLines: multiLine ? 3 : 1,
             maxLines: multiLine ? 5 : 1,
             keyboardType: multiLine
@@ -432,6 +433,10 @@ class DocDetailsView extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
                 borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
@@ -554,15 +559,16 @@ class DocDetailsView extends StatelessWidget {
             ),
             Expanded(
               flex: 1,
-              child: _buildTextFormField(
+              child: _buildAutocompleteField(
                 context,
                 DocFieldHeader.category,
                 value: lineItem.categoryCode,
+                items: lineCategory, // Your list of strings
                 onChanged: (value) {
                   cubit.updateLineItemField(
-                    lineItem.lineItemId,
-                    'category',
-                    value,
+                    lineItem.lineItemId, 
+                    'category', 
+                    value
                   );
                 },
               ),
@@ -613,6 +619,146 @@ class DocDetailsView extends StatelessWidget {
       thickness: 1,
       indent: 5,
       endIndent: 5,
+    );
+  }
+
+  Widget _buildAutocompleteField(
+    BuildContext context,
+    DocFieldHeader header, {
+    required String? value,
+    required List<String> items,
+    required void Function(String) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(5.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${header.fieldName}:',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Inter',
+            ),
+          ),
+          const SizedBox(height: 5),
+          LayoutBuilder(builder: (context, constraints) {
+            return Autocomplete<String>(
+              // 1. Set the initial value from the Cubit state
+              initialValue: TextEditingValue(text: value ?? ''),
+              
+              // 2. Define how to filter the list based on user typing
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text == '') {
+                  return const Iterable<String>.empty(); 
+                  // or return items; // if you want to show all options on focus
+                }
+                return items.where((String option) {
+                  return option
+                      .toLowerCase()
+                      .contains(textEditingValue.text.toLowerCase());
+                });
+              },
+
+              // 3. Handle selection from the list
+              onSelected: (String selection) {
+                onChanged(selection);
+              },
+
+              // 4. Customize the input field to match your app's style
+              fieldViewBuilder: (
+                BuildContext context,
+                TextEditingController fieldTextEditingController,
+                FocusNode fieldFocusNode,
+                VoidCallback onFieldSubmitted,
+              ) {
+                return TextFormField(
+                  controller: fieldTextEditingController,
+                  focusNode: fieldFocusNode,
+                  onChanged: (val) {
+                    // Update the state as they type (even if they don't select an option)
+                    onChanged(val); 
+                  },
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Required';
+                    }
+                    // Optional: If you want to force them to pick ONLY from the list:
+                    // if (!items.contains(val)) return 'Select a valid category';
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(
+                        color: Color.fromARGB(255, 204, 204, 204),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(
+                        color: Colors.blue,
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(
+                        color: Colors.red,
+                        width: 1,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5),
+                      borderSide: const BorderSide(
+                        color: Colors.red,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              
+              // 5. Customize the Dropdown visual (The list of suggestions)
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    // Constraint width to match the text field
+                    child: SizedBox(
+                      width: constraints.maxWidth, 
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final String option = options.elementAt(index);
+                          return InkWell(
+                            onTap: () => onSelected(option),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(option),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          }),
+        ],
+      ),
     );
   }
 }
@@ -794,3 +940,117 @@ class DocDetailsArguments {
     this.documentId,
   });
 }
+
+const List<String> docType = [
+  'Sales Invoice',
+  'Official Receipt',
+  'Cash Receipt',
+  'Credit Note',
+  'Debit Note',
+  'Sales Order',
+  'Purchase Order',
+  'Supplier Invoice',
+  'Goods Received Note',
+  'Delivery Order',
+  'Payment Voucher',
+  'Receipt Voucher',
+  'Journal Voucher',
+  'Expense Claim Form',
+  'Payroll Slip',
+  'Time Sheet',
+  'Bank Statement',
+  'Deposit Slip',
+  'Cheque Stub',
+  'Petty Cash Voucher',
+  'Stock Issue Note',
+  'Stock Return Note',
+  'Inventory Adjustment Form',
+  'Asset Purchase Invoice',
+  'Asset Disposal Form',
+  'Loan Agreement',
+  'Loan Repayment Schedule',
+  'Dividend Voucher',
+  'Capital Injection Record',
+  'Owner Drawing Record',
+  'Contract Agreement',
+  'Service Report',
+  'Maintenance Record',
+  'Insurance Claim Form',
+  'Tax Invoice',
+  'Tax Payment Receipt',
+];
+
+const List<String> lineCategory = [
+  'Product Revenue',
+  'Service Revenue',
+  'Subscription Revenue',
+  'Rental Revenue',
+  'Other Operating Revenue',
+  'Sales Returns',
+  'Sales Discounts',
+  'Sales Allowances',
+  'Interest Income',
+  'Dividend Income',
+  'Investment Gains',
+  'Insurance Claims',
+  'Gain on Sale of Assets',
+  'Other Income',
+  'Opening Inventory',
+  'Purchases',
+  'Delivery Fees',
+  'Purchase Returns',
+  'Purchase Discounts',
+  'Closing Inventory',
+  'Other Cost of Goods Sold',
+  'Direct Labor Costs',
+  'Contractor Costs',
+  'Other Cost of Services',
+  'Advertising',
+  'Sales Commissions',
+  'Sales Salaries',
+  'Travel & Entertainment',
+  'Shipping/Delivery-Out',
+  'Office Salaries',
+  'Office Rent',
+  'Office Utilities',
+  'Office Supplies',
+  'Telephone & Internet',
+  'Repairs & Maintenance',
+  'Insurance',
+  'Professional Fees',
+  'Bank Charges',
+  'Training & Development',
+  'Depreciation (Office, Equipment, Vehicles)',
+  'Amortization (Patents, Trademarks, Software)',
+  'Licenses & Permits',
+  'Security',
+  'Outsourcing Expenses',
+  'Subscriptions & Tools',
+  'HR & Recruiting',
+  'Interest Expense',
+  'Loss on Sale of Assets',
+  'Investment Losses',
+  'Penalties & Fines',
+  'Legal Settlements',
+  'Impairment Losses',
+  'Other Expenses',
+  'Purchase of Assets',
+  'Money Lent to Others',
+  'Money Collected from Others',
+  'Stock',
+  'Stock Repurchase',
+  'Dividend Payment',
+  'Debt',
+  'Debt Repayment',
+  'Notes Payable',
+  'Notes Repayment',
+  'Cash & Cash Equivalents',
+  'Intangible Assets',
+  'Long-term Investments',
+  'Other Assets',
+  'Shared Premium',
+  'Owner Investment',
+  'Owner Drawing',
+  'Partner Investment',
+  'Partner Drawing',
+];

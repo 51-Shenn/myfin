@@ -6,6 +6,7 @@ import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
+import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -16,35 +17,46 @@ class UserProfileScreen extends StatelessWidget {
       create: (_) => ProfileBloc(
         ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
       )..add(const LoadProfileEvent("M123")),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: BlocBuilder<ProfileBloc, ProfileState>(
-            builder: (context, state) {
-              // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
-              if (state.isLoading && state.member == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, authState) {
+          if (authState is AuthUnauthenticated) {
+            // Navigate to auth screen when logged out
+            Navigator.of(
+              context,
+              rootNavigator: true,
+            ).pushNamedAndRemoveUntil('/auth', (route) => false);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: BlocBuilder<ProfileBloc, ProfileState>(
+              builder: (context, state) {
+                // 1. Check for loading (but usually you might want to show content BEHIND a loader if data exists)
+                if (state.isLoading && state.member == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              // 2. Check for Error
-              if (state.error != null) {
-                return Center(child: Text(state.error!));
-              }
+                // 2. Check for Error
+                if (state.error != null) {
+                  return Center(child: Text(state.error!));
+                }
 
-              // 3. Show Content
-              if (state.member != null) {
-                // If loading is true here (reloading), you could show a linear progress bar at the top
-                return Stack(
-                  children: [
-                    _buildContent(context, state.member!),
-                    if (state.isLoading)
-                      const LinearProgressIndicator(), // Optional: Indication that it's refreshing
-                  ],
-                );
-              }
+                // 3. Show Content
+                if (state.member != null) {
+                  // If loading is true here (reloading), you could show a linear progress bar at the top
+                  return Stack(
+                    children: [
+                      _buildContent(context, state.member!),
+                      if (state.isLoading)
+                        const LinearProgressIndicator(), // Optional: Indication that it's refreshing
+                    ],
+                  );
+                }
 
-              return const SizedBox();
-            },
+                return const SizedBox();
+              },
+            ),
           ),
         ),
       ),
@@ -297,7 +309,10 @@ class UserProfileScreen extends StatelessWidget {
                   "Admin Dashboard",
                   hasArrow: true,
                   onTap: () {
-                    Navigator.of(context, rootNavigator: true).pushNamed('/admin_dashboard');
+                    Navigator.of(
+                      context,
+                      rootNavigator: true,
+                    ).pushNamed('/admin_dashboard');
                   },
                 ),
                 Divider(
@@ -309,8 +324,11 @@ class UserProfileScreen extends StatelessWidget {
 
                 _buildActionRow(
                   Icons.logout_outlined,
-                  "Log Out",
-                  onTap: () => context.read<ProfileBloc>().add(LogoutEvent()),
+                  "Sign Out",
+                  onTap: () {
+                    // Trigger logout on AuthBloc
+                    context.read<AuthBloc>().add(AuthLogoutRequested());
+                  },
                 ),
                 Divider(
                   height: 1,

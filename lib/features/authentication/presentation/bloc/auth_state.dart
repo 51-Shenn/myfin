@@ -31,7 +31,11 @@ final class AuthAuthenticatedAsAdmin extends AuthState {
 }
 
 final class AuthUnauthenticated extends AuthState {
-  const AuthUnauthenticated({super.currentPage = 0});
+  final String? savedEmail;
+  const AuthUnauthenticated({super.currentPage = 0, this.savedEmail});
+
+  @override
+  List<Object> get props => [currentPage, if (savedEmail != null) savedEmail!];
 }
 
 final class AuthFailure extends AuthState {

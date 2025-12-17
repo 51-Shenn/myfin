@@ -1,25 +1,21 @@
 import 'package:myfin/features/authentication/domain/repositories/auth_repository.dart';
-import 'package:myfin/features/authentication/domain/repositories/admin_repository.dart';
 import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
+import 'package:myfin/features/authentication/domain/repositories/admin_repository.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_in_usecase.dart';
 
-class GetCurrentUserUseCase {
+class SignInWithGoogleUseCase {
   final AuthRepository authRepository;
-  final AdminRepository adminRepository;
   final MemberRepository memberRepository;
+  final AdminRepository adminRepository;
 
-  GetCurrentUserUseCase({
+  SignInWithGoogleUseCase({
     required this.authRepository,
-    required this.adminRepository,
     required this.memberRepository,
+    required this.adminRepository,
   });
 
-  Future<SignInResult?> call() async {
-    final uid = await authRepository.getCurrentUserId();
-
-    if (uid == null) {
-      return null;
-    }
+  Future<SignInResult> call() async {
+    final uid = await authRepository.signInWithGoogle();
 
     try {
       final admin = await adminRepository.getAdmin(uid);
@@ -33,7 +29,9 @@ class GetCurrentUserUseCase {
           userData: member,
         );
       } catch (e) {
-        throw Exception('User profile not found in database');
+        throw Exception(
+          'User profile not found. Please complete registration.',
+        );
       }
     }
   }
