@@ -1,41 +1,41 @@
-import 'dart:io'; // Import for File
+import 'dart:io';
+import 'dart:typed_data'; // Import
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Import Image Picker
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:myfin/features/authentication/domain/entities/member.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  final Member? member;
-
-  const EditProfileScreen({super.key, this.member});
-
+  final Map<String, dynamic> arguments;
+  const EditProfileScreen({super.key, required this.arguments});
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // Controllers
+  late Member? member;
+  late Uint8List? currentImageBytes;
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-
-  // Image Picker State
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
-
   @override
   void initState() {
     super.initState();
+    // Extract data from arguments
+    member = widget.arguments['member'] as Member?;
+    currentImageBytes = widget.arguments['imageBytes'] as Uint8List?;
     _firstNameController = TextEditingController(
-      text: widget.member?.first_name ?? '',
+      text: member?.first_name ?? '',
     );
-    _lastNameController = TextEditingController(
-      text: widget.member?.last_name ?? '',
-    );
-    _emailController = TextEditingController(text: widget.member?.email ?? '');
-    _phoneController = TextEditingController(
-      text: widget.member?.phone_number ?? '',
-    );
+    _lastNameController = TextEditingController(text: member?.last_name ?? '');
+    _emailController = TextEditingController(text: member?.email ?? '');
+    _phoneController = TextEditingController(text: member?.phone_number ?? '');
   }
 
   @override
@@ -47,23 +47,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  // --- Image Picker Logic ---
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        imageQuality: 50, // Reduce quality to 50% to save space
+        maxWidth: 800, // Resize width to max 800px
+      );
+
       if (pickedFile != null) {
         setState(() {
           _selectedImage = File(pickedFile.path);
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
     }
   }
 
-  // --- Show Bottom Sheet for Selection ---
   void _showImageSourceModal() {
     showModalBottomSheet(
       context: context,
@@ -97,176 +102,201 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  void _onSave() {
+    if (member == null) return;
+    final updatedMember = Member(
+      member_id: member!.member_id,
+      username: member!.username,
+      first_name: _firstNameController.text.trim(),
+      last_name: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone_number: _phoneController.text.trim(),
+      address: member!.address,
+      created_at: member!.created_at,
+      status: member!.status,
+    );
+
+    context.read<ProfileBloc>().add(
+      UpdateMemberProfileEvent(updatedMember, newImageFile: _selectedImage),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Determine which image provider to use
+    // --- LOGIC TO DETERMINE IMAGE TO SHOW ---
     ImageProvider backgroundImage;
     if (_selectedImage != null) {
-      backgroundImage = FileImage(_selectedImage!); // Local File
+      // 1. User picked a new file
+      backgroundImage = FileImage(_selectedImage!);
+    } else if (currentImageBytes != null) {
+      // 2. User hasn't picked new file, show existing from DB
+      backgroundImage = MemoryImage(currentImageBytes!);
     } else {
-      // Fallback to network or placeholder
+      // 3. Fallback
       backgroundImage = const NetworkImage(
         'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
       );
     }
+    // ----------------------------------------
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return BlocListener<ProfileBloc, ProfileState>(
+      listener: (context, state) {
+        if (!state.isLoading && state.error == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Profile updated successfully"),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else if (state.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.black,
-            size: 20,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.black,
+              size: 20,
+            ),
+            onPressed: () => Navigator.pop(context),
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Inter',
+          centerTitle: true,
+          title: const Text(
+            'Edit Profile',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+            ),
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Avatar Section ---
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+          child: Column(
+            children: [
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                        image: DecorationImage(
+                          image: backgroundImage, // Use the determined provider
+                          fit: BoxFit.cover,
                         ),
-                      ],
-                      image: DecorationImage(
-                        image: backgroundImage,
-                        fit: BoxFit.cover,
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: GestureDetector(
-                      onTap: _showImageSourceModal, // Trigger the modal
-                      child: Container(
-                        padding: const EdgeInsets.all(
-                          8,
-                        ), // Increased touch area slightly
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2B46F9),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_outlined,
-                          color: Colors.white,
-                          size: 16,
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _showImageSourceModal,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2B46F9),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_outlined,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+
+              // --- Fields ---
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      label: 'First Name',
+                      controller: _firstNameController,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      label: 'Last Name',
+                      controller: _lastNameController,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
-            // --- Section Header ---
-            const Text(
-              'PERSONAL DETAILS',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
-                letterSpacing: 0.5,
+              _buildTextField(
+                label: 'Email Address',
+                controller: _emailController,
+                inputType: TextInputType.emailAddress,
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // --- Name Fields (Row) ---
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    label: 'First Name',
-                    controller: _firstNameController,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildTextField(
-                    label: 'Last Name',
-                    controller: _lastNameController,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+              _buildTextField(
+                label: 'Phone Number',
+                controller: _phoneController,
+                inputType: TextInputType.phone,
+              ),
 
-            // --- Email Field ---
-            _buildTextField(
-              label: 'Email',
-              controller: _emailController,
-              inputType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 40),
 
-            // --- Phone Number Field ---
-            _buildTextField(
-              label: 'Phone Number',
-              controller: _phoneController,
-              inputType: TextInputType.phone,
-            ),
-
-            const SizedBox(height: 40),
-
-            // --- Save Button ---
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Pass _selectedImage along with text data to your Bloc/Repository
-                  Navigator.pop(context);
+              // --- Save Button ---
+              BlocBuilder<ProfileBloc, ProfileState>(
+                builder: (context, state) {
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: state.isLoading ? null : _onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2B46F9),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: state.isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                    ),
+                  );
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2B46F9),
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save Changes',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
-                  ),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

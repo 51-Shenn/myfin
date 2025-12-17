@@ -7,7 +7,11 @@ class AdminTaxScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tax Regulations"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Tax Regulations"), 
+        centerTitle: true,
+        automaticallyImplyLeading: false, // Removes back button
+      ),
       body: const Center(child: Text("Tax Regulations Content")),
     );
   }
@@ -19,9 +23,14 @@ class AdminProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Admin Profile"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Admin Profile"), 
+        centerTitle: true,
+        automaticallyImplyLeading: false, // Removes back button
+      ),
       body: Center(
         child: ElevatedButton(
+          // This allows the user to explicitly log out/exit
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
           child: const Text("Exit Admin Mode"),
         ),

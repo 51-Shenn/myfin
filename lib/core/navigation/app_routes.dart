@@ -23,10 +23,12 @@ import 'package:myfin/features/authentication/domain/usecases/sign_up_usecase.da
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/features/authentication/presentation/pages/auth_main.dart';
 import 'package:myfin/features/authentication/presentation/pages/forget_password_page.dart';
+import 'package:myfin/features/admin/presentation/pages/admin_main.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
   static const String home = '/home';
+  static const String adminHome = '/admin-home'; 
   static const String forgetPassword = '/forget-password';
 
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
@@ -97,6 +99,8 @@ class AppRoutes {
             child: const ForgetPasswordPage(),
           ),
         );
+      case adminHome:
+        return MaterialPageRoute(builder: (_) => const AdminMainScreen());
 
       default:
         return MaterialPageRoute(

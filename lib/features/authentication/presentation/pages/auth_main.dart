@@ -35,8 +35,12 @@ class _AuthMainPageState extends State<AuthMainPage> {
       body: SafeArea(
         child: BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
-            if (state is AuthAuthenticatedAsMember ||
-                state is AuthAuthenticatedAsAdmin) {
+            // 1. Check for Admin State FIRST
+            if (state is AuthAuthenticatedAsAdmin) {
+              Navigator.pushReplacementNamed(context, AppRoutes.adminHome);
+            }
+            // 2. Check for Member State SECOND
+            else if (state is AuthAuthenticatedAsMember) {
               Navigator.pushReplacementNamed(context, AppRoutes.home);
             }
 
