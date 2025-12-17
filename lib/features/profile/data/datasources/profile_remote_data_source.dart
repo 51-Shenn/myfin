@@ -15,6 +15,9 @@ abstract class ProfileRemoteDataSource {
   // --- ADDED THESE METHODS ---
   Future<void> uploadProfileImage(String memberId, File imageFile);
   Future<String?> fetchProfileImageBase64(String memberId);
+
+  Future<void> uploadBusinessLogo(String profileId, File imageFile);
+  Future<String?> fetchBusinessLogoBase64(String profileId);
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
@@ -168,6 +171,78 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       return buffer.toString();
     } catch (e) {
       throw Exception("Failed to fetch image chunks: $e");
+    }
+  }
+
+  @override
+  Future<void> uploadBusinessLogo(String profileId, File imageFile) async {
+    try {
+      // 1. Convert to Base64
+      final base64String = await ImageChunkerService.fileToBase64(imageFile);
+      
+      // 2. Split into chunks
+      final chunks = ImageChunkerService.splitString(base64String);
+
+      // 3. Define reference: business_profiles/{profileId}/logo_chunks
+      final collectionRef = _firestore
+          .collection('business_profiles')
+          .doc(profileId)
+          .collection('logo_chunks');
+
+      // 4. Delete existing chunks
+      final existingDocs = await collectionRef.get();
+      final batchDelete = _firestore.batch();
+      for (var doc in existingDocs.docs) {
+        batchDelete.delete(doc.reference);
+      }
+      await batchDelete.commit();
+
+      // 5. Upload new chunks
+      final batchWrite = _firestore.batch();
+
+      for (int i = 0; i < chunks.length; i++) {
+        final docRef = collectionRef.doc(i.toString());
+        batchWrite.set(docRef, {
+          'index': i,
+          'data': chunks[i],
+          'total_chunks': chunks.length,
+        });
+      }
+
+      // 6. Update metadata on parent document
+      batchWrite.update(_firestore.collection('business_profiles').doc(profileId), {
+        'has_custom_logo': true,
+        'logo_updated_at': FieldValue.serverTimestamp(),
+      });
+
+      await batchWrite.commit();
+    } catch (e) {
+      throw Exception("Failed to upload business logo chunks: $e");
+    }
+  }
+
+  @override
+  Future<String?> fetchBusinessLogoBase64(String profileId) async {
+    if (profileId.isEmpty) return null;
+    
+    try {
+      final collectionRef = _firestore
+          .collection('business_profiles')
+          .doc(profileId)
+          .collection('logo_chunks');
+
+      final querySnapshot = await collectionRef.orderBy('index').get();
+
+      if (querySnapshot.docs.isEmpty) return null;
+
+      final StringBuffer buffer = StringBuffer();
+      for (var doc in querySnapshot.docs) {
+        buffer.write(doc['data'] as String);
+      }
+
+      return buffer.toString();
+    } catch (e) {
+      throw Exception("Failed to fetch business logo chunks: $e");
     }
   }
 }

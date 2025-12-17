@@ -19,15 +19,16 @@ class LoadProfileEvent extends ProfileEvent {
 
 class UpdateBusinessProfileEvent extends ProfileEvent {
   final BusinessProfile profile;
-  const UpdateBusinessProfileEvent(this.profile);
+  final File? logoFile;
+  const UpdateBusinessProfileEvent(this.profile, {this.logoFile});
   @override
-  List<Object?> get props => [profile];
+  List<Object?> get props => [profile, logoFile];
 }
 
 // Added: Update Member Event
 class UpdateMemberProfileEvent extends ProfileEvent {
   final Member member;
-  final File? newImageFile; 
+  final File? newImageFile;
   const UpdateMemberProfileEvent(this.member, {this.newImageFile});
 
   @override
@@ -37,7 +38,10 @@ class UpdateMemberProfileEvent extends ProfileEvent {
 class ChangePasswordEvent extends ProfileEvent {
   final String currentPassword;
   final String newPassword;
-  const ChangePasswordEvent({required this.currentPassword, required this.newPassword});
+  const ChangePasswordEvent({
+    required this.currentPassword,
+    required this.newPassword,
+  });
   @override
   List<Object?> get props => [currentPassword, newPassword];
 }

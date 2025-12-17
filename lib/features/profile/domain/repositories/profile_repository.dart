@@ -11,4 +11,6 @@ abstract class ProfileRepository {
   Future<void> changePassword(String currentPassword, String newPassword);
   Future<void> uploadProfileImage(String memberId, File imageFile);
   Future<Uint8List?> getProfileImage(String memberId);
+  Future<void> uploadBusinessLogo(String profileId, File imageFile);
+  Future<Uint8List?> getBusinessLogo(String profileId);
 }

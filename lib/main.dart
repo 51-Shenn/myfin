@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/authentication/data/datasources/admin_remote_data_source.dart';
+import 'package:myfin/features/authentication/data/datasources/auth_local_data_source.dart'; // Added
 import 'package:myfin/features/authentication/data/datasources/auth_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/datasources/member_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/repositories/admin_repository_impl.dart';
@@ -14,8 +15,11 @@ import 'package:myfin/features/authentication/data/repositories/auth_repository_
 import 'package:myfin/features/authentication/data/repositories/member_repository_impl.dart';
 import 'package:myfin/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:myfin/features/authentication/domain/usecases/get_current_user_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/get_saved_email_usecase.dart'; // Added
 import 'package:myfin/features/authentication/domain/usecases/reset_password_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/save_email_usecase.dart'; // Added
 import 'package:myfin/features/authentication/domain/usecases/sign_in_usecase.dart';
+import 'package:myfin/features/authentication/domain/usecases/sign_in_with_google_usecase.dart'; // Added
 import 'package:myfin/features/authentication/domain/usecases/sign_out_usecase.dart';
 import 'package:myfin/features/authentication/domain/usecases/sign_up_usecase.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
@@ -36,13 +40,16 @@ Future<void> main() async {
 
   final firestore = FirebaseFirestore.instance;
   final firebaseAuth = FirebaseAuth.instance;
+  final sharedPreferences = await SharedPreferences.getInstance(); // Ensure this is awaited
 
   // --- 1. Initialize Auth Dependencies ---
   final authRemote = AuthRemoteDataSourceImpl(firebaseAuth: firebaseAuth);
+  final authLocal = AuthLocalDataSourceImpl(sharedPreferences: sharedPreferences); // NEW
   final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
   final adminRemote = AdminRemoteDataSourceImpl(firestore: firestore);
 
-  final authRepo = AuthRepositoryImpl(authRemote);
+  // FIXED: Passed both remote and local data sources
+  final authRepo = AuthRepositoryImpl(authRemote, authLocal); 
   final memberRepo = MemberRepositoryImpl(memberRemote);
   final adminRepo = AdminRepositoryImpl(adminRemote);
 
@@ -61,6 +68,16 @@ Future<void> main() async {
     adminRepository: adminRepo,
     memberRepository: memberRepo,
   );
+  
+  // NEW USE CASES
+  final signInWithGoogleUseCase = SignInWithGoogleUseCase(
+    authRepository: authRepo,
+    adminRepository: adminRepo,
+    memberRepository: memberRepo,
+  );
+  final saveEmailUseCase = SaveEmailUseCase(authRepository: authRepo);
+  final getSavedEmailUseCase = GetSavedEmailUseCase(authRepository: authRepo);
+  
   final signOutUseCase = SignOutUseCase(authRepository: authRepo);
   final resetPasswordUseCase = ResetPasswordUseCase(authRepository: authRepo);
 
@@ -90,10 +107,14 @@ Future<void> main() async {
               getCurrentUser: getCurrentUserUseCase,
               signOut: signOutUseCase,
               resetPassword: resetPasswordUseCase,
+              // FIXED: Added missing named arguments
+              signInWithGoogle: signInWithGoogleUseCase,
+              saveEmail: saveEmailUseCase,
+              getSavedEmail: getSavedEmailUseCase,
             )..add(AuthCheckRequested()), // Check login status immediately
           ),
         ],
-        child: const MainApp(),
+        child: MainApp(sharedPreferences: sharedPreferences),
       ),
     ),
   );

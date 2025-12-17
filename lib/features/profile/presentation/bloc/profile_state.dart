@@ -11,6 +11,7 @@ class ProfileState {
   final String? error;
   final FormStatus passwordStatus;
   final Uint8List? profileImageBytes;
+  final Uint8List? businessImageBytes;
 
   const ProfileState({
     required this.isLoading,
@@ -19,6 +20,7 @@ class ProfileState {
     this.error,
     this.passwordStatus = FormStatus.initial,
     this.profileImageBytes,
+    this.businessImageBytes,
   });
 
   factory ProfileState.initial() {
@@ -29,6 +31,7 @@ class ProfileState {
       error: null,
       passwordStatus: FormStatus.initial,
       profileImageBytes: null,
+      businessImageBytes: null,
     );
   }
 
@@ -38,15 +41,17 @@ class ProfileState {
     BusinessProfile? businessProfile,
     String? error,
     FormStatus? passwordStatus,
-    Uint8List? profileImageBytes, // Added parameter
+    Uint8List? profileImageBytes,
+    Uint8List? businessImageBytes,
   }) {
     return ProfileState(
       isLoading: isLoading ?? this.isLoading,
       member: member ?? this.member,
       businessProfile: businessProfile ?? this.businessProfile,
-      error: error, // Keep explicit null handling logic you had or change to ?? this.error
+      error: error,
       passwordStatus: passwordStatus ?? this.passwordStatus,
-      profileImageBytes: profileImageBytes ?? this.profileImageBytes, // Added assignment
+      profileImageBytes: profileImageBytes ?? this.profileImageBytes,
+      businessImageBytes: businessImageBytes ?? this.businessImageBytes,
     );
   }
 }

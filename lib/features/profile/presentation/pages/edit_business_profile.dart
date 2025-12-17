@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -29,6 +30,7 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   late TextEditingController _emailController;
   late TextEditingController _contactController;
   late TextEditingController _addressController;
+  Uint8List? existingImageBytes;
 
   // Image Picker
   File? _selectedImage;
@@ -45,6 +47,7 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     _emailController = TextEditingController(text: profile?.email ?? '');
     _contactController = TextEditingController(text: profile?.contactNo ?? '');
     _addressController = TextEditingController(text: profile?.address ?? '');
+    existingImageBytes = context.read<ProfileBloc>().state.businessImageBytes;
   }
 
   @override
@@ -67,9 +70,9 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }
@@ -121,11 +124,20 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     );
 
     // 2. Call Bloc to save
-    context.read<ProfileBloc>().add(UpdateBusinessProfileEvent(updatedProfile));
+    context.read<ProfileBloc>().add(
+      UpdateBusinessProfileEvent(updatedProfile, logoFile: _selectedImage),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider? imageProvider;
+    if (_selectedImage != null) {
+      imageProvider = FileImage(_selectedImage!);
+    } else if (existingImageBytes != null) {
+      imageProvider = MemoryImage(existingImageBytes!);
+    }
+
     return BlocListener<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (!state.isLoading && state.error == null) {
@@ -177,74 +189,59 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
               Center(
                 child: GestureDetector(
                   onTap: _showImageSourceModal,
-                  child: Column(
+                  child: Stack(
                     children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey.shade200),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
-                              image: _selectedImage != null
-                                  ? DecorationImage(
-                                      image: FileImage(_selectedImage!),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: _selectedImage == null
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: const [
-                                        Icon(
-                                          Icons.layers_outlined,
-                                          size: 30,
-                                          color: Color(0xFF2B46F9),
-                                        ),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          "COMPANY\nSLOGAN HERE",
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black54,
-                                          ),
-                                        ),
-                                      ],
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey.shade200),
+                          image: imageProvider != null
+                              ? DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: imageProvider == null
+                            ? const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.layers_outlined,
+                                      size: 30,
+                                      color: Color(0xFF2B46F9),
                                     ),
-                                  )
-                                : null,
+                                    Text(
+                                      "UPLOAD",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : null,
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2B46F9),
+                            shape: BoxShape.circle,
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF2B46F9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
+                          child: const Icon(
+                            Icons.camera_alt_outlined,
+                            color: Colors.white,
+                            size: 16,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

@@ -1,3 +1,4 @@
+import 'dart:typed_data'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
@@ -49,6 +50,7 @@ class BusinessProfileScreen extends StatelessWidget {
           // Even if null, we show the UI so user can click "Manage" to create one
           final business = state.businessProfile;
           final member = state.member;
+          final logoBytes = state.businessImageBytes;
 
           if (business == null && member == null) {
              return const Center(child: Text("Loading profile data..."));
@@ -73,7 +75,7 @@ class BusinessProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeaderCard(displayProfile),
+                _buildHeaderCard(displayProfile, logoBytes),
                 const SizedBox(height: 30),
 
                 _buildSectionTitle("OFFICIAL DETAILS"),
@@ -91,31 +93,45 @@ class BusinessProfileScreen extends StatelessWidget {
   }
 
   // --- Dynamic Header Card ---
-  Widget _buildHeaderCard(BusinessProfile business) {
+  Widget _buildHeaderCard(BusinessProfile business, Uint8List? logoBytes) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40),
       decoration: _boxDecoration(),
       child: Column(
         children: [
-          Column(
-            children: [
-              const Icon(
-                Icons.layers_outlined,
-                size: 50,
-                color: Color(0xFF2B46F9),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                "COMPANY\nLOGO HERE",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+              image: logoBytes != null 
+                ? DecorationImage(image: MemoryImage(logoBytes), fit: BoxFit.cover)
+                : null,
+            ),
+            child: logoBytes == null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.layers_outlined,
+                        size: 40,
+                        color: Color(0xFF2B46F9),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "LOGO",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
           ),
           const SizedBox(height: 24),
           Text(

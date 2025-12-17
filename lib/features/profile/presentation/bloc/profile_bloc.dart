@@ -32,6 +32,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         _repo.getMemberProfile(event.memberId),
         _repo.getBusinessProfile(event.memberId),
         _repo.getProfileImage(event.memberId),
+        _repo.getBusinessLogo(event.memberId),
       ]);
 
       // 3. Emit success state with proper casting
@@ -41,6 +42,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           member: results[0] as Member,
           businessProfile: results[1] as BusinessProfile,
           profileImageBytes: results[2] as Uint8List?,
+          businessImageBytes: results[3] as Uint8List?,
         ),
       );
     } catch (e) {
@@ -58,10 +60,34 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(isLoading: true));
 
     try {
+      // 1. Save Text Data
       await _repo.saveBusinessProfile(event.profile);
 
-      // Update the local state with the new profile data
-      emit(state.copyWith(isLoading: false, businessProfile: event.profile));
+      Uint8List? newLogoBytes;
+
+      // 2. Upload Logo if provided
+      if (event.logoFile != null) {
+        // Use the profileId (which is usually memberId based on your logic)
+        final idToUse = event.profile.profileId.isNotEmpty
+            ? event.profile.profileId
+            : event.profile.memberId;
+
+        await _repo.uploadBusinessLogo(idToUse, event.logoFile!);
+
+        // Update local state immediately
+        newLogoBytes = await event.logoFile!.readAsBytes();
+      } else {
+        // Keep existing if no new one
+        newLogoBytes = state.businessImageBytes;
+      }
+
+      emit(
+        state.copyWith(
+          isLoading: false,
+          businessProfile: event.profile,
+          businessImageBytes: newLogoBytes,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(isLoading: false, error: "Failed to save profile: $e"),
