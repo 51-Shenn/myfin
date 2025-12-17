@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 
@@ -9,13 +10,17 @@ class ProfileState {
   final BusinessProfile? businessProfile;
   final String? error;
   final FormStatus passwordStatus;
+  final Uint8List? profileImageBytes;
+  final Uint8List? businessImageBytes;
 
   const ProfileState({
     required this.isLoading,
     this.member,
     this.businessProfile,
     this.error,
-      this.passwordStatus = FormStatus.initial,
+    this.passwordStatus = FormStatus.initial,
+    this.profileImageBytes,
+    this.businessImageBytes,
   });
 
   factory ProfileState.initial() {
@@ -25,6 +30,8 @@ class ProfileState {
       businessProfile: null,
       error: null,
       passwordStatus: FormStatus.initial,
+      profileImageBytes: null,
+      businessImageBytes: null,
     );
   }
 
@@ -34,6 +41,8 @@ class ProfileState {
     BusinessProfile? businessProfile,
     String? error,
     FormStatus? passwordStatus,
+    Uint8List? profileImageBytes,
+    Uint8List? businessImageBytes,
   }) {
     return ProfileState(
       isLoading: isLoading ?? this.isLoading,
@@ -41,6 +50,8 @@ class ProfileState {
       businessProfile: businessProfile ?? this.businessProfile,
       error: error,
       passwordStatus: passwordStatus ?? this.passwordStatus,
+      profileImageBytes: profileImageBytes ?? this.profileImageBytes,
+      businessImageBytes: businessImageBytes ?? this.businessImageBytes,
     );
   }
 }
