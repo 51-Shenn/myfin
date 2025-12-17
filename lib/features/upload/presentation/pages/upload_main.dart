@@ -7,7 +7,6 @@ import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/option.dart';
-import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
 import 'package:myfin/features/upload/presentation/widgets/document_card.dart';
 import 'package:myfin/features/upload/presentation/widgets/upload_option_card.dart';
 

@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
-import 'package:myfin/features/upload/presentation/cubit/upload_cubit.dart';
-import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 
 class DocumentCard extends StatelessWidget {
   final Document document;

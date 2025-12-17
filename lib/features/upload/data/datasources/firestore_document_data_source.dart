@@ -44,7 +44,10 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
   }) async {
     Query query = _collectionRef;
 
-    // apply filter to get doc that matches type and status
+    // apply filter to get doc that matches type and status based on memberid
+    if (filters?['memberId'] != null) {
+      query = query.where('memberId', isEqualTo: filters!['memberId']);
+    }
     if (filters?['status'] != null) {
       query = query.where('status', isEqualTo: filters!['status']);
     }

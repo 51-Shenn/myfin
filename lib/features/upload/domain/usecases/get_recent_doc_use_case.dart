@@ -6,9 +6,10 @@ class GetRecentDocumentsUseCase {
 
   GetRecentDocumentsUseCase(this.repository);
 
-  Future<List<Document>> call({int limit = 3}) async {
+  Future<List<Document>> call({int limit = 3, required String memberId}) async {
     return repository.getDocuments(
       limit: limit,
+      memberId: memberId,
       sortBy: DocumentSortField.updatedAt,
       direction: SortDirection.descending,
     );
