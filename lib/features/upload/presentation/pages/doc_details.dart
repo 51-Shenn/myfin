@@ -8,6 +8,29 @@ import 'package:myfin/features/upload/presentation/cubit/doc_detail_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_field_header.dart';
 import 'package:intl/intl.dart';
+import 'package:myfin/features/upload/presentation/widgets/auto_complete_field.dart';
+import 'package:myfin/features/upload/presentation/widgets/custom_divider.dart';
+import 'package:myfin/features/upload/presentation/widgets/doc_line_item_field.dart';
+import 'package:myfin/features/upload/presentation/widgets/doc_text_form_field.dart';
+
+class AppValidators {
+  static String? required(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+    return null;
+  }
+
+  static String? number(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+    if (double.tryParse(value) == null) {
+      return 'Invalid number';
+    }
+    return null;
+  }
+}
 
 class DocumentDetailsScreen extends StatelessWidget {
   final String? documentId;
@@ -49,8 +72,15 @@ class DocumentDetailsScreen extends StatelessWidget {
   }
 }
 
-class DocDetailsView extends StatelessWidget {
+class DocDetailsView extends StatefulWidget {
   const DocDetailsView({super.key});
+
+  @override
+  State<DocDetailsView> createState() => _DocDetailsViewState();
+}
+
+class _DocDetailsViewState extends State<DocDetailsView> {
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _pickDate(
     BuildContext context,
@@ -127,12 +157,14 @@ class DocDetailsView extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.save, color: Color(0xFF2B46F9)),
                       onPressed: () {
-                        if (state.document != null) {
-                          context.read<DocDetailCubit>().saveDocument();
+                        if (_formKey.currentState!.validate()) {
+                          if (state.document != null) {
+                            context.read<DocDetailCubit>().saveDocument();
+                          }
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Please fill in required fields'),
+                              content: Text('Please fix errors in the form'),
                               backgroundColor: Colors.orange,
                             ),
                           );
@@ -178,587 +210,203 @@ class DocDetailsView extends StatelessWidget {
           ),
           body: state.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (state.document?.id.isEmpty == true)
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Card(
-                              color: Colors.blue[50],
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.info, color: Colors.blue),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'Creating new document. Fill in the details below.',
-                                        style: TextStyle(
-                                          color: Colors.blue[700],
+              : Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (state.document?.id.isEmpty == true)
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Card(
+                                color: Colors.blue[50],
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.info, color: Colors.blue),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Creating new document. Fill in the details below.',
+                                          style: TextStyle(
+                                            color: Colors.blue[700],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  _buildTextFormField(
-                                    context,
-                                    DocFieldHeader.name,
-                                    value: state.document?.name ?? '',
-                                    onChanged: (value) {
-                                      context
-                                          .read<DocDetailCubit>()
-                                          .updateDocumentField('name', value);
-                                    },
-                                  ),
-                                  _buildAutocompleteField(
-                                    context,
-                                    DocFieldHeader.type,
-                                    value: state.document?.type,
-                                    items: docType,
-                                    onChanged: (value) {
-                                      context.read<DocDetailCubit>().updateDocumentField('type', value);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Padding(
-                              padding: const EdgeInsets.all(5.0),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                width: 150,
-                                height: 150,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.image,
-                                      size: 40,
-                                      color: Colors.grey[500],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Add Image',
-                                      style: TextStyle(color: Colors.grey[600]),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextFormField(
-                                context,
-                                DocFieldHeader.status,
-                                value: state.document?.status ?? 'Draft',
-                                onChanged: (value) {
-                                  context
-                                      .read<DocDetailCubit>()
-                                      .updateDocumentField('status', value);
-                                },
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: _buildTextFormField(
-                                context,
-                                DocFieldHeader.postingDate,
-                                value: state.document != null
-                                    ? DateFormat(
-                                        'yyyy-MM-dd',
-                                      ).format(state.document!.postingDate)
-                                    : '',
-                                isDate: true,
-                                onTap: () {
-                                  if (state.document != null) {
-                                    _pickDate(
-                                      context,
-                                      state.document!.postingDate,
-                                      (pickedDate) {
+                                    DocTextFormField(
+                                      header: DocFieldHeader.name,
+                                      value: state.document?.name ?? '',
+                                      validator: AppValidators.required,
+                                      onChanged: (value) {
                                         context
                                             .read<DocDetailCubit>()
-                                            .updateDocumentField(
-                                              'postingDate',
-                                              pickedDate,
-                                            );
+                                            .updateDocumentField('name', value);
                                       },
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        BlocBuilder<DocDetailCubit, DocDetailState>(
-                          builder: (context, state) {
-                            return DynamicKeyValueSection(
-                              title: 'Additional Information',
-                              rows: state.rows,
-                              onAdd: () =>
-                                  context.read<DocDetailCubit>().addNewRow(),
-                              onUpdateKey: (idx, val) => context
-                                  .read<DocDetailCubit>()
-                                  .updateRowKey(idx, val),
-                              onUpdateValue: (idx, val) => context
-                                  .read<DocDetailCubit>()
-                                  .updateRowValue(idx, val),
-                              onDelete: (idx) =>
-                                  context.read<DocDetailCubit>().deleteRow(idx),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-                        _buildLineItems(context),
-                        _buildDivider(),
-                        Padding(
-                          padding: const EdgeInsets.all(5.0),
-                          child: Material(
-                            color: const Color(0xFFD9D9D9),
-                            borderRadius: BorderRadius.circular(10.0),
-                            clipBehavior: Clip.hardEdge,
-                            child: InkWell(
-                              onTap: () {
-                                context.read<DocDetailCubit>().addNewLineItem();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
+                                    ),
+                                    AutoCompleteField(
+                                      header: DocFieldHeader.type,
+                                      value: state.document?.type,
+                                      validator: AppValidators.required,
+                                      items: docType,
+                                      onChanged: (value) {
+                                        context.read<DocDetailCubit>().updateDocumentField('type', value);
+                                      },
+                                    ),
+                                  ],
                                 ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  '+ Add New Line Item',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                              ),
+                              const SizedBox(width: 10),
+                              Padding(
+                                padding: const EdgeInsets.all(5.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.grey[300]!),
+                                  ),
+                                  width: 150,
+                                  height: 150,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.image,
+                                        size: 40,
+                                        color: Colors.grey[500],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Add Image',
+                                        style: TextStyle(color: Colors.grey[600]),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AutoCompleteField(
+                                  header: DocFieldHeader.status,
+                                  value: state.document?.status ?? 'Draft',
+                                  items: docStatus, // Pass the list defined above
+                                  validator: AppValidators.required, // Ensure you have the AppValidators class from the previous step
+                                  onChanged: (value) {
+                                    context
+                                        .read<DocDetailCubit>()
+                                        .updateDocumentField('status', value);
+                                  },
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: DocTextFormField(
+                                  header: DocFieldHeader.postingDate,
+                                  validator: AppValidators.required,
+                                  value: state.document != null
+                                      ? DateFormat(
+                                          'yyyy-MM-dd',
+                                        ).format(state.document!.postingDate)
+                                      : '',
+                                  isDate: true,
+                                  onTap: () {
+                                    if (state.document != null) {
+                                      _pickDate(
+                                        context,
+                                        state.document!.postingDate,
+                                        (pickedDate) {
+                                          context
+                                              .read<DocDetailCubit>()
+                                              .updateDocumentField(
+                                                'postingDate',
+                                                pickedDate,
+                                              );
+                                        },
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          BlocBuilder<DocDetailCubit, DocDetailState>(
+                            builder: (context, state) {
+                              return DynamicKeyValueSection(
+                                title: 'Additional Information',
+                                rows: state.rows,
+                                onAdd: () =>
+                                    context.read<DocDetailCubit>().addNewRow(),
+                                onUpdateKey: (idx, val) => context
+                                    .read<DocDetailCubit>()
+                                    .updateRowKey(idx, val),
+                                onUpdateValue: (idx, val) => context
+                                    .read<DocDetailCubit>()
+                                    .updateRowValue(idx, val),
+                                onDelete: (idx) =>
+                                    context.read<DocDetailCubit>().deleteRow(idx),
+                              );
+                            },
+                          ),
+                
+                          const SizedBox(height: 20),
+                          DocLineItemField(),
+                          CustomDivider(),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
+                            child: Material(
+                              color: const Color(0xFFD9D9D9),
+                              borderRadius: BorderRadius.circular(10.0),
+                              clipBehavior: Clip.hardEdge,
+                              child: InkWell(
+                                onTap: () {
+                                  context.read<DocDetailCubit>().addNewLineItem();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const Text(
+                                    '+ Add New Line Item',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
-                ),
+              ),
         );
       },
-    );
-  }
-
-  Widget _buildTextFormField(
-    BuildContext context,
-    DocFieldHeader header, {
-    String? value,
-    bool readOnly = false,
-    bool isAdditional = false,
-    void Function(String)? onChanged,
-    String? Function(String?)? validator,
-    bool multiLine = false,
-    VoidCallback? onTap,
-    bool isDate = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isAdditional)
-            Text(
-              '${header.fieldName}:',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Inter',
-              ),
-            ),
-          const SizedBox(height: 5),
-          TextFormField(
-            key: isDate ? ValueKey(value) : null,
-            initialValue: value,
-            readOnly: readOnly || isDate,
-            onTap: onTap,
-            onChanged: onChanged,
-            validator: validator,
-            minLines: multiLine ? 3 : 1,
-            maxLines: multiLine ? 5 : 1,
-            keyboardType: multiLine
-                ? TextInputType.multiline
-                : TextInputType.text,
-            decoration: InputDecoration(
-              suffixIcon: isDate
-                  ? const Icon(Icons.calendar_today, size: 20)
-                  : null,
-              filled: true,
-              fillColor: readOnly ? Colors.grey[100] : Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(
-                  color: Color.fromARGB(255, 204, 204, 204),
-                  width: 1,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(color: Colors.blue, width: 1.5),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(5),
-                borderSide: const BorderSide(
-                  color: Color.fromARGB(255, 204, 204, 204),
-                  width: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLineItems(BuildContext context) {
-    return BlocBuilder<DocDetailCubit, DocDetailState>(
-      builder: (context, state) {
-        if (state.lineItems.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(5.0),
-              child: Text(
-                'Line Items',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            ...state.lineItems.map(
-              (lineItem) => _buildLineItem(context, lineItem),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildLineItem(BuildContext context, DocumentLineItem lineItem) {
-    final cubit = context.read<DocDetailCubit>();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDivider(),
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Text(
-                'Line ${lineItem.lineNo}',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Delete Line Item'),
-                    content: const Text(
-                      'Are you sure you want to delete this line item?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Cancel'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          cubit.deleteLineItem(lineItem.lineItemId);
-                          Navigator.pop(dialogContext);
-                        },
-                        child: const Text(
-                          'Delete',
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextFormField(
-                context,
-                DocFieldHeader.date,
-                value: lineItem.lineDate != null
-                    ? DateFormat('yyyy-MM-dd').format(lineItem.lineDate!)
-                    : '',
-                isDate: true,
-                onTap: () {
-                  final initialDate = lineItem.lineDate ?? DateTime.now();
-                  _pickDate(context, initialDate, (pickedDate) {
-                    cubit.updateLineItemField(
-                      lineItem.lineItemId,
-                      'date',
-                      pickedDate,
-                    );
-                  });
-                },
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: _buildAutocompleteField(
-                context,
-                DocFieldHeader.category,
-                value: lineItem.categoryCode,
-                items: lineCategory, // Your list of strings
-                onChanged: (value) {
-                  cubit.updateLineItemField(
-                    lineItem.lineItemId, 
-                    'category', 
-                    value
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        _buildTextFormField(
-          context,
-          DocFieldHeader.description,
-          value: lineItem.description ?? '',
-          multiLine: true,
-          onChanged: (value) {
-            cubit.updateLineItemField(
-              lineItem.lineItemId,
-              'description',
-              value,
-            );
-          },
-        ),
-        _buildTextFormField(
-          context,
-          DocFieldHeader.total,
-          value: lineItem.total.toStringAsFixed(2),
-          onChanged: (value) {
-            cubit.updateLineItemField(lineItem.lineItemId, 'amount', value);
-          },
-        ),
-        const SizedBox(height: 10),
-        DynamicKeyValueSection(
-          title: 'Line Item Attributes',
-          rows: lineItem.attribute,
-          onAdd: () => cubit.addLineItemAttribute(lineItem.lineItemId),
-          onUpdateKey: (idx, val) =>
-              cubit.updateLineItemAttributeKey(lineItem.lineItemId, idx, val),
-          onUpdateValue: (idx, val) =>
-              cubit.updateLineItemAttributeValue(lineItem.lineItemId, idx, val),
-          onDelete: (idx) =>
-              cubit.deleteLineItemAttribute(lineItem.lineItemId, idx),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDivider() {
-    return Divider(
-      color: Colors.grey[300],
-      height: 40,
-      thickness: 1,
-      indent: 5,
-      endIndent: 5,
-    );
-  }
-
-  Widget _buildAutocompleteField(
-    BuildContext context,
-    DocFieldHeader header, {
-    required String? value,
-    required List<String> items,
-    required void Function(String) onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(5.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${header.fieldName}:',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Inter',
-            ),
-          ),
-          const SizedBox(height: 5),
-          LayoutBuilder(builder: (context, constraints) {
-            return Autocomplete<String>(
-              // 1. Set the initial value from the Cubit state
-              initialValue: TextEditingValue(text: value ?? ''),
-              
-              // 2. Define how to filter the list based on user typing
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                if (textEditingValue.text == '') {
-                  return const Iterable<String>.empty(); 
-                  // or return items; // if you want to show all options on focus
-                }
-                return items.where((String option) {
-                  return option
-                      .toLowerCase()
-                      .contains(textEditingValue.text.toLowerCase());
-                });
-              },
-
-              // 3. Handle selection from the list
-              onSelected: (String selection) {
-                onChanged(selection);
-              },
-
-              // 4. Customize the input field to match your app's style
-              fieldViewBuilder: (
-                BuildContext context,
-                TextEditingController fieldTextEditingController,
-                FocusNode fieldFocusNode,
-                VoidCallback onFieldSubmitted,
-              ) {
-                return TextFormField(
-                  controller: fieldTextEditingController,
-                  focusNode: fieldFocusNode,
-                  onChanged: (val) {
-                    // Update the state as they type (even if they don't select an option)
-                    onChanged(val); 
-                  },
-                  validator: (val) {
-                    if (val == null || val.trim().isEmpty) {
-                      return 'Required';
-                    }
-                    // Optional: If you want to force them to pick ONLY from the list:
-                    // if (!items.contains(val)) return 'Select a valid category';
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 204, 204, 204),
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(
-                        color: Colors.blue,
-                        width: 1.5,
-                      ),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 1,
-                      ),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(5),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              
-              // 5. Customize the Dropdown visual (The list of suggestions)
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4.0,
-                    // Constraint width to match the text field
-                    child: SizedBox(
-                      width: constraints.maxWidth, 
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final String option = options.elementAt(index);
-                          return InkWell(
-                            onTap: () => onSelected(option),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text(option),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-        ],
-      ),
     );
   }
 }
@@ -809,27 +457,24 @@ class DynamicKeyValueSection extends StatelessWidget {
                   child: TextFormField(
                     initialValue: row.key,
                     onChanged: (val) => onUpdateKey(index, val),
+                    validator: (val) =>
+                        val == null || val.isEmpty ? 'Field required' : null,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: 5,
                         vertical: 12,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(
-                          color: Color(0xFFCCCCCC),
-                          width: 1,
-                        ),
-                      ),
+                        borderSide: const BorderSide(color: Color(0xFFCCCCCC), width: 1)),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(
-                          color: Colors.blue,
-                          width: 1.5,
-                        ),
-                      ),
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.5)),
+                      errorBorder: OutlineInputBorder( // Added error style
+                          borderRadius: BorderRadius.circular(5),
+                          borderSide: const BorderSide(color: Colors.red, width: 1)),
                     ),
                   ),
                 ),
@@ -845,11 +490,13 @@ class DynamicKeyValueSection extends StatelessWidget {
                   child: TextFormField(
                     initialValue: row.value,
                     onChanged: (val) => onUpdateValue(index, val),
+                    validator: (val) =>
+                        val == null || val.isEmpty ? 'Value required' : null,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: 5,
                         vertical: 12,
                       ),
                       enabledBorder: OutlineInputBorder(
@@ -980,77 +627,12 @@ const List<String> docType = [
   'Tax Payment Receipt',
 ];
 
-const List<String> lineCategory = [
-  'Product Revenue',
-  'Service Revenue',
-  'Subscription Revenue',
-  'Rental Revenue',
-  'Other Operating Revenue',
-  'Sales Returns',
-  'Sales Discounts',
-  'Sales Allowances',
-  'Interest Income',
-  'Dividend Income',
-  'Investment Gains',
-  'Insurance Claims',
-  'Gain on Sale of Assets',
-  'Other Income',
-  'Opening Inventory',
-  'Purchases',
-  'Delivery Fees',
-  'Purchase Returns',
-  'Purchase Discounts',
-  'Closing Inventory',
-  'Other Cost of Goods Sold',
-  'Direct Labor Costs',
-  'Contractor Costs',
-  'Other Cost of Services',
-  'Advertising',
-  'Sales Commissions',
-  'Sales Salaries',
-  'Travel & Entertainment',
-  'Shipping/Delivery-Out',
-  'Office Salaries',
-  'Office Rent',
-  'Office Utilities',
-  'Office Supplies',
-  'Telephone & Internet',
-  'Repairs & Maintenance',
-  'Insurance',
-  'Professional Fees',
-  'Bank Charges',
-  'Training & Development',
-  'Depreciation (Office, Equipment, Vehicles)',
-  'Amortization (Patents, Trademarks, Software)',
-  'Licenses & Permits',
-  'Security',
-  'Outsourcing Expenses',
-  'Subscriptions & Tools',
-  'HR & Recruiting',
-  'Interest Expense',
-  'Loss on Sale of Assets',
-  'Investment Losses',
-  'Penalties & Fines',
-  'Legal Settlements',
-  'Impairment Losses',
-  'Other Expenses',
-  'Purchase of Assets',
-  'Money Lent to Others',
-  'Money Collected from Others',
-  'Stock',
-  'Stock Repurchase',
-  'Dividend Payment',
-  'Debt',
-  'Debt Repayment',
-  'Notes Payable',
-  'Notes Repayment',
-  'Cash & Cash Equivalents',
-  'Intangible Assets',
-  'Long-term Investments',
-  'Other Assets',
-  'Shared Premium',
-  'Owner Investment',
-  'Owner Drawing',
-  'Partner Investment',
-  'Partner Drawing',
+const List<String> docStatus = [
+  'Draft',
+  'Pending Approval',
+  'Approved',
+  'Posted',
+  'Paid',
+  'Void',
+  'Rejected',
 ];

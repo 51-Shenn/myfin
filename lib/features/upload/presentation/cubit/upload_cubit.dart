@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
@@ -20,7 +21,18 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> fetchDocument() async {
     try {
       emit(UploadLoading(state.document));
-      final documents = await getRecentDocumentsUseCase(limit: 3);
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        emit(UploadError(state.document, 'User not authenticated'));
+        return;
+      }
+
+      final documents = await getRecentDocumentsUseCase(
+        limit: 3, 
+        memberId: user.uid
+      );
+
       emit(UploadLoaded(documents));
     } catch (e) {
       emit(UploadError(state.document, 'Failed to load documents: $e'));
@@ -107,6 +119,9 @@ class UploadCubit extends Cubit<UploadState> {
       // Show loading while AI processes
       emit(UploadLoading(state.document));
 
+      final user = FirebaseAuth.instance.currentUser;
+      final String currentMemberId = user?.uid ?? "";
+
       // 1. Call Gemini
       final jsonResult = await _ocrDataSource.extractDataFromImage(imagePath);
       
@@ -114,7 +129,7 @@ class UploadCubit extends Cubit<UploadState> {
       final docData = jsonResult['document'];
       final document = Document(
         id: '', // Empty ID = New Document
-        memberId: 'M123', // Replace with actual logged-in user ID
+        memberId: currentMemberId,
         name: docData['name'] ?? 'Scanned Document',
         type: docData['type'] ?? 'Invoice',
         status: 'Draft',

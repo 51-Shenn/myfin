@@ -55,6 +55,7 @@ class DocumentRepositoryImpl implements DocumentRepository {
   Future<List<Document>> getDocuments({
     String? status,
     String? type,
+    String? memberId,
     DocumentSortField sortBy = DocumentSortField.updatedAt,
     SortDirection direction = SortDirection.descending,
     int page = 1,
@@ -64,6 +65,7 @@ class DocumentRepositoryImpl implements DocumentRepository {
     final filters = <String, dynamic>{
       if (status != null) 'status': status,
       if (type != null) 'type': type,
+      if (memberId != null) 'memberId': memberId,
     };
 
     // 2. Call Data Source
@@ -81,9 +83,9 @@ class DocumentRepositoryImpl implements DocumentRepository {
 
   // READ
   @override
-  Future<List<Document>> getDocumentsByCreator(String createdBy) async {
+  Future<List<Document>> getDocumentsByCreator(String memberId) async {
     final rawList = await dataSource.getDocuments(
-      filters: {'createdBy': createdBy},
+      filters: {'memberId': memberId},
       orderByField: DocumentSortField.updatedAt,
       direction: SortDirection.descending,
     );
