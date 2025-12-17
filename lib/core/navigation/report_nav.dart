@@ -11,12 +11,15 @@ import 'package:myfin/features/report/presentation/pages/report_main.dart';
 class ReportsNav extends StatefulWidget {
   const ReportsNav({super.key});
 
+  // Public static getter to access the navigator key
+  static GlobalKey<NavigatorState> get navigatorKey => _ReportsNavState.reportsNavKey;
+
   @override
   State<ReportsNav> createState() => _ReportsNavState();
 }
 
 class _ReportsNavState extends State<ReportsNav> {
-  GlobalKey<NavigatorState> reportsNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> reportsNavKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +32,7 @@ class _ReportsNavState extends State<ReportsNav> {
             // routes for report navigation
             if (settings.name == '/report_history') {
               return const ReportHistoryScreen(); // report history screen
-            } 
+            }
 
             if (settings.name == '/report_${ReportType.profitLoss.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const ProfitAndLossReportScreen(); // profit & loss report screen
@@ -42,7 +45,7 @@ class _ReportsNavState extends State<ReportsNav> {
             if (settings.name == '/report_${ReportType.balanceSheet.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const BalanceSheetReportScreen(); // balance sheet report screen
             }
-            
+
             if (settings.name == '/report_${ReportType.accountsPayable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const AccountsPayableReportScreen(); // accounts payable report screen
             }
