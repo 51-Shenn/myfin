@@ -212,11 +212,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
 
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: event.email,
-        password: event.password,
-      );
-
       await signUp.signUpMember(
         email: event.email,
         password: event.password,
