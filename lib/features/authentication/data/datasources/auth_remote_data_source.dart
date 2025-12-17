@@ -74,6 +74,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final UserCredential userCredential = await firebaseAuth
           .signInWithCredential(credential);
 
+      if (userCredential.additionalUserInfo?.isNewUser == true) {
+        await userCredential.user?.delete();
+        await _googleSignIn
+            .signOut(); 
+        throw Exception('Email not registered. Please sign up first.');
+      }
+
       return userCredential.user!.uid;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'account-exists-with-different-credential') {
@@ -82,13 +89,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw Exception('Invalid Google credentials');
       } else if (e.code == 'user-disabled') {
         throw Exception('This account has been disabled');
+      } else if (e.code == 'user-not-found') {
+        throw Exception('No user found');
       }
       throw Exception('Google sign-in failed: ${e.message}');
     } catch (e) {
       throw Exception('Google sign-in failed: $e');
     }
   }
-
 
   @override
   Future<void> signOut() async {

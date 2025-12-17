@@ -45,12 +45,10 @@ class AppRoutes {
   static const String adminDashboard = '/admin_dashboard';
 
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
-    // 1. Initialize External Services
     final firebaseAuth = FirebaseAuth.instance;
     final firestore = FirebaseFirestore.instance;
     final googleSignIn = GoogleSignIn();
 
-    // 2. Initialize Data Sources
     final authRemote = AuthRemoteDataSourceImpl(
       firebaseAuth: firebaseAuth,
       googleSignIn: googleSignIn,
@@ -61,37 +59,44 @@ class AppRoutes {
     final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
     final adminRemote = AdminRemoteDataSourceImpl(firestore: firestore);
 
-    // 3. Initialize Repositories
     final authRepo = AuthRepositoryImpl(authRemote, authLocal);
     final memberRepo = MemberRepositoryImpl(memberRemote);
     final adminRepo = AdminRepositoryImpl(adminRemote);
 
-    // 4. Create and return AuthBloc
+    final signInUseCase = SignInUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final signUpUseCase = SignUpUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final getCurrentUserUseCase = GetCurrentUserUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final signOutUseCase = SignOutUseCase(authRepository: authRepo);
+    final resetPasswordUseCase = ResetPasswordUseCase(authRepository: authRepo);
+    final signInWithGoogleUseCase = SignInWithGoogleUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final saveEmailUseCase = SaveEmailUseCase(authRepository: authRepo);
+    final getSavedEmailUseCase = GetSavedEmailUseCase(authRepository: authRepo);
+
     return AuthBloc(
-      signIn: SignInUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      signUp: SignUpUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      getCurrentUser: GetCurrentUserUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      signOut: SignOutUseCase(authRepository: authRepo),
-      resetPassword: ResetPasswordUseCase(authRepository: authRepo),
-      signInWithGoogle: SignInWithGoogleUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      saveEmail: SaveEmailUseCase(authRepository: authRepo),
-      getSavedEmail: GetSavedEmailUseCase(authRepository: authRepo),
+      signIn: signInUseCase,
+      signUp: signUpUseCase,
+      getCurrentUser: getCurrentUserUseCase,
+      signOut: signOutUseCase,
+      resetPassword: resetPasswordUseCase,
+      signInWithGoogle: signInWithGoogleUseCase,
+      saveEmail: saveEmailUseCase,
+      getSavedEmail: getSavedEmailUseCase,
     )..add(AuthCheckRequested());
   }
 
