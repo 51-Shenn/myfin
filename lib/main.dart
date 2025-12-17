@@ -63,7 +63,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
 
       // home: const BottomNavBar(),
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.auth,
       onGenerateRoute: (settings) =>
           AppRoutes.onGenerateRoute(settings, sharedPreferences),
     );
