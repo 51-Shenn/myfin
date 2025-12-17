@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
+import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
@@ -49,7 +50,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) =>
-          ReportBLoC(ReportRepository())..add(LoadReportsEvent(member_id)),
+          ReportBLoC(ReportRepositoryImpl(context.read<FirestoreReportDataSource>()))..add(LoadReportsEvent(member_id)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(

@@ -5,7 +5,7 @@ import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 import 'package:myfin/features/report/services/generator/report_factory.dart';
 
 class ReportBLoC extends Bloc<ReportEvent, ReportState> {
-  final ReportRepository repo;
+  final ReportRepositoryImpl repo;
 
   ReportBLoC(this.repo) : super(ReportState.initial()) {
     // event handlers
@@ -67,7 +67,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
         event.endDate,
       );
 
-      final generatedReport = await repo.createReport(report);
+      final generatedReport = await repo.createReport(report, event.startDate, event.endDate);
 
       if (generatedReport.report_id.isEmpty) {
         emit(

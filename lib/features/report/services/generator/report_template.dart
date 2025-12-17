@@ -62,7 +62,7 @@ class ProfitAndLossTemplate {
         'Training & Development',
       ],
       'Depreciation & Amortization': [
-        'Depreciation (Office, Equipment, Vehicles)', // TODO: how calc
+        'Depreciation (Office, Equipment, Vehicles)',
         'Amortization (Patents, Trademarks, Software)',
       ],
       'Other Expenses': [
@@ -81,7 +81,7 @@ class ProfitAndLossTemplate {
       ],
     },
 
-    'Income Tax Expense': ['Current Tax Expense'],
+    'Income Tax Expense': ['Tax Expense'],
   };
 }
 

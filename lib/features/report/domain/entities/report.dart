@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
 import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';
@@ -5,6 +8,7 @@ import 'package:myfin/features/report/services/generator/balance_sheet_generator
 import 'package:myfin/features/report/services/generator/cash_flow_generator.dart';
 import 'package:myfin/features/report/services/generator/profitloss_generator.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
+import 'package:myfin/features/upload/domain/entities/document.dart';
 
 // report types
 enum ReportType {
@@ -165,7 +169,8 @@ class Report extends Equatable {
 
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     return Report.initial();
   }
@@ -183,6 +188,45 @@ class Report extends Equatable {
       fiscal_period: fiscal_period ?? this.fiscal_period,
       report_type: report_type ?? this.report_type,
       member_id: member_id ?? this.member_id,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': Timestamp.fromDate(generated_at),
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+    };
+  }
+
+  factory Report.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> stringToDateMap(String source) {
+      final decoded = jsonDecode(source) as Map<String, dynamic>;
+      return decoded.map((key, value) => MapEntry(key, DateTime.parse(value)));
+    }
+
+    return Report(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: stringToDateMap(data['fiscal_period']),
+      report_type: stringToReportType(data['report_type']),
+      member_id: data['member_id'] as String? ?? '',
     );
   }
 
@@ -239,10 +283,11 @@ class ProfitAndLossReport extends Report {
   @override
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = ProfitLossGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
+    return generator.generateFullReport(this, businessName, docLineData)
         as ProfitAndLossReport;
   }
 
@@ -329,10 +374,16 @@ class CashFlowStatement extends Report {
   @override
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = CashFlowGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
+    return generator.generateFullReport(
+          this,
+          businessName,
+          docData,
+          docLineData,
+        )
         as ProfitAndLossReport;
   }
 
@@ -420,10 +471,16 @@ class BalanceSheet extends Report {
   @override
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = BalanceSheetGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
+    return generator.generateFullReport(
+          this,
+          businessName,
+          docData,
+          docLineData,
+        )
         as ProfitAndLossReport;
   }
 
@@ -610,10 +667,16 @@ class AccountsReceivable extends Report {
   @override
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = AccReceivableGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
+    return generator.generateFullReport(
+          this,
+          businessName,
+          docData,
+          docLineData,
+        )
         as ProfitAndLossReport;
   }
 
@@ -692,10 +755,16 @@ class AccountsPayable extends Report {
   @override
   Future<Report> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = AccPayableGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
+    return generator.generateFullReport(
+          this,
+          businessName,
+          docData,
+          docLineData,
+        )
         as ProfitAndLossReport;
   }
 

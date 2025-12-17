@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
+import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
@@ -33,7 +34,7 @@ class _CashFlowStatementScreenState extends State<CashFlowStatementScreen> {
 
     return BlocProvider(
       create: (_) =>
-          ReportBLoC(ReportRepository())
+          ReportBLoC(ReportRepositoryImpl(context.read<FirestoreReportDataSource>()))
             ..add(LoadReportDetailsEvent(cashFlowStatement)),
       child: Scaffold(
         backgroundColor: Colors.white,

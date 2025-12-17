@@ -3,6 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
+import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
@@ -36,6 +38,11 @@ Future<void> main() async {
             FirestoreDocumentLineItemDataSource(firestore: firestore),
           ),
         ),
+        RepositoryProvider<ReportRepositoryImpl>(
+          create: (context) => ReportRepositoryImpl(
+            FirestoreReportDataSource(firestore: firestore),
+          ),
+        ),
       ],
       child: BlocProvider(
         create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
@@ -56,7 +63,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
 
       // home: const BottomNavBar(),
-      initialRoute: AppRoutes.auth,
+      initialRoute: AppRoutes.home,
       onGenerateRoute: (settings) =>
           AppRoutes.onGenerateRoute(settings, sharedPreferences),
     );
