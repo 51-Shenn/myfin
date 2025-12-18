@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
@@ -38,7 +39,7 @@ Future<void> main() async {
             FirestoreDocumentLineItemDataSource(firestore: firestore),
           ),
         ),
-        RepositoryProvider<ReportRepositoryImpl>(
+        RepositoryProvider<ReportRepository>(
           create: (context) => ReportRepositoryImpl(
             FirestoreReportDataSource(firestore: firestore),
           ),

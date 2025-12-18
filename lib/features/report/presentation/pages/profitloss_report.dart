@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
-import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
@@ -23,7 +22,8 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     try {
-      _report = ModalRoute.of(context)!.settings.arguments as ProfitAndLossReport;
+      _report =
+          ModalRoute.of(context)!.settings.arguments as ProfitAndLossReport;
     } catch (e) {
       _report = ProfitAndLossReport.initial();
       _showErrorSnackBar('Failed to retrieve report details: $e');
@@ -40,16 +40,15 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ReportBLoC(ReportRepositoryImpl(context.read<FirestoreReportDataSource>()))..add(LoadReportDetailsEvent(_report)),
+      create: (context) =>
+          ReportBLoC(context.read<ReportRepository>())
+            ..add(LoadReportDetailsEvent(_report)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: _buildAppBar(),
         body: BlocListener<ReportBLoC, ReportState>(
           listener: _handleBlocStateChanges,
-          child: BlocBuilder<ReportBLoC, ReportState>(
-            builder: _buildBody,
-          ),
+          child: BlocBuilder<ReportBLoC, ReportState>(builder: _buildBody),
         ),
       ),
     );
@@ -106,10 +105,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
 
     if (state.error != null) {
       return Center(
-        child: Text(
-          state.error!,
-          style: const TextStyle(color: Colors.red),
-        ),
+        child: Text(state.error!, style: const TextStyle(color: Colors.red)),
       );
     }
 
@@ -313,17 +309,11 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
         children: [
           Text(
             'Total ${section.section_title}',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           Text(
             _formatCurrency(section.grand_total),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -415,10 +405,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
           ),
           Text(
             _formatCurrency(group.subtotal),
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -519,15 +506,15 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   }
 
   void _handleDownloadPdf() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PDF Download initiated')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('PDF Download initiated')));
   }
 
   void _handleShare() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('PDF Share initiated')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('PDF Share initiated')));
   }
 
   Widget _buildReportFooter() {

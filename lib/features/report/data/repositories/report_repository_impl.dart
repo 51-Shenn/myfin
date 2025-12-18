@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/services/generator/report_factory.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
 // repo implementation
-class ReportRepositoryImpl {
+class ReportRepositoryImpl implements ReportRepository {
   final FirestoreReportDataSource dataSource;
 
   ReportRepositoryImpl(this.dataSource);
@@ -35,6 +36,7 @@ class ReportRepositoryImpl {
     },
   ];
 
+  @override
   Future<List<Report>> fetchReportsForMember(String memberId) async {
     final memberReports = _exampleCollection
         .where((doc) => doc["member_id"] == memberId)
@@ -43,6 +45,7 @@ class ReportRepositoryImpl {
     return memberReports;
   }
 
+  @override
   Future<Report> getReportByReportId(String reportId) async {
     final report = _exampleCollection
         .where((doc) => doc["report_id"] == reportId)
@@ -52,6 +55,7 @@ class ReportRepositoryImpl {
   }
 
   // generate report
+  @override
   Future<Report> createReport(
     Report report,
     DateTime startDate,
@@ -87,6 +91,7 @@ class ReportRepositoryImpl {
     return generatedReport;
   }
 
+  @override
   Future<String> saveReportLog(Report report) async {
     final rawData = report.toMap();
 
@@ -95,6 +100,7 @@ class ReportRepositoryImpl {
     return docId;
   }
 
+  @override
   Future<List<DocumentLineItem>> getDocLineItemsByDateRange({
     DateTime? startDate,
     DateTime? endDate,

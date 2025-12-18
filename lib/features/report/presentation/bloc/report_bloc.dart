@@ -1,11 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 import 'package:myfin/features/report/services/generator/report_factory.dart';
 
 class ReportBLoC extends Bloc<ReportEvent, ReportState> {
-  final ReportRepositoryImpl repo;
+  final ReportRepository repo;
 
   ReportBLoC(this.repo) : super(ReportState.initial()) {
     // event handlers
@@ -21,12 +21,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     LoadReportsEvent event,
     Emitter<ReportState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        loadingReports: true,
-        error: null,
-      ),
-    );
+    emit(state.copyWith(loadingReports: true, error: null));
 
     try {
       final reports = await repo.fetchReportsForMember(event.member_id);
@@ -67,7 +62,11 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
         event.endDate,
       );
 
-      final generatedReport = await repo.createReport(report, event.startDate, event.endDate);
+      final generatedReport = await repo.createReport(
+        report,
+        event.startDate,
+        event.endDate,
+      );
 
       if (generatedReport.report_id.isEmpty) {
         emit(
@@ -129,11 +128,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     LoadReportDetailsFailure event,
     Emitter<ReportState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        error: "Failed to load report details",
-      ),
-    );
+    emit(state.copyWith(error: "Failed to load report details"));
   }
 
   // format startDate and endDate to fiscal period
