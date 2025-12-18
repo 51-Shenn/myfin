@@ -20,7 +20,7 @@ class ChatRepository {
 
   /// Initializes the chat session by loading user data and setting the system prompt.
   Future<void> initializeSession(String memberId) async {
-    final apiKey = dotenv.env['GEMINI_API_KEY'] ?? "";
+    final apiKey = dotenv.env['GEMINI_API_KEY_4'] ?? "";
     
     // 1. Fetch data from Firestore and format it as text
     final contextString = await _buildFinancialContext(memberId);

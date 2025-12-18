@@ -74,6 +74,7 @@ class ChatViewModel extends Cubit<ChatState> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
+    // 1. Add user message immediately
     final updatedMessages = List<ChatMessage>.from(state.messages)
       ..add(ChatMessage(text: text, isUser: true));
     
@@ -82,8 +83,9 @@ class ChatViewModel extends Cubit<ChatState> {
     try {
       final responseText = await _repo.sendMessage(text);
 
+      // 2. Add ONLY the bot response. 
+      // state.messages already contains the user message from the previous emit.
       final finalMessages = List<ChatMessage>.from(state.messages)
-        ..add(ChatMessage(text: text, isUser: true)) // Ensure user message is kept
         ..add(ChatMessage(text: responseText, isUser: false));
 
       emit(state.copyWith(messages: finalMessages, isLoading: false));

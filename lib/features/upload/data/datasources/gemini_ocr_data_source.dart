@@ -41,10 +41,11 @@ class GeminiOCRDataSource {
   ) async {
     final keys = _getApiKeys();
 
-    if (keys.isEmpty)
+    if (keys.isEmpty) {
       throw Exception(
         "No API keys found in .env (Checked for GEMINI_API_KEY 1-4)",
       );
+    }
 
     Object? lastError;
 
@@ -53,7 +54,6 @@ class GeminiOCRDataSource {
       // Loop through Models
       for (String modelName in _modelsToTry) {
         try {
-          // Identify which key we are using (last 4 chars) for debugging
           final keyId = apiKey.length > 4
               ? apiKey.substring(apiKey.length - 4)
               : "short-key";
@@ -65,15 +65,12 @@ class GeminiOCRDataSource {
           return response; // Success! Return immediately.
         } catch (e) {
           print("Failed ($modelName). Error: $e");
-
-          // Store error and continue to the next combination
           lastError = e;
           continue;
         }
       }
     }
 
-    // If we reach here, 8 attempts (4 keys * 2 models) failed.
     throw Exception(
       "All AI models and 4 API keys failed. Last error: $lastError",
     );
@@ -89,18 +86,13 @@ class GeminiOCRDataSource {
     return docType.map((e) => "- $e").join("\n");
   }
 
-  Future<Map<String, dynamic>> extractDataFromImage(String imagePath) async {
-    final file = File(imagePath);
-    if (!await file.exists()) throw Exception("File does not exist");
-    final imageBytes = await file.readAsBytes();
-
-    // Dynamically build the prompts from the existing project lists
+  // --- PROMPT GENERATION (Reused for all file types) ---
+  String _buildPrompt() {
     final String categoryList = _getFormattedCategories();
     final String docTypeList = _getFormattedDocTypes();
 
-    // --- UPDATED PROMPT ---
-    final prompt = """
-    You are an expert accountant. Analyze this image.
+    return """
+    You are an expert accountant. Analyze the provided file (Image, PDF, or Text Data).
     
     1. Extract document details. 
        - For "name", construct a descriptive title using the format: "**Supplier Name** - **Invoice Number**".
@@ -145,28 +137,61 @@ class GeminiOCRDataSource {
       ]
     }
     """;
+  }
+
+  // --- PUBLIC METHODS ---
+
+  // 1. Handle Images (JPG, PNG) and PDFs (Binary data)
+  Future<Map<String, dynamic>> extractDataFromMedia(String filePath, String mimeType) async {
+    final file = File(filePath);
+    if (!await file.exists()) throw Exception("File does not exist");
+    final bytes = await file.readAsBytes();
+
+    final prompt = _buildPrompt();
 
     try {
       final content = [
-        Content.multi([TextPart(prompt), DataPart('image/jpeg', imageBytes)]),
+        Content.multi([TextPart(prompt), DataPart(mimeType, bytes)]),
       ];
 
-      // Calls the fallback logic
-      final response = await _generateContentWithFallback(content);
-      final responseText = response.text;
-
-      if (responseText == null) throw Exception("No response from AI");
-
-      String cleanJson = responseText
-          .replaceAll('```json', '')
-          .replaceAll('```', '')
-          .trim();
-
-      return jsonDecode(cleanJson);
+      return await _executeExtraction(content);
     } catch (e) {
-      print("Final Extraction Error: $e");
-      throw Exception("OCR Extraction Failed after all retries: $e");
+      print("Media Extraction Error: $e");
+      throw Exception("Extraction Failed: $e");
     }
+  }
+
+  // 2. Handle Text Data (Excel converted to CSV string)
+  Future<Map<String, dynamic>> extractDataFromText(String textData) async {
+    final prompt = _buildPrompt();
+    final fullPrompt = "$prompt\n\nHERE IS THE DOCUMENT CONTENT:\n$textData";
+
+    try {
+      final content = [Content.text(fullPrompt)];
+      return await _executeExtraction(content);
+    } catch (e) {
+      throw Exception("Text Extraction Failed: $e");
+    }
+  }
+
+  // 3. Wrapper for Backward Compatibility (defaults to image/jpeg)
+  Future<Map<String, dynamic>> extractDataFromImage(String imagePath) async {
+    return extractDataFromMedia(imagePath, 'image/jpeg');
+  }
+
+  // --- PRIVATE HELPER ---
+  Future<Map<String, dynamic>> _executeExtraction(List<Content> content) async {
+    final response = await _generateContentWithFallback(content);
+    final responseText = response.text;
+
+    if (responseText == null) throw Exception("No response from AI");
+
+    String cleanJson = responseText
+        .replaceAll('```json', '')
+        .replaceAll('```', '')
+        .trim();
+
+    return jsonDecode(cleanJson);
   }
 
   Future<Map<String, String>> categorizeDescriptions(
@@ -201,7 +226,6 @@ class GeminiOCRDataSource {
     try {
       final content = [Content.text(prompt)];
 
-      // Calls the fallback logic
       final response = await _generateContentWithFallback(content);
       final responseText = response.text;
 
