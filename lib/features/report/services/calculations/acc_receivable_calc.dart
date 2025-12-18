@@ -17,20 +17,10 @@ class AccountsReceivableCalculator {
 
   /// Get all receivable documents (invoices and related documents)
   List<Document> getReceivableDocuments() {
-    // Document types that represent money owed TO the business
-    const receivableTypes = [
-      'Sales Invoice',
-      'Official Receipt',
-      'Tax Invoice',
-      'Sales Order',
-      'Credit Note',
-      'Delivery Order',
-      'Invoice', // Keep legacy support
-    ];
-
     return documents.where((doc) {
-      return receivableTypes.contains(doc.type) &&
-          (doc.status == 'Posted' || doc.status == 'Approved') &&
+      return (doc.status == 'Posted' || doc.status == 'Approved') &&
+          (doc.metadata?.map((m) => m.key).contains('Customer Name') ??
+              false) && // check if
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }

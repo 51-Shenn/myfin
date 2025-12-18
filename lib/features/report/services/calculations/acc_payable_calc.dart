@@ -17,20 +17,10 @@ class AccountsPayableCalculator {
 
   /// Get all payable documents (bills and related documents)
   List<Document> getPayableDocuments() {
-    // Document types that represent money owed BY the business
-    const payableTypes = [
-      'Supplier Invoice',
-      'Purchase Order',
-      'Goods Received Note',
-      'Payment Voucher',
-      'Expense Claim Form',
-      'Debit Note',
-      'Bill', // Keep legacy support
-    ];
-
     return documents.where((doc) {
-      return payableTypes.contains(doc.type) &&
-          (doc.status == 'Posted' || doc.status == 'Approved') &&
+      return (doc.status == 'Posted' || doc.status == 'Approved') &&
+          (doc.metadata?.map((m) => m.key).contains('Supplier Name') ??
+              false) && // check if the metadata inside got Supplier keyword
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }
