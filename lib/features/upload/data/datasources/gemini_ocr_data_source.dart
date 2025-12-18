@@ -94,25 +94,28 @@ class GeminiOCRDataSource {
     return """
     You are an expert accountant. Analyze the provided file (Image, PDF, or Text Data).
     
-    1. Extract document details. 
-       - For "name", construct a descriptive title using the format: "**Supplier Name** - **Invoice Number**".
-         - Example: "Tenaga Nasional - INV-88291"
-         - If no Invoice Number is found, use: "**Supplier Name** - **Date**".
+    STEP 1: CLASSIFICATION
+    Identify if this document is an **Invoice** (a request for payment issued TO a customer) or a **Bill/Receipt** (a document received FROM a supplier/merchant for an expense).
+    
+    STEP 2: EXTRACTION RULES
+    1. Extract document details:
+       - For "name", use format: "**Entity Name** - **Number**".
        - For "type", you MUST pick the exact string from the DOCUMENT TYPE LIST below.
     
-    2. Extract Key Entities to Metadata:
-       - Extract the raw **Supplier Name** (Merchant Name).
-       - Extract Contact Info: Address, Phone, and Email.
+    2. Extract Metadata based on Classification:
+       - **IF THE DOCUMENT IS AN INVOICE (Accounts Receivable):** 
+         Focus on the **Customer/Client** (the "Bill To" party). 
+         Extract: "Customer Name", "Customer Address", "Customer Phone", "Customer Email".
        
-       - Add these to the "metadata" list. 
-       - Keys MUST be exactly: 
-         "Supplier Name", "Supplier Address", "Supplier Phone", "Supplier Email".
+       - **IF THE DOCUMENT IS A BILL or RECEIPT (Accounts Payable/Expense):** 
+         Focus on the **Supplier/Merchant** (the "From" party). 
+         Extract: "Supplier Name", "Supplier Address", "Supplier Phone", "Supplier Email".
        
-       - Do not include keys if the value is not visible on the document.
+       - Add these to the "metadata" list using the exact keys mentioned above.
+       - Only include keys if the value is clearly visible.
 
-    3. Extract line items.
+    3. Extract line items:
        - For "category", you MUST pick the exact string from the CATEGORY LIST below.
-       - Do not invent new categories.
 
     DOCUMENT TYPE LIST:
     $docTypeList
@@ -123,14 +126,14 @@ class GeminiOCRDataSource {
     Return strictly valid JSON:
     {
       "document": { 
-        "name": "Supplier Name - INV-001", 
+        "name": "Entity Name - INV-001", 
         "type": "EXACT_TYPE_FROM_LIST", 
         "date": "YYYY-MM-DD", 
         "total": 0.00 
       },
       "metadata": [
-        { "key": "Supplier Name", "value": "Tenaga Nasional" },
-        { "key": "Supplier Phone", "value": "+603-2222..." }
+        { "key": "Supplier Name", "value": "Example Supplier" },
+        { "key": "Supplier Address", "value": "123 Street, City" }
       ],
       "line_items": [
         { "description": "Item Name", "category": "EXACT_CATEGORY_FROM_LIST", "amount": 0.00 }
@@ -139,10 +142,14 @@ class GeminiOCRDataSource {
     """;
   }
 
+
   // --- PUBLIC METHODS ---
 
   // 1. Handle Images (JPG, PNG) and PDFs (Binary data)
-  Future<Map<String, dynamic>> extractDataFromMedia(String filePath, String mimeType) async {
+  Future<Map<String, dynamic>> extractDataFromMedia(
+    String filePath,
+    String mimeType,
+  ) async {
     final file = File(filePath);
     if (!await file.exists()) throw Exception("File does not exist");
     final bytes = await file.readAsBytes();
