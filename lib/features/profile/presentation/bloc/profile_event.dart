@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:equatable/equatable.dart';
+import 'package:myfin/features/authentication/domain/entities/member.dart'; // Import
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 
 abstract class ProfileEvent extends Equatable {
@@ -8,38 +10,40 @@ abstract class ProfileEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-// Event to trigger loading the member and business profile
 class LoadProfileEvent extends ProfileEvent {
   final String memberId;
-
   const LoadProfileEvent(this.memberId);
-
   @override
   List<Object?> get props => [memberId];
 }
 
-// Event to trigger a profile update
 class UpdateBusinessProfileEvent extends ProfileEvent {
   final BusinessProfile profile;
+  final File? logoFile;
+  const UpdateBusinessProfileEvent(this.profile, {this.logoFile});
+  @override
+  List<Object?> get props => [profile, logoFile];
+}
 
-  const UpdateBusinessProfileEvent(this.profile);
+// Added: Update Member Event
+class UpdateMemberProfileEvent extends ProfileEvent {
+  final Member member;
+  final File? newImageFile;
+  const UpdateMemberProfileEvent(this.member, {this.newImageFile});
 
   @override
-  List<Object?> get props => [profile];
+  List<Object?> get props => [member, newImageFile];
 }
 
 class ChangePasswordEvent extends ProfileEvent {
   final String currentPassword;
   final String newPassword;
-
   const ChangePasswordEvent({
-    required this.currentPassword, 
-    required this.newPassword
+    required this.currentPassword,
+    required this.newPassword,
   });
-
   @override
   List<Object?> get props => [currentPassword, newPassword];
 }
 
-// Event to trigger logout
 class LogoutEvent extends ProfileEvent {}

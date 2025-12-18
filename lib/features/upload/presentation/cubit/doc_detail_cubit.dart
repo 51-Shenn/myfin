@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/authentication/data/datasources/member_remote_data_source.dart';
+import 'package:myfin/features/authentication/data/repositories/member_repository_impl.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
@@ -11,6 +15,8 @@ class DocDetailCubit extends Cubit<DocDetailState> {
   final DocumentLineItemRepository _lineItemRepository;
   final GeminiOCRDataSource _aiDataSource = GeminiOCRDataSource();
 
+  final List<String> _deletedLineItemIds = []; // keep track of items deleted
+
   DocDetailCubit({
     required DocumentRepository docRepository,
     required DocumentLineItemRepository lineItemRepository,
@@ -22,6 +28,8 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     Document document,
     List<DocumentLineItem>? lineItems,
   ) async {
+    _deletedLineItemIds.clear();
+
     emit(
       state.copyWith(
         isLoading: false,
@@ -52,18 +60,32 @@ class DocDetailCubit extends Cubit<DocDetailState> {
   }
 
   Future<void> loadDocument(String? documentId) async {
+    _deletedLineItemIds.clear();
     try {
       emit(state.copyWith(isLoading: true));
+
+      final user = FirebaseAuth.instance.currentUser;
+      final String memberId = user?.uid ?? "";
+
+      if (memberId.isEmpty) {
+         emit(state.copyWith(isLoading: false, errorMessage: 'User not logged in'));
+        return;
+      }
+
+      final firestore = FirebaseFirestore.instance;
+      final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
+      final memberRepo = MemberRepositoryImpl(memberRemote);
+      final memberUsername = (await memberRepo.getMember(memberId)).username;
 
       // brand new doc template
       if (documentId == null || documentId.isEmpty) {
         final document = Document(
           id: '',
-          memberId: '',  // await memberRepo.getCurrentUserId();
+          memberId: memberId,
           name: '',
           type: '',
           status: '',
-          createdBy: 'CURRENT USER', 
+          createdBy: memberUsername,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           postingDate: DateTime.now(),
@@ -82,6 +104,17 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       }
 
       final document = await _docRepository.getDocumentById(documentId);
+
+      if (document.memberId != memberId) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: 'Unauthorized: You do not have permission to view this document.',
+          ),
+        );
+        return;
+      }
+
       final lineItems = await _lineItemRepository.getLineItemsByDocumentId(documentId);
 
       emit(
@@ -119,6 +152,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       case 'postingDate':
         updatedDoc = state.document!.copyWith(postingDate: value as DateTime);
         break;
+      case 'imageBase64':
+        updatedDoc = state.document!.copyWith(imageBase64: value as String);
+        break;
       default:
         updatedDoc = state.document!;
     }
@@ -133,8 +169,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
     try {
       emit(state.copyWith(isSaving: true));
-
-      // --- 1. AUTO-CATEGORIZATION STEP ---
 
       // Filter items that have a description but NO category
       final itemsToCategorize = state.lineItems
@@ -170,8 +204,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         emit(state.copyWith(lineItems: updatedLineItems));
       }
 
-      // --- 2. EXISTING SAVE LOGIC (Database) ---
-
       Document docToSave = state.document!.copyWith(
         metadata: state.rows,
         updatedAt: DateTime.now(),
@@ -187,10 +219,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         await _docRepository.updateDocument(docToSave);
       }
 
-      // Save Line Items to Firestore (Now with categories filled in)
-      for (var item in state.lineItems) {
-        // Note: using state.lineItems which we just updated
+      for (final idToDelete in _deletedLineItemIds) {
+        try {
+          await _lineItemRepository.deleteLineItem(idToDelete);
+        } catch (e) {
+          print("Skipping delete for $idToDelete: $e");
+        }
+      }
+      _deletedLineItemIds.clear();
 
+      for (var item in state.lineItems) {
         bool isEmpty =
             (item.description == null || item.description!.trim().isEmpty) &&
             item.total == 0 &&
@@ -202,11 +240,10 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
         final itemToSave = item.copyWith(documentId: docId);
 
-        // Handle Temp IDs vs Firestore IDs
         bool isNewItem =
             itemToSave.lineItemId.isEmpty ||
             itemToSave.lineItemId.startsWith('TEMP_') ||
-            itemToSave.lineItemId.length > 20; // Basic check
+            itemToSave.lineItemId.length < 20;
 
         if (isNewItem) {
           await _lineItemRepository.createLineItem(
@@ -217,9 +254,12 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         }
       }
 
+      final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(docId);
+
       emit(
         state.copyWith(
           document: docToSave,
+          lineItems: refreshedItems,
           isSaving: false,
           successMessage:
               'Document categorized & saved successfully', // Updated message
@@ -251,15 +291,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
       await _docRepository.deleteDocument(docId);
 
-      emit(state.copyWith(
-        isSaving: false,
-        successMessage: 'Document deleted successfully',
-      ));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          successMessage: 'Document deleted successfully',
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to delete: $e',
-      ));
+      emit(
+        state.copyWith(isSaving: false, errorMessage: 'Failed to delete: $e'),
+      );
     }
   }
 
@@ -311,6 +352,8 @@ class DocDetailCubit extends Cubit<DocDetailState> {
   }
 
   void deleteLineItem(String lineItemId) {
+    _deletedLineItemIds.add(lineItemId);
+
     final updatedItems = state.lineItems
         .where((item) => item.lineItemId != lineItemId)
         .toList();

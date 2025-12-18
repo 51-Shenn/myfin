@@ -14,7 +14,7 @@ dependencies:
   intl: ^0.20.2
   flutter_bloc: ^9.1.0
   google_generative_ai: ^0.4.0  
-  flutter_dotenv: ^5.2.1  
+  flutter_dotenv: ^6.0.0  
   flutter_markdown_plus: ^1.0.5
   equatable: ^2.0.7
   google_sign_in: ^6.2.1
@@ -33,6 +33,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/MyFin.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/MyFin.png"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+  windows:
+    generate: true
+    image_path: "assets/MyFin.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/MyFin.png"
 
 flutter:
   uses-material-design: true

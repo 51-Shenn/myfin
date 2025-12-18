@@ -45,8 +45,12 @@ Future<void> main() async {
           ),
         ),
       ],
-      child: BlocProvider(
-        create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
+          ),
+        ],
         child: MainApp(sharedPreferences: sharedPreferences),
       ),
     ),

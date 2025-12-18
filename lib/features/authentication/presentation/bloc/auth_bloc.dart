@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/authentication/domain/entities/admin.dart';
@@ -66,6 +65,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     const genericErrorMessages = {
       'user-not-found':
           'No account found with this email. Please sign up first.',
+      'email not registered': 'Email not registered. Please sign up first.',
       'wrong-password': 'Invalid email or password. Please try again.',
       'invalid-credential': 'Invalid email or password. Please try again.',
       'auth credential is incorrect':
@@ -282,7 +282,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(AuthAuthenticatedAsMember(result.userData as Member));
       }
     } catch (e) {
-      emit(AuthFailure(_getFriendlyErrorMessage(e)));
+      final errorMessage = _getFriendlyErrorMessage(e);
+      if (errorMessage == 'Email not registered. Please sign up first.') {
+        emit(AuthFailure(errorMessage, currentPage: 1));
+      } else {
+        emit(AuthFailure(errorMessage));
+      }
     }
   }
 }

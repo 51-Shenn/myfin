@@ -20,6 +20,7 @@ abstract class DocumentRepository {
   Future<List<Document>> getDocuments({
     String? status,
     String? type,
+    String memberId,
     DocumentSortField sortBy = DocumentSortField.updatedAt,
     SortDirection direction = SortDirection.descending,
     int page = 1,
@@ -27,7 +28,7 @@ abstract class DocumentRepository {
   });
 
   // return list of docs created by a specified username/user_id
-  Future<List<Document>> getDocumentsByCreator(String createdBy);
+  Future<List<Document>> getDocumentsByCreator(String memberId);
 
   // update existing doc
   Future<Document> updateDocument(Document document);

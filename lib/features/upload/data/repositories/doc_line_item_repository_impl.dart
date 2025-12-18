@@ -44,7 +44,7 @@ class DocumentLineItemRepositoryImpl implements DocumentLineItemRepository {
   Future<void> deleteLineItem(String lineItemId) async {
     return dataSource.deleteLineItem(lineItemId);
   }
-
+  
   @override
   Future<void> deleteLineItemsByDocumentId(String documentId) async {
     return dataSource.deleteLineItemsByDocumentId(documentId);

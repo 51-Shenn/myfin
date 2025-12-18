@@ -1,122 +1,141 @@
+import 'dart:typed_data'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
-import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
-import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 
 class BusinessProfileScreen extends StatelessWidget {
   const BusinessProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ProfileBloc(
-        ProfileRepositoryImpl(remoteDataSource: ProfileRemoteDataSourceImpl()),
-      )..add(const LoadProfileEvent("M123")),
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Colors.black,
-              size: 20,
-            ),
-            onPressed: () => Navigator.pop(context),
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
           ),
-          title: const Text(
-            'Business',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Inter',
-            ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Business',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Inter',
           ),
         ),
-        body: BlocBuilder<ProfileBloc, ProfileState>(
-          builder: (context, state) {
-            // 1. Loading State
-            if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      ),
+      body: BlocBuilder<ProfileBloc, ProfileState>(
+        builder: (context, state) {
+          // 1. Loading State
+          if (state.isLoading && state.businessProfile == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            // 2. Error State
-            if (state.error != null) {
-              return Center(child: Text("Error: ${state.error}"));
-            }
+          // 2. Error State
+          if (state.error != null) {
+            return Center(child: Text("Error: ${state.error}"));
+          }
 
-            // 3. Success State
-            final business = state.businessProfile;
+          // 3. Success State
+          // Even if null, we show the UI so user can click "Manage" to create one
+          final business = state.businessProfile;
+          final member = state.member;
+          final logoBytes = state.businessImageBytes;
 
-            // If no business profile exists yet
-            if (business == null) {
-              return const Center(child: Text("No Business Profile Found"));
-            }
+          if (business == null && member == null) {
+             return const Center(child: Text("Loading profile data..."));
+          }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 20.0,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderCard(business),
-                  const SizedBox(height: 30),
+          // Create a dummy/empty profile for display if one doesn't exist yet
+          final displayProfile = business ?? BusinessProfile(
+            profileId: '',
+            name: 'No Business Name',
+            registrationNo: '-',
+            contactNo: '-',
+            email: '-',
+            address: '-',
+            memberId: member?.member_id ?? '',
+          );
 
-                  _buildSectionTitle("OFFICIAL DETAILS"),
-                  _buildDetailsCard(business),
-                  const SizedBox(height: 30),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 20.0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeaderCard(displayProfile, logoBytes),
+                const SizedBox(height: 30),
 
-                  _buildSectionTitle("SETTINGS"),
-                  _buildSettingsCard(context, business),
-                ],
-              ),
-            );
-          },
-        ),
+                _buildSectionTitle("OFFICIAL DETAILS"),
+                _buildDetailsCard(displayProfile),
+                const SizedBox(height: 30),
+
+                _buildSectionTitle("SETTINGS"),
+                _buildSettingsCard(context, business, member?.member_id),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   // --- Dynamic Header Card ---
-  Widget _buildHeaderCard(BusinessProfile business) {
+  Widget _buildHeaderCard(BusinessProfile business, Uint8List? logoBytes) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40),
       decoration: _boxDecoration(),
       child: Column(
         children: [
-          Column(
-            children: [
-              const Icon(
-                Icons.layers_outlined,
-                size: 50,
-                color: Color(0xFF2B46F9),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                "COMPANY\nLOGO HERE",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
+              image: logoBytes != null 
+                ? DecorationImage(image: MemoryImage(logoBytes), fit: BoxFit.cover)
+                : null,
+            ),
+            child: logoBytes == null
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.layers_outlined,
+                        size: 40,
+                        color: Color(0xFF2B46F9),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "LOGO",
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  )
+                : null,
           ),
           const SizedBox(height: 24),
-          // DYNAMIC DATA: Name
           Text(
-            business.name,
+            business.name.isEmpty ? "Set Company Name" : business.name,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 22,
@@ -137,7 +156,6 @@ class BusinessProfileScreen extends StatelessWidget {
       decoration: _boxDecoration(),
       child: Column(
         children: [
-          // DYNAMIC DATA: Registration No
           _buildDetailItem(
             icon: Icons.domain,
             title: "Registration No.",
@@ -145,7 +163,6 @@ class BusinessProfileScreen extends StatelessWidget {
           ),
           _buildDivider(),
 
-          // DYNAMIC DATA: Email
           _buildDetailItem(
             icon: Icons.email_outlined,
             title: "Email Address",
@@ -153,7 +170,6 @@ class BusinessProfileScreen extends StatelessWidget {
           ),
           _buildDivider(),
 
-          // DYNAMIC DATA: Contact No
           _buildDetailItem(
             icon: Icons.phone_outlined,
             title: "Contact No.",
@@ -161,7 +177,6 @@ class BusinessProfileScreen extends StatelessWidget {
           ),
           _buildDivider(),
 
-          // DYNAMIC DATA: Address
           _buildDetailItem(
             icon: Icons.location_on_outlined,
             title: "Registered Address",
@@ -173,7 +188,7 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, BusinessProfile? business) {
+  Widget _buildSettingsCard(BuildContext context, BusinessProfile? business, String? memberId) {
     return Container(
       decoration: _boxDecoration(),
       child: ListTile(
@@ -194,9 +209,12 @@ class BusinessProfileScreen extends StatelessWidget {
             context,
             '/edit_business_profile',
             arguments: {
-              'bloc': context.read<ProfileBloc>(),
-              'profile': business, // Pass current data to pre-fill
-              'memberId': "M123", // Or business?.memberId
+              // No need to pass 'bloc' explicitly if using BlocProvider.value in nav
+              // but current nav setup expects it or uses context.
+              // We pass data to pre-fill fields:
+              'profile': business, 
+              // IMPORTANT: Pass the actual member ID, or empty string if not loaded yet
+              'memberId': memberId ?? '', 
             },
           );
         },
@@ -265,7 +283,7 @@ class BusinessProfileScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value,
+                  value.isEmpty ? "-" : value,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade600,

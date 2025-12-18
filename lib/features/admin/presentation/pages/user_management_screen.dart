@@ -6,7 +6,6 @@ import 'package:myfin/features/admin/presentation/bloc/admin_event.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_state.dart';
 import 'package:myfin/features/admin/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/admin/presentation/widgets/edit_user_dialog.dart';
-import 'package:myfin/features/admin/presentation/widgets/edit_user_dialog.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -17,7 +16,7 @@ class UserManagementScreen extends StatelessWidget {
       create: (context) => AdminBloc(
         AdminRepository(
           remoteDataSource:
-              AdminRemoteDataSourceImpl(), // Inject DataSource here
+              AdminRemoteDataSourceImpl(),
         ),
       )..add(LoadAdminDashboardEvent()),
       child: Scaffold(
@@ -25,10 +24,7 @@ class UserManagementScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
+          automaticallyImplyLeading: false, 
           centerTitle: true,
           title: const Text(
             'User Management',

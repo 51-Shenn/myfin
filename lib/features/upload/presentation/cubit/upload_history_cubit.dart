@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/upload_history_state.dart';
@@ -11,10 +12,11 @@ class UploadHistoryCubit extends Cubit<UploadHistoryState> {
     try {
       emit(UploadHistoryLoading());
       
-      // Fetch a larger number of docs (e.g., 50) or implement pagination later
+      final user = FirebaseAuth.instance.currentUser;
+      final String currentMemberId = user?.uid ?? "";
+      
       final documents = await _repository.getDocuments(
-        limit: 50, 
-        // Assuming your Repo supports sorting, sort by newest first
+        memberId: currentMemberId,
         sortBy: DocumentSortField.updatedAt, 
         direction: SortDirection.descending
       );

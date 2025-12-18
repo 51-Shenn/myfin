@@ -6,7 +6,7 @@ class GetDocumentsByCreatorUseCase {
 
   GetDocumentsByCreatorUseCase(this.repository);
 
-  Future<List<Document>> call(String createdBy) async {
-    return repository.getDocumentsByCreator(createdBy);
+  Future<List<Document>> call(String memberId) async {
+    return repository.getDocumentsByCreator(memberId);
   }
 }

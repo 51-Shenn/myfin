@@ -1,25 +1,40 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/admin/data/datasources/tax_regulation_remote_data_source.dart';
+import 'package:myfin/features/admin/data/repositories/tax_regulation_repository_impl.dart';
+import 'package:myfin/features/admin/presentation/cubit/tax_regulation_cubit.dart';
+import 'package:myfin/features/admin/presentation/pages/tax_regulations_list_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
 
-// Placeholder for Tax Regulations
 class AdminTaxScreen extends StatelessWidget {
   const AdminTaxScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Tax Regulations"), centerTitle: true),
-      body: const Center(child: Text("Tax Regulations Content")),
+    return BlocProvider(
+      create: (context) => TaxRegulationCubit(
+        repository: TaxRegulationRepositoryImpl(
+          remoteDataSource: TaxRegulationRemoteDataSource(
+            firestore: FirebaseFirestore.instance,
+          ),
+        ),
+      ),
+      child: const TaxRegulationsListScreen(),
     );
   }
 }
 
-// Placeholder for Admin Profile
 class AdminProfileScreen extends StatelessWidget {
   const AdminProfileScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Admin Profile"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Admin Profile"),
+        centerTitle: true,
+        automaticallyImplyLeading: false,
+      ),
       body: Center(
         child: ElevatedButton(
           onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
@@ -43,21 +58,22 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   // List of screens for the admin navigation
   final List<Widget> _pages = [
     const UserManagementScreen(), // Tab 0
-    const AdminTaxScreen(),       // Tab 1
-    const AdminProfileScreen(),   // Tab 2
+    const AdminTaxScreen(), // Tab 1
+    const AdminProfileScreen(), // Tab 2
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
           ],
         ),
         child: BottomNavigationBar(
@@ -68,8 +84,14 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           unselectedItemColor: Colors.black,
           showUnselectedLabels: true,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 12),
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 12,
+          ),
           items: [
             BottomNavigationBarItem(
               icon: _buildIcon(Icons.people_alt_outlined, 0),
