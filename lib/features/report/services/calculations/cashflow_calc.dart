@@ -50,9 +50,20 @@ class CashFlowCalculator {
   double calculateGainOnSaleOfAssets() =>
       _sumCategory('Gain on Sale of Assets');
 
-  double calculateUnrealizedGainsLosses() => 0.0; // TODO: Implement
+  double calculateUnrealizedGainsLosses() {
+    return _sumCategory('Investment Gains') - _sumCategory('Investment Losses');
+  }
 
-  double calculateChangeInAccounts() => 0.0; // TODO: Implement
+  double calculateChangeInAccounts() {
+    // Calculate inventory change using Opening and Closing Inventory
+    final openingInventory = _sumCategory('Opening Inventory');
+    final closingInventory = _sumCategory('Closing Inventory');
+    final inventoryChange = closingInventory - openingInventory;
+
+    // Inventory increase = use of cash (negative for cash flow)
+    // Inventory decrease = source of cash (positive for cash flow)
+    return -inventoryChange;
+  }
 
   double calculateTotalOperatingActivities() {
     return netIncome +
@@ -71,9 +82,10 @@ class CashFlowCalculator {
   double calculateProceedsFromSaleOfAssets() =>
       _sumCategory('Proceeds from Sale of Assets');
 
-  double calculateMoneyLentToOthers() => 0.0; // TODO: Implement
+  double calculateMoneyLentToOthers() => _sumCategory('Money Lent to Others');
 
-  double calculateMoneyCollectedFromOthers() => 0.0; // TODO: Implement
+  double calculateMoneyCollectedFromOthers() =>
+      _sumCategory('Money Collected from Others');
 
   double calculateTotalInvestingActivities() {
     return -calculatePurchaseOfAssets() +
@@ -83,19 +95,29 @@ class CashFlowCalculator {
   }
 
   // Financing Activities
-  double calculateIssuanceOfStock() => 0.0; // TODO: Implement
+  double calculateIssuanceOfStock() {
+    return _sumCategory('Stock') +
+        _sumCategory('Shared Premium') +
+        _sumCategory('Owner Investment') +
+        _sumCategory('Partner Investment');
+  }
 
-  double calculateRepurchaseOfStock() => 0.0; // TODO: Implement
+  double calculateRepurchaseOfStock() {
+    return _sumCategory('Stock Repurchase') +
+        _sumCategory('Owner Drawing') +
+        _sumCategory('Partner Drawing');
+  }
 
-  double calculateDividendPayments() => 0.0; // TODO: Implement
+  double calculateDividendPayments() => _sumCategory('Dividend Payment');
 
-  double calculateIssuanceOfLongTermDebt() => 0.0; // TODO: Implement
+  double calculateIssuanceOfLongTermDebt() => _sumCategory('Debt');
 
-  double calculateRepaymentOfLongTermDebt() => 0.0; // TODO: Implement
+  double calculateRepaymentOfLongTermDebt() => _sumCategory('Debt Repayment');
 
-  double calculateIssuanceOfShortTermNotes() => 0.0; // TODO: Implement
+  double calculateIssuanceOfShortTermNotes() => _sumCategory('Notes Payable');
 
-  double calculateRepaymentOfShortTermNotes() => 0.0; // TODO: Implement
+  double calculateRepaymentOfShortTermNotes() =>
+      _sumCategory('Notes Repayment');
 
   double calculateTotalFinancingActivities() {
     return calculateIssuanceOfStock() -

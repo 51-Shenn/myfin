@@ -104,86 +104,81 @@ class _MainReportScreenState extends State<MainReportScreen> {
                 builder: (context, state) {
                   final reports = state.loadedReports;
 
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Report Functions
-                        _buildReportFunctions(context),
-                        const SizedBox(height: 16),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Report Functions
+                      _buildReportFunctions(context),
+                      const SizedBox(height: 16),
 
-                        if (state.loadingReports && state.loadedReports.isEmpty)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(48.0),
-                              child: CircularProgressIndicator(),
-                            ),
+                      if (state.loadingReports && state.loadedReports.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(48.0),
+                            child: CircularProgressIndicator(),
                           ),
+                        ),
 
-                        if (state.error != null)
-                          Center(
-                            child: Text(
-                              state.error!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
+                      if (state.error != null)
+                        Center(
+                          child: Text(
+                            state.error!,
+                            style: const TextStyle(color: Colors.red),
                           ),
+                        ),
 
-                        // Recent Reports List
-                        if (!state.loadingReports &&
-                            state.loadedReports.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.all(32.0),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.description,
-                                    size: 64,
-                                    color: Colors.grey[400],
+                      // Recent Reports List
+                      if (!state.loadingReports && state.loadedReports.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.description,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No reports found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No reports found',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      if (mounted) {
-                                        context.read<ReportBLoC>().add(
-                                          LoadReportsEvent(member_id),
-                                        );
-                                      }
-                                    },
-                                    child: const Text('Refresh'),
-                                  ),
-                                ],
-                              ),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    if (mounted) {
+                                      context.read<ReportBLoC>().add(
+                                        LoadReportsEvent(member_id),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('Refresh'),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
 
-                        if (state.loadedReports.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
-                            child: ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: reports.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final report = reports[index];
-                                return RecentReportCard(report: report);
-                              },
-                            ),
+                      if (state.loadedReports.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: reports.length > 2 ? 2 : reports.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final report = reports[index];
+                              return RecentReportCard(report: report);
+                            },
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   );
                 },
               ),

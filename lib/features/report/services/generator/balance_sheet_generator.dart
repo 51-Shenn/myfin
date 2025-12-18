@@ -30,12 +30,17 @@ class BalanceSheetGenerator {
     // Get ending cash from Cash Flow calculator if not provided
     final endingCash =
         endingCashFromCashFlow ??
-        CashFlowCalculator(
-          lineItems: docLineData,
-          startDate: startDate,
-          endDate: asOfDate,
-          netIncome: netIncome,
-        ).calculateEndingCashBalance(0.0); // TODO: Get starting cash
+        () {
+          final cashFlowCalc = CashFlowCalculator(
+            lineItems: docLineData,
+            startDate: startDate,
+            endDate: asOfDate,
+            netIncome: netIncome,
+          );
+          return cashFlowCalc.calculateEndingCashBalance(
+            cashFlowCalc.getStartingCashBalance(),
+          );
+        }();
 
     final calculator = BalanceSheetCalculator(
       lineItems: docLineData,
@@ -45,7 +50,7 @@ class BalanceSheetGenerator {
 
     final sections = [
       _buildAssetsSection(calculator),
-      _buildLiabilitiesSection(calculator),
+      _buildLiabilitiesSection(calculator, netIncome),
       _buildEquitySection(calculator, netIncome),
     ];
 
@@ -53,7 +58,7 @@ class BalanceSheetGenerator {
       generated_at: DateTime.now(),
       sections: sections,
       total_assets: calculator.calculateTotalAssets(),
-      total_liabilities: calculator.calculateTotalLiabilities(),
+      total_liabilities: calculator.calculateTotalLiabilities(netIncome),
       total_equity: calculator.calculateTotalEquity(netIncome),
       total_liabilities_and_equity: calculator
           .calculateTotalLiabilitiesAndEquity(netIncome),
@@ -127,7 +132,10 @@ class BalanceSheetGenerator {
     );
   }
 
-  ReportSection _buildLiabilitiesSection(BalanceSheetCalculator calc) {
+  ReportSection _buildLiabilitiesSection(
+    BalanceSheetCalculator calc,
+    double netIncome,
+  ) {
     final currentLiabilitiesGroup = ReportGroup(
       group_title: 'Current Liabilities',
       line_items: [
@@ -143,7 +151,7 @@ class BalanceSheetGenerator {
         ),
         ReportLineItem(
           item_title: 'Income Tax Payable',
-          amount: calc.calculateIncomeTaxPayable(),
+          amount: calc.calculateIncomeTaxPayable(netIncome),
           isIncrease: false,
         ),
         ReportLineItem(
@@ -162,7 +170,7 @@ class BalanceSheetGenerator {
           isIncrease: false,
         ),
       ],
-      subtotal: calc.calculateTotalCurrentLiabilities(),
+      subtotal: calc.calculateTotalCurrentLiabilities(netIncome),
     );
 
     final longTermLiabilitiesGroup = ReportGroup(
@@ -190,7 +198,7 @@ class BalanceSheetGenerator {
     return ReportSection(
       section_title: 'Liabilities',
       groups: [currentLiabilitiesGroup, longTermLiabilitiesGroup],
-      grand_total: calc.calculateTotalLiabilities(),
+      grand_total: calc.calculateTotalLiabilities(netIncome),
     );
   }
 

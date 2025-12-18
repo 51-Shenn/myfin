@@ -1,3 +1,4 @@
+import 'package:myfin/features/admin/domain/entities/tax_regulation.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 /// Calculator class for Balance Sheet calculations
@@ -5,11 +6,15 @@ class BalanceSheetCalculator {
   final List<DocumentLineItem> lineItems;
   final DateTime asOfDate;
   final double cashBalance; // Ending cash from Cash Flow Statement
+  final TaxRegulation? salesTaxRegulation;
+  final TaxRegulation? incomeTaxRegulation;
 
   BalanceSheetCalculator({
     required this.lineItems,
     required this.asOfDate,
     this.cashBalance = 0.0,
+    this.salesTaxRegulation,
+    this.incomeTaxRegulation,
   });
 
   /// Filter line items by category code up to the date
@@ -25,34 +30,61 @@ class BalanceSheetCalculator {
     }).toList();
   }
 
-  /// Sum debits for asset accounts (debit increases assets)
-  double _sumDebits(String categoryCode) {
+  /// Sum amounts for a specific category using total field
+  /// - isIncrease=true: Returns positive sum (increases account balance)
+  /// - isIncrease=false: Returns negative sum (decreases account balance)
+  double _sumCategory(String categoryCode, bool isIncrease) {
     final filteredItems = _filterByCategory(categoryCode);
-    return filteredItems.fold(0.0, (sum, item) => sum + item.debit);
+    final sum = filteredItems.fold(0.0, (sum, item) => sum + item.total);
+    // Use isIncrease to determine if this adds to or subtracts from balance
+    return isIncrease ? sum : -sum;
   }
 
-  /// Sum credits for asset accounts (credit decreases assets)
-  double _sumCredits(String categoryCode) {
-    final filteredItems = _filterByCategory(categoryCode);
-    return filteredItems.fold(0.0, (sum, item) => sum + item.credit);
+  /// Calculate tax using progressive tax brackets
+  /// Returns the total tax amount based on the taxable amount and tax regulation
+  double _calculateProgressiveTax(
+    double taxableAmount,
+    TaxRegulation? regulation,
+  ) {
+    if (regulation == null || regulation.rates.isEmpty) return 0.0;
+
+    double totalTax = 0.0;
+
+    for (final rate in regulation.rates) {
+      // Determine the taxable portion in this bracket
+      final bracketMin = rate.minimumIncome;
+      final bracketMax = rate.maximumIncome;
+
+      if (taxableAmount <= bracketMin) {
+        // Income doesn't reach this bracket
+        break;
+      }
+
+      // Calculate taxable amount in this bracket
+      final taxableInBracket = taxableAmount > bracketMax
+          ? (bracketMax - bracketMin)
+          : (taxableAmount - bracketMin);
+
+      // Calculate tax for this bracket
+      final taxInBracket = taxableInBracket * (rate.percentage / 100);
+      totalTax += taxInBracket;
+
+      if (taxableAmount <= bracketMax) {
+        // No need to check higher brackets
+        break;
+      }
+    }
+
+    return totalTax;
   }
 
-  /// For assets: Debit - Credit = Net Asset Value
-  double _netAssetValue(String categoryCode) {
-    return _sumDebits(categoryCode) - _sumCredits(categoryCode);
-  }
-
-  /// For liabilities/equity: Credit - Debit = Net Liability/Equity Value
-  double _netLiabilityValue(String categoryCode) {
-    return _sumCredits(categoryCode) - _sumDebits(categoryCode);
-  }
-
-  // ASSETS - Current Assets (use debit - credit)
+  // ASSETS - Current Assets
   /// Cash & Cash Equivalents comes from Cash Flow Statement ending balance
   double calculateCashAndCashEquivalents() => cashBalance;
-  double calculateAccountsReceivable() => _netAssetValue('Accounts Receivable');
-  double calculateNotesReceivable() => _netAssetValue('Notes Receivable');
-  double calculateInventory() => _netAssetValue('Closing Inventory');
+  double calculateAccountsReceivable() =>
+      _sumCategory('Accounts Receivable', true);
+  double calculateNotesReceivable() => _sumCategory('Notes Receivable', true);
+  double calculateInventory() => _sumCategory('Closing Inventory', true);
 
   double calculateTotalCurrentAssets() {
     return calculateCashAndCashEquivalents() +
@@ -61,21 +93,24 @@ class BalanceSheetCalculator {
         calculateInventory();
   }
 
-  // ASSETS - Non-Current Assets (use debit - credit)
+  // ASSETS - Non-Current Assets
   double calculatePropertyPlantEquipment() =>
-      _netAssetValue('Purchase of Assets');
+      _sumCategory('Purchase of Assets', true);
 
   /// Accumulated depreciation is a contra-asset (credit account that reduces assets)
   /// Store it separately as accumulated on the credit side of the asset account
   double calculateAccumulatedDepreciation() {
     // This should be tracked separately, but for now calculate as 20% of PPE
-    return _netAssetValue('Purchase of Assets') *
+    return _sumCategory('Purchase of Assets', true) *
         0.2; // Shown as positive in reports
   }
 
-  double calculateIntangibleAssets() => 0.0; // TODO: Implement
-  double calculateLongTermInvestments() => 0.0; // TODO: Implement
-  double calculateOtherAssets() => 0.0; // TODO: Implement
+  double calculateIntangibleAssets() => _sumCategory('Intangible Assets', true);
+
+  double calculateLongTermInvestments() =>
+      _sumCategory('Long-term Investments', true);
+
+  double calculateOtherAssets() => _sumCategory('Other Assets', true);
 
   double calculateTotalNonCurrentAssets() {
     return calculatePropertyPlantEquipment() -
@@ -89,28 +124,57 @@ class BalanceSheetCalculator {
     return calculateTotalCurrentAssets() + calculateTotalNonCurrentAssets();
   }
 
-  // LIABILITIES - Current Liabilities (use credit - debit)
-  double calculateAccountsPayable() => _netLiabilityValue('Accounts Payable');
-  double calculateNotesPayable() => _netLiabilityValue('Notes Payable');
-  double calculateIncomeTaxPayable() => _netLiabilityValue('Tax Expense');
-  double calculateSalesTaxesPayable() => 0.0; // TODO: Implement
-  double calculateProductReturnsLiability() =>
-      _netLiabilityValue('Sales Returns');
-  double calculateOtherCurrentLiabilities() => 0.0; // TODO: Implement
+  // LIABILITIES - Current Liabilities
+  double calculateAccountsPayable() => _sumCategory('Accounts Payable', true);
+  double calculateNotesPayable() => _sumCategory('Notes Payable', true);
 
-  double calculateTotalCurrentLiabilities() {
+  /// Calculate income tax payable based on net income and tax regulation
+  double calculateIncomeTaxPayable([double netIncome = 0.0]) {
+    if (incomeTaxRegulation == null) {
+      // Fallback to summing 'Tax Expense' category if no regulation provided
+      return _sumCategory('Tax Expense', true);
+    }
+    return _calculateProgressiveTax(netIncome, incomeTaxRegulation);
+  }
+
+  /// Calculate sales tax payable based on total sales revenue
+  double calculateSalesTaxesPayable() {
+    if (salesTaxRegulation == null) return 0.0;
+
+    // Sum all revenue categories to get total taxable sales
+    final productRevenue = _sumCategory('Product Revenue', true);
+    final serviceRevenue = _sumCategory('Service Revenue', true);
+    final totalRevenue = productRevenue + serviceRevenue;
+
+    // Apply first tax rate (assuming flat sales tax rate)
+    if (salesTaxRegulation!.rates.isNotEmpty) {
+      final salesTaxRate = salesTaxRegulation!.rates.first.percentage;
+      return totalRevenue * (salesTaxRate / 100);
+    }
+
+    return 0.0;
+  }
+
+  double calculateProductReturnsLiability() =>
+      _sumCategory('Sales Returns', true);
+
+  double calculateOtherCurrentLiabilities() => 0.0; // No specific category
+
+  double calculateTotalCurrentLiabilities([double netIncome = 0.0]) {
     return calculateAccountsPayable() +
         calculateNotesPayable() +
-        calculateIncomeTaxPayable() +
+        calculateIncomeTaxPayable(netIncome) +
         calculateSalesTaxesPayable() +
         calculateProductReturnsLiability() +
         calculateOtherCurrentLiabilities();
   }
 
   // LIABILITIES - Long-term Liabilities
-  double calculateLongTermDebt() => 0.0; // TODO: Implement
-  double calculateDeferredRevenueLongTerm() => 0.0; // TODO: Implement
-  double calculateOtherLongTermLiabilities() => 0.0; // TODO: Implement
+  double calculateLongTermDebt() => _sumCategory('Debt', true);
+
+  double calculateDeferredRevenueLongTerm() => 0.0; // No specific category
+
+  double calculateOtherLongTermLiabilities() => 0.0; // No specific category
 
   double calculateTotalLongTermLiabilities() {
     return calculateLongTermDebt() +
@@ -118,18 +182,20 @@ class BalanceSheetCalculator {
         calculateOtherLongTermLiabilities();
   }
 
-  double calculateTotalLiabilities() {
-    return calculateTotalCurrentLiabilities() +
+  double calculateTotalLiabilities([double netIncome = 0.0]) {
+    return calculateTotalCurrentLiabilities(netIncome) +
         calculateTotalLongTermLiabilities();
   }
 
-  // EQUITY - Corporate Equity (use credit - debit)
-  double calculateSharedCapital() =>
-      0.0; // TODO: Implement with actual capital accounts
-  double calculateSharedPremium() => 0.0; // TODO: Implement
+  // EQUITY - Corporate Equity
+  double calculateSharedCapital() => _sumCategory('Stock', true);
+
+  double calculateSharedPremium() => _sumCategory('Shared Premium', true);
+
   double calculateRetainedEarnings(double netIncome) =>
       netIncome; // Simplified - should accumulate over time
-  double calculateOtherCorporateEquity() => 0.0; // TODO: Implement
+
+  double calculateOtherCorporateEquity() => 0.0; // No specific category
 
   double calculateTotalCorporateEquity(double netIncome) {
     return calculateSharedCapital() +
@@ -139,9 +205,11 @@ class BalanceSheetCalculator {
   }
 
   // EQUITY - Owner's Equity
-  double calculateOwnersCapital() => 0.0; // TODO: Implement
-  double calculateOwnersDrawings() => 0.0; // TODO: Implement
-  double calculateOtherOwnersEquity() => 0.0; // TODO: Implement
+  double calculateOwnersCapital() => _sumCategory('Owner Investment', true);
+
+  double calculateOwnersDrawings() => _sumCategory('Owner Drawing', false);
+
+  double calculateOtherOwnersEquity() => 0.0; // No specific category
 
   double calculateTotalOwnersEquity(double netIncome) {
     return calculateOwnersCapital() -
@@ -150,10 +218,11 @@ class BalanceSheetCalculator {
         calculateOtherOwnersEquity();
   }
 
-  // EQUITY - Partnership Equity (use credit - debit)
-  double calculatePartnerCapital() => 0.0; // TODO: Implement
+  // EQUITY - Partnership Equity
+  double calculatePartnerCapital() => _sumCategory('Partner Investment', true);
+
   double calculatePartnerDrawings() =>
-      0.0; // TODO: Implement (debit balance, reduces equity)
+      _sumCategory('Partner Drawing', false); // Debit balance, reduces equity
 
   double calculateTotalPartnershipEquity() {
     return calculatePartnerCapital() - calculatePartnerDrawings();
@@ -180,7 +249,7 @@ class BalanceSheetCalculator {
     double netIncome, {
     String equityType = 'corporate',
   }) {
-    return calculateTotalLiabilities() +
+    return calculateTotalLiabilities(netIncome) +
         calculateTotalEquity(netIncome, equityType: equityType);
   }
 

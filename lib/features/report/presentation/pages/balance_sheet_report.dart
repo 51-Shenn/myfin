@@ -537,7 +537,7 @@ class _BalanceSheetReportScreenState extends State<BalanceSheetReportScreen> {
               Text(
                 isBalanced
                     ? 'Balance Sheet Equation Verified ✓'
-                    : 'Balance Sheet Does Not Balance!',
+                    : 'Balance Sheet Does Not Balance! \nHelp in top right corner.',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isBalanced ? Colors.green : Colors.red,
@@ -764,6 +764,10 @@ class _BalanceSheetReportScreenState extends State<BalanceSheetReportScreen> {
                       isBalanced
                           ? 'Balance Sheet Equation Verified ✓'
                           : 'Balance Sheet Does Not Balance!',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                    pw.Text(
+                      'Help in top right corner.',
                       style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                     ),
                   ],

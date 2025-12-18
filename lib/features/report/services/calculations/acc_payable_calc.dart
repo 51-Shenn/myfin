@@ -15,11 +15,22 @@ class AccountsPayableCalculator {
     required this.asOfDate,
   });
 
-  /// Get all payable documents (bills)
+  /// Get all payable documents (bills and related documents)
   List<Document> getPayableDocuments() {
+    // Document types that represent money owed BY the business
+    const payableTypes = [
+      'Supplier Invoice',
+      'Purchase Order',
+      'Goods Received Note',
+      'Payment Voucher',
+      'Expense Claim Form',
+      'Debit Note',
+      'Bill', // Keep legacy support
+    ];
+
     return documents.where((doc) {
-      return doc.type == 'Bill' &&
-          doc.status == 'Posted' &&
+      return payableTypes.contains(doc.type) &&
+          (doc.status == 'Posted' || doc.status == 'Approved') &&
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }
