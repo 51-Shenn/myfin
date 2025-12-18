@@ -12,6 +12,8 @@ class ProfileState {
   final FormStatus passwordStatus;
   final Uint8List? profileImageBytes;
   final Uint8List? businessImageBytes;
+  final FormStatus emailStatus; 
+  final FormStatus deleteStatus; 
 
   const ProfileState({
     required this.isLoading,
@@ -21,6 +23,8 @@ class ProfileState {
     this.passwordStatus = FormStatus.initial,
     this.profileImageBytes,
     this.businessImageBytes,
+    this.emailStatus = FormStatus.initial,
+    this.deleteStatus = FormStatus.initial,
   });
 
   factory ProfileState.initial() {
@@ -32,6 +36,8 @@ class ProfileState {
       passwordStatus: FormStatus.initial,
       profileImageBytes: null,
       businessImageBytes: null,
+      emailStatus: FormStatus.initial,
+      deleteStatus: FormStatus.initial,
     );
   }
 
@@ -43,6 +49,8 @@ class ProfileState {
     FormStatus? passwordStatus,
     Uint8List? profileImageBytes,
     Uint8List? businessImageBytes,
+    FormStatus? emailStatus,
+    FormStatus? deleteStatus,
   }) {
     return ProfileState(
       isLoading: isLoading ?? this.isLoading,
@@ -52,6 +60,8 @@ class ProfileState {
       passwordStatus: passwordStatus ?? this.passwordStatus,
       profileImageBytes: profileImageBytes ?? this.profileImageBytes,
       businessImageBytes: businessImageBytes ?? this.businessImageBytes,
+      emailStatus: emailStatus ?? this.emailStatus,
+      deleteStatus: deleteStatus ?? this.deleteStatus,
     );
   }
 }

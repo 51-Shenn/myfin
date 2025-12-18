@@ -12,6 +12,7 @@ import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/edit_business_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/change_password.dart';
+import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
 
 class ProfileNav extends StatefulWidget {
   const ProfileNav({super.key});
@@ -37,13 +38,17 @@ class _ProfileNavState extends State<ProfileNav> {
     // 2. Initialize Bloc
     return BlocProvider(
       create: (_) {
-        final bloc = ProfileBloc(
-          ProfileRepositoryImpl(
-            remoteDataSource: ProfileRemoteDataSourceImpl(),
-          ),
+        final profileRepo = ProfileRepositoryImpl(
+          remoteDataSource: ProfileRemoteDataSourceImpl(),
         );
 
-        // Only load if we have a valid ID
+        final memberRepo = context.read<MemberRepository>();
+
+        final bloc = ProfileBloc(
+          profileRepo: profileRepo,
+          memberRepo: memberRepo, // Injecting it here
+        );
+
         if (memberId.isNotEmpty) {
           bloc.add(LoadProfileEvent(memberId));
         }
@@ -69,7 +74,7 @@ class _ProfileNavState extends State<ProfileNav> {
 
                 return EditProfileScreen(
                   arguments: args,
-                );
+                ); // Updated Constructor usage
               }
 
               // --- View Business Profile ---

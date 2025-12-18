@@ -6,6 +6,8 @@ import 'package:myfin/features/admin/presentation/bloc/admin_event.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_state.dart';
 import 'package:myfin/features/admin/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/admin/presentation/widgets/edit_user_dialog.dart';
+import 'package:myfin/features/admin/presentation/widgets/user_avatar.dart';
+import 'package:myfin/features/admin/presentation/widgets/add_admin_dialog.dart';
 
 class UserManagementScreen extends StatelessWidget {
   const UserManagementScreen({super.key});
@@ -14,17 +16,14 @@ class UserManagementScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => AdminBloc(
-        AdminRepository(
-          remoteDataSource:
-              AdminRemoteDataSourceImpl(),
-        ),
+        AdminRepository(remoteDataSource: AdminRemoteDataSourceImpl()),
       )..add(LoadAdminDashboardEvent()),
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          automaticallyImplyLeading: false, 
+          automaticallyImplyLeading: false,
           centerTitle: true,
           title: const Text(
             'User Management',
@@ -36,6 +35,26 @@ class UserManagementScreen extends StatelessWidget {
             ),
           ),
         ),
+        // --- ADDED FLOATING ACTION BUTTON HERE ---
+        floatingActionButton: Builder(
+          builder: (ctx) {
+            return FloatingActionButton(
+              mini: true, // Makes the button small
+              backgroundColor: const Color(0xFF2B46F9),
+              onPressed: () {
+                showDialog(
+                  context: ctx,
+                  builder: (dialogContext) {
+                    // Assuming AuthBloc is provided at the top of the widget tree (AppRoutes)
+                    return const AddAdminDialog();
+                  },
+                );
+              },
+              child: const Icon(Icons.add, color: Colors.white),
+            );
+          }
+        ),
+        // ----------------------------------------
         body: BlocBuilder<AdminBloc, AdminState>(
           builder: (context, state) {
             if (state is AdminLoading) {
@@ -129,20 +148,12 @@ class UserManagementScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 // Avatar
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    user.imageUrl,
-                                    width: 50,
-                                    height: 50,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, _, __) => Container(
-                                      color: Colors.grey,
-                                      width: 50,
-                                      height: 50,
-                                    ),
-                                  ),
+                                UserAvatar(
+                                  userId: user.userId,
+                                  userName: user.name,
+                                  size: 50,
                                 ),
+                                // -----------------------------------------------
                                 const SizedBox(width: 16),
                                 // Text Info
                                 Expanded(
@@ -212,8 +223,6 @@ class UserManagementScreen extends StatelessWidget {
                                       showDialog(
                                         context: context,
                                         builder: (dialogContext) {
-                                          // IMPORTANT: We must pass the existing AdminBloc to the dialog
-                                          // so the dialog can trigger the EditUserEvent.
                                           return BlocProvider.value(
                                             value: context.read<AdminBloc>(),
                                             child: EditUserDialog(user: user),
@@ -266,7 +275,6 @@ class UserManagementScreen extends StatelessWidget {
                                   },
                                   itemBuilder: (BuildContext context) =>
                                       <PopupMenuEntry<String>>[
-                                        // Option 1: Edit
                                         const PopupMenuItem<String>(
                                           value: 'edit',
                                           child: Row(
@@ -287,7 +295,6 @@ class UserManagementScreen extends StatelessWidget {
                                             ],
                                           ),
                                         ),
-                                        // Option 2: Delete
                                         const PopupMenuItem<String>(
                                           value: 'delete',
                                           child: Row(

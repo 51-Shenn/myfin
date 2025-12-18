@@ -6,6 +6,7 @@ import 'package:myfin/features/admin/data/repositories/tax_regulation_repository
 import 'package:myfin/features/admin/presentation/cubit/tax_regulation_cubit.dart';
 import 'package:myfin/features/admin/presentation/pages/tax_regulations_list_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
+import 'package:myfin/features/admin/presentation/pages/admin_profile_screen.dart'; // Import the new file
 
 class AdminTaxScreen extends StatelessWidget {
   const AdminTaxScreen({super.key});
@@ -58,8 +59,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   // List of screens for the admin navigation
   final List<Widget> _pages = [
     const UserManagementScreen(), // Tab 0
-    const AdminTaxScreen(), // Tab 1
-    const AdminProfileScreen(), // Tab 2
+    const AdminTaxScreen(),       // Tab 1
+    const AdminProfileScreen(),   // Tab 2: Replaced the placeholder
   ];
 
   @override

@@ -35,6 +35,21 @@ class UploadView extends StatelessWidget {
 
     return BlocListener<UploadCubit, UploadState>(
       listener: (context, state) async {
+        if (state is UploadError) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Upload Error'),
+              content: Text(state.message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
         if (state is UploadNavigateToManual) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/doc_details').then((_) {
@@ -58,12 +73,12 @@ class UploadView extends StatelessWidget {
             NavBarController.of(context)?.toggleNavBar();
           });
         }
-        else if (state is UploadImagePicked) {
-          uploadCubit.processPickedImage(state.imagePath);
-        } 
-        else if (state is UploadFilePicked) {
-          uploadCubit.processPickedFile(state.filePath, state.fileName);
-        }
+        // else if (state is UploadImagePicked) {
+        //   uploadCubit.processPickedImage(state.imagePath);
+        // } 
+        // else if (state is UploadFilePicked) {
+        //   uploadCubit.processPickedFile(state.filePath, state.fileName);
+        // }
         else if (state is UploadNavigateToHistory) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/upload_history').then((_) {
@@ -159,18 +174,6 @@ class UploadView extends StatelessWidget {
                                     CircularProgressIndicator(),
                                   ],
                                 )
-                              );
-                            }
-      
-                            if (state is UploadError) {
-                              return Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Error: ${state.message}',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                ),
                               );
                             }
                             

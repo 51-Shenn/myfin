@@ -47,3 +47,24 @@ class ChangePasswordEvent extends ProfileEvent {
 }
 
 class LogoutEvent extends ProfileEvent {}
+
+class ChangeEmailEvent extends ProfileEvent {
+  final String newEmail;
+  final String currentPassword;
+
+  const ChangeEmailEvent({
+    required this.newEmail,
+    required this.currentPassword,
+  });
+
+  @override
+  List<Object?> get props => [newEmail, currentPassword];
+}
+
+class DeleteAccountEvent extends ProfileEvent {
+  final String password;
+  const DeleteAccountEvent(this.password);
+
+  @override
+  List<Object?> get props => [password];
+}

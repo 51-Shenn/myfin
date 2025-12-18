@@ -1,5 +1,8 @@
+import 'dart:typed_data';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/admin/domain/entities/admin.dart';
+
+enum AdminPasswordStatus { initial, loading, success, failure }
 
 abstract class AdminState extends Equatable {
   @override
@@ -13,15 +16,21 @@ class AdminLoaded extends AdminState {
   final List<AdminUserView> users;
   final List<AdminUserView> filteredUsers;
   final Map<String, int> stats;
+  final Uint8List? adminImageBytes;
   
-  // Optional: Add specific action states if you want to show a spinner on a specific row
-  // final String? processingUserId; 
+  // --- ADD THESE FIELDS ---
+  final AdminPasswordStatus passwordStatus;
+  final String? passwordError;
 
   AdminLoaded({
     required this.admin,
     required this.users,
     required this.filteredUsers,
     required this.stats,
+    this.adminImageBytes,
+    // --- Initialize them ---
+    this.passwordStatus = AdminPasswordStatus.initial,
+    this.passwordError,
   });
 
   AdminLoaded copyWith({
@@ -29,17 +38,34 @@ class AdminLoaded extends AdminState {
     List<AdminUserView>? users,
     List<AdminUserView>? filteredUsers,
     Map<String, int>? stats,
+    Uint8List? adminImageBytes,
+    // --- Add to copyWith ---
+    AdminPasswordStatus? passwordStatus,
+    String? passwordError,
   }) {
     return AdminLoaded(
       admin: admin ?? this.admin,
       users: users ?? this.users,
       filteredUsers: filteredUsers ?? this.filteredUsers,
       stats: stats ?? this.stats,
+      adminImageBytes: adminImageBytes ?? this.adminImageBytes,
+      // --- Assign them ---
+      passwordStatus: passwordStatus ?? this.passwordStatus,
+      passwordError: passwordError ?? this.passwordError,
     );
   }
 
   @override
-  List<Object?> get props => [admin, users, filteredUsers, stats];
+  List<Object?> get props => [
+    admin,
+    users,
+    filteredUsers,
+    stats,
+    adminImageBytes,
+    // --- Add to props ---
+    passwordStatus,
+    passwordError,
+  ];
 }
 
 class AdminError extends AdminState {
