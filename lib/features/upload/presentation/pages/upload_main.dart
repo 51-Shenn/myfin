@@ -58,12 +58,12 @@ class UploadView extends StatelessWidget {
             NavBarController.of(context)?.toggleNavBar();
           });
         }
-        else if (state is UploadImagePicked) {
-          uploadCubit.processPickedImage(state.imagePath);
-        } 
-        else if (state is UploadFilePicked) {
-          uploadCubit.processPickedFile(state.filePath, state.fileName);
-        }
+        // else if (state is UploadImagePicked) {
+        //   uploadCubit.processPickedImage(state.imagePath);
+        // } 
+        // else if (state is UploadFilePicked) {
+        //   uploadCubit.processPickedFile(state.filePath, state.fileName);
+        // }
         else if (state is UploadNavigateToHistory) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/upload_history').then((_) {

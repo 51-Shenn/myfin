@@ -67,7 +67,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       if (image != null) {
         // Emit image picked state first (optional)
-        emit(UploadImagePicked(state.document, image.path));
+        // emit(UploadImagePicked(state.document, image.path));
         // Process immediately
         await processPickedImage(image.path);
       }
