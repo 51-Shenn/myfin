@@ -1,10 +1,11 @@
 // Abstract repository interface for report feature
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
+import 'package:myfin/features/upload/domain/entities/document.dart';
 
 abstract class ReportRepository {
   /// Fetch all reports for a specific member
-  Future<List<Report>> fetchReportsForMember(String memberId);
+  Future<List<Report>> getReportsByMemberId(String memberId);
 
   /// Get a specific report by its ID
   Future<Report> getReportByReportId(String reportId);
@@ -25,4 +26,25 @@ abstract class ReportRepository {
     DateTime? endDate,
     int? limit,
   });
+
+  /// Get all documents for a specific member
+  Future<List<Document>> getDocumentsByMemberId(String memberId);
+
+  /// Get documents filtered by member ID and status
+  Future<List<Document>> getDocumentsByMemberIdAndStatus(
+    String memberId,
+    String status,
+  );
+
+  /// Get documents filtered by member ID and date range
+  Future<List<Document>> getDocumentsByMemberIdAndDateRange(
+    String memberId,
+    DateTime startDate,
+    DateTime endDate,
+  );
+
+  /// Get document line items filtered by document IDs
+  Future<List<DocumentLineItem>> getDocLineItemsByDocumentIds(
+    List<String> documentIds,
+  );
 }

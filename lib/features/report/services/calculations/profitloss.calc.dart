@@ -25,111 +25,116 @@ class ProfitLossCalculator {
     }).toList();
   }
 
-  /// Sum amounts for a specific category using debit/credit logic
-  double _sumCategory(String categoryCode, {bool useDebit = true}) {
-    return _filterByCategory(
-      categoryCode,
-    ).fold(0.0, (sum, item) => sum + (useDebit ? item.debit : item.credit));
+  /// Sum amounts for a specific category using total field
+  /// Categories are classified as:
+  /// - Income/Revenue categories: use positive (add to profit)
+  /// - Expense/Cost categories: use negative (subtract from profit)
+  /// - Contra-revenue categories (returns, discounts): use negative
+  /// - Contra-expense categories (purchase returns, discounts): use negative
+  double _sumCategory(String categoryCode, bool isIncrease) {
+    final filteredItems = _filterByCategory(categoryCode);
+    final sum = filteredItems.fold(0.0, (sum, item) => sum + item.total);
+    // If isIncrease is true, return positive (adds to profit/revenue)
+    // If isIncrease is false, return as-is for subtraction in formulas
+    return sum;
   }
 
-  double _sumCategoryByTotal(String categoryCode) {
-    return _filterByCategory(
-      categoryCode,
-    ).fold(0.0, (sum, item) => sum + item.total);
-  }
-
-  // revenue
-  double calculateProductRevenue() =>
-      _sumCategory('Product Revenue', useDebit: false);
-  double calculateServiceRevenue() =>
-      _sumCategory('Service Revenue', useDebit: false);
+  // Revenue categories (isIncrease: true)
+  double calculateProductRevenue() => _sumCategory('Product Revenue', true);
+  double calculateServiceRevenue() => _sumCategory('Service Revenue', true);
   double calculateSubscriptionRevenue() =>
-      _sumCategory('Subscription Revenue', useDebit: false);
-  double calculateRentalRevenue() =>
-      _sumCategory('Rental Revenue', useDebit: false);
+      _sumCategory('Subscription Revenue', true);
+  double calculateRentalRevenue() => _sumCategory('Rental Revenue', true);
   double calculateOtherOperatingRevenue() =>
-      _sumCategory('Other Operating Revenue', useDebit: false);
+      _sumCategory('Other Operating Revenue', true);
 
-  double calculateSalesReturns() => _sumCategory('Sales Returns');
-  double calculateSalesDiscounts() => _sumCategory('Sales Discounts');
-  double calculateSalesAllowances() => _sumCategory('Sales Allowances');
+  // Deductions from revenue (isIncrease: false - these reduce revenue)
+  double calculateSalesReturns() => _sumCategory('Sales Returns', false);
+  double calculateSalesDiscounts() => _sumCategory('Sales Discounts', false);
+  double calculateSalesAllowances() => _sumCategory('Sales Allowances', false);
 
-  double calculateInterestIncome() =>
-      _sumCategory('Interest Income', useDebit: false);
-  double calculateDividendIncome() =>
-      _sumCategory('Dividend Income', useDebit: false);
-  double calculateInvestmentGains() =>
-      _sumCategory('Investment Gains', useDebit: false);
-  double calculateInsuranceClaims() =>
-      _sumCategory('Insurance Claims', useDebit: false);
+  // Other income (isIncrease: true)
+  double calculateInterestIncome() => _sumCategory('Interest Income', true);
+  double calculateDividendIncome() => _sumCategory('Dividend Income', true);
+  double calculateInvestmentGains() => _sumCategory('Investment Gains', true);
+  double calculateInsuranceClaims() => _sumCategory('Insurance Claims', true);
   double calculateGainOnSaleOfAssets() =>
-      _sumCategory('Gain on Sale of Assets', useDebit: false);
-  double calculateOtherIncome() =>
-      _sumCategory('Other Income', useDebit: false);
+      _sumCategory('Gain on Sale of Assets', true);
+  double calculateOtherIncome() => _sumCategory('Other Income', true);
 
-  // cogs
-  double calculateOpeningInventory() => _sumCategory('Opening Inventory');
-  double calculatePurchases() => _sumCategory('Purchases');
-  double calculateDeliveryFees() => _sumCategory('Delivery Fees');
+  // Cost of Goods Sold (isIncrease: false for costs, true for reductions)
+  double calculateOpeningInventory() =>
+      _sumCategory('Opening Inventory', false);
+  double calculatePurchases() => _sumCategory('Purchases', false);
+  double calculateDeliveryFees() => _sumCategory('Delivery Fees', false);
   double calculatePurchaseReturns() =>
-      _sumCategory('Purchase Returns', useDebit: false);
+      _sumCategory('Purchase Returns', true); // Reduces COGS
   double calculatePurchaseDiscounts() =>
-      _sumCategory('Purchase Discounts', useDebit: false);
+      _sumCategory('Purchase Discounts', true); // Reduces COGS
   double calculateClosingInventory() =>
-      _sumCategory('Closing Inventory', useDebit: false);
+      _sumCategory('Closing Inventory', true); // Reduces COGS
   double calculateOtherCostOfGoodsSold() =>
-      _sumCategory('Other Cost of Goods Sold');
+      _sumCategory('Other Cost of Goods Sold', false);
 
-  // cos
-  double calculateDirectLaborCosts() => _sumCategory('Direct Labor Costs');
-  double calculateContractorCosts() => _sumCategory('Contractor Costs');
+  // Cost of Services (isIncrease: false - all are expenses)
+  double calculateDirectLaborCosts() =>
+      _sumCategory('Direct Labor Costs', false);
+  double calculateContractorCosts() => _sumCategory('Contractor Costs', false);
   double calculateOtherCostOfServices() =>
-      _sumCategory('Other Cost of Services');
+      _sumCategory('Other Cost of Services', false);
 
-  // expense
-  double calculateAdvertising() => _sumCategory('Advertising');
-  double calculateSalesCommissions() => _sumCategory('Sales Commissions');
-  double calculateSalesSalaries() => _sumCategory('Sales Salaries');
+  // Operating Expenses (isIncrease: false - all reduce profit)
+  double calculateAdvertising() => _sumCategory('Advertising', false);
+  double calculateSalesCommissions() =>
+      _sumCategory('Sales Commissions', false);
+  double calculateSalesSalaries() => _sumCategory('Sales Salaries', false);
   double calculateTravelAndEntertainment() =>
-      _sumCategory('Travel & Entertainment');
+      _sumCategory('Travel & Entertainment', false);
   double calculateShippingDeliveryOut() =>
-      _sumCategory('Shipping/Delivery-Out');
+      _sumCategory('Shipping/Delivery-Out', false);
 
-  double calculateOfficeSalaries() => _sumCategory('Office Salaries');
-  double calculateOfficeRent() => _sumCategory('Office Rent');
-  double calculateOfficeUtilities() => _sumCategory('Office Utilities');
-  double calculateOfficeSupplies() => _sumCategory('Office Supplies');
+  double calculateOfficeSalaries() => _sumCategory('Office Salaries', false);
+  double calculateOfficeRent() => _sumCategory('Office Rent', false);
+  double calculateOfficeUtilities() => _sumCategory('Office Utilities', false);
+  double calculateOfficeSupplies() => _sumCategory('Office Supplies', false);
   double calculateTelephoneAndInternet() =>
-      _sumCategory('Telephone & Internet');
+      _sumCategory('Telephone & Internet', false);
   double calculateRepairsAndMaintenance() =>
-      _sumCategory('Repairs & Maintenance');
-  double calculateInsurance() => _sumCategory('Insurance');
-  double calculateProfessionalFees() => _sumCategory('Professional Fees');
-  double calculateBankCharges() => _sumCategory('Bank Charges');
+      _sumCategory('Repairs & Maintenance', false);
+  double calculateInsurance() => _sumCategory('Insurance', false);
+  double calculateProfessionalFees() =>
+      _sumCategory('Professional Fees', false);
+  double calculateBankCharges() => _sumCategory('Bank Charges', false);
   double calculateTrainingAndDevelopment() =>
-      _sumCategory('Training & Development');
+      _sumCategory('Training & Development', false);
 
   double calculateDepreciation() =>
-      (_sumCategoryByTotal('Purchase of Assets') * 0.2);
+      (_sumCategory('Purchase of Assets', false) * 0.2);
   double calculateAmortization() =>
-      _sumCategory('Amortization (Patents, Trademarks, Software)');
+      _sumCategory('Amortization (Patents, Trademarks, Software)', false);
 
-  double calculateLicensesAndPermits() => _sumCategory('Licenses & Permits');
-  double calculateSecurity() => _sumCategory('Security');
-  double calculateOutsourcingExpenses() => _sumCategory('Outsourcing Expenses');
+  double calculateLicensesAndPermits() =>
+      _sumCategory('Licenses & Permits', false);
+  double calculateSecurity() => _sumCategory('Security', false);
+  double calculateOutsourcingExpenses() =>
+      _sumCategory('Outsourcing Expenses', false);
   double calculateSubscriptionsAndTools() =>
-      _sumCategory('Subscriptions & Tools');
-  double calculateHRAndRecruiting() => _sumCategory('HR & Recruiting');
-  double calculateInterestExpense() => _sumCategory('Interest Expense');
+      _sumCategory('Subscriptions & Tools', false);
+  double calculateHRAndRecruiting() => _sumCategory('HR & Recruiting', false);
+  double calculateInterestExpense() => _sumCategory('Interest Expense', false);
   double calculateLossOnSaleOfAssets() =>
-      _sumCategory('Loss on Sale of Assets');
-  double calculateInvestmentLosses() => _sumCategory('Investment Losses');
-  double calculatePenaltiesAndFines() => _sumCategory('Penalties & Fines');
-  double calculateLegalSettlements() => _sumCategory('Legal Settlements');
-  double calculateImpairmentLosses() => _sumCategory('Impairment Losses');
-  double calculateOtherExpenses() => _sumCategory('Other Expenses');
+      _sumCategory('Loss on Sale of Assets', false);
+  double calculateInvestmentLosses() =>
+      _sumCategory('Investment Losses', false);
+  double calculatePenaltiesAndFines() =>
+      _sumCategory('Penalties & Fines', false);
+  double calculateLegalSettlements() =>
+      _sumCategory('Legal Settlements', false);
+  double calculateImpairmentLosses() =>
+      _sumCategory('Impairment Losses', false);
+  double calculateOtherExpenses() => _sumCategory('Other Expenses', false);
 
-  double calculateCurrentTaxExpense() => _sumCategory('Tax Expense');
+  double calculateCurrentTaxExpense() => _sumCategory('Tax Expense', false);
 
   // totals
   double calculateTotalOperatingRevenue() {

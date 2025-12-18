@@ -24,7 +24,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(loadingReports: true, error: null));
 
     try {
-      final reports = await repo.fetchReportsForMember(event.member_id);
+      final reports = await repo.getReportsByMemberId(event.member_id);
 
       emit(state.copyWith(loadingReports: false, loadedReports: reports));
     } catch (e) {

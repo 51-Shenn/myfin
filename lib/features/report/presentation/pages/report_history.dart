@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -15,7 +16,7 @@ class ReportHistoryScreen extends StatefulWidget {
 }
 
 class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
-  String member_id = "M123";
+  String member_id = "";
 
   void _showErrorSnackBar(BuildContext context, String message) {
     if (!mounted) return;
@@ -23,6 +24,16 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Get member_id from current authenticated user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      member_id = user.uid;
+    }
   }
 
   @override

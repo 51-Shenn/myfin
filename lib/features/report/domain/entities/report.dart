@@ -201,7 +201,7 @@ class Report extends Equatable {
 
     return {
       'report_id': report_id,
-      'generated_at': Timestamp.fromDate(generated_at),
+      'generated_at': generated_at,
       'fiscal_period': dateMapToString(fiscal_period),
       'report_type': report_type.reportTypeToString,
       'member_id': member_id,
@@ -287,8 +287,7 @@ class ProfitAndLossReport extends Report {
     List<DocumentLineItem> docLineData,
   ) async {
     final generator = ProfitLossGenerator();
-    return generator.generateFullReport(this, businessName, docLineData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(this, businessName, docLineData);
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/repositories/report_repository.dart';
@@ -42,6 +43,7 @@ Future<void> main() async {
         RepositoryProvider<ReportRepository>(
           create: (context) => ReportRepositoryImpl(
             FirestoreReportDataSource(firestore: firestore),
+            ProfileRemoteDataSourceImpl(),
           ),
         ),
       ],
