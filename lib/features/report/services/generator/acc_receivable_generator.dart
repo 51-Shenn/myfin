@@ -25,14 +25,39 @@ class AccReceivableGenerator {
 
     // Build customer list
     for (var entry in groupedByMember.entries) {
-      final memberId = entry.key;
       final docs = entry.value;
 
-      // TODO: Fetch member details from repository/database using memberId
-      // For now, use memberId as the customer name
-      final customerName =
-          'Customer $memberId'; // Replace with actual member name
-      final customerContact = ''; // Replace with actual contact info
+      // Extract customer details from first document's metadata
+      String customerName = '';
+      String customerContact = '';
+
+      if (docs.isNotEmpty && docs.first.metadata != null) {
+        final metadata = docs.first.metadata!;
+
+        // Extract customer name
+        final nameEntry = metadata.firstWhere(
+          (m) => m.key == 'Customer Name',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+        if (nameEntry.value.isNotEmpty) {
+          customerName = nameEntry.value;
+        }
+
+        // Extract contact info (phone and email)
+        final phoneEntry = metadata.firstWhere(
+          (m) => m.key == 'Customer Phone',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+        final emailEntry = metadata.firstWhere(
+          (m) => m.key == 'Customer Email',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+
+        final contactParts = <String>[];
+        if (phoneEntry.value.isNotEmpty) contactParts.add(phoneEntry.value);
+        if (emailEntry.value.isNotEmpty) contactParts.add(emailEntry.value);
+        customerContact = contactParts.join(' • ');
+      }
 
       final invoices = docs
           .map((doc) => calculator.buildAccountLineItem(doc))

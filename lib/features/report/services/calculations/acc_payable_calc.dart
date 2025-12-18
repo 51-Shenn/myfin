@@ -19,6 +19,7 @@ class AccountsPayableCalculator {
   List<Document> getPayableDocuments() {
     return documents.where((doc) {
       return doc.type == 'Bill' &&
+          doc.status == 'Posted' &&
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }

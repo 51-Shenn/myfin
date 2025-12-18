@@ -88,11 +88,12 @@ class ReportRepositoryImpl implements ReportRepository {
       generatedReportId = dataSource.generateReportId();
       report = report.copyWith(report_id: generatedReportId);
 
-      // 1. Fetch all Posted documents by memberId (status-based filtering)
-      docData = await getDocumentsByMemberIdAndStatus(
-        report.member_id,
+      // 1. Fetch all Posted, Paid, and Approved documents by memberId
+      docData = await getDocumentsByMemberIdAndStatuses(report.member_id, [
         'Posted',
-      );
+        'Paid',
+        'Approved',
+      ]);
 
       // 2. Extract document IDs from Posted documents
       final documentIds = docData.map((doc) => doc.id).toList();
@@ -188,6 +189,21 @@ class ReportRepositoryImpl implements ReportRepository {
     final rawList = await dataSource.getDocumentsByMemberIdAndStatus(
       memberId,
       status,
+    );
+
+    // 2. Map raw list to Document entities
+    return rawList.map(Document.fromMap).toList();
+  }
+
+  @override
+  Future<List<Document>> getDocumentsByMemberIdAndStatuses(
+    String memberId,
+    List<String> statuses,
+  ) async {
+    // 1. Call Data Source
+    final rawList = await dataSource.getDocumentsByMemberIdAndStatuses(
+      memberId,
+      statuses,
     );
 
     // 2. Map raw list to Document entities

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:myfin/features/authentication/data/models/member_model.dart';
 import 'package:myfin/features/profile/data/models/business_profile.dart';
@@ -7,22 +8,16 @@ import 'package:myfin/core/utils/image_chunker_service.dart';
 abstract class ProfileRemoteDataSource {
   Future<BusinessProfileModel> fetchBusinessProfile(String memberId);
   Future<void> saveBusinessProfile(BusinessProfileModel profile);
-
-  // Member methods
-  Future<MemberModel> fetchMemberProfile(String memberId);
-  Future<void> updateMemberProfile(MemberModel member);
-
-  // --- ADDED THESE METHODS ---
   Future<void> uploadProfileImage(String memberId, File imageFile);
   Future<String?> fetchProfileImageBase64(String memberId);
-
   Future<void> uploadBusinessLogo(String profileId, File imageFile);
   Future<String?> fetchBusinessLogoBase64(String profileId);
+  Future<void> deleteAccount(String password);
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
-  // ... (rest of the implementation remains the same)
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Future<void> saveBusinessProfile(BusinessProfileModel profile) async {
@@ -72,42 +67,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       }
     } catch (e) {
       throw Exception("Firestore Fetch Business Error: $e");
-    }
-  }
-
-  @override
-  Future<MemberModel> fetchMemberProfile(String memberId) async {
-    if (memberId.isEmpty) {
-      throw Exception("Invalid User ID");
-    }
-
-    try {
-      final docSnapshot = await _firestore
-          .collection('members')
-          .doc(memberId)
-          .get();
-
-      if (docSnapshot.exists && docSnapshot.data() != null) {
-        return MemberModel.fromJson(docSnapshot.data()!, docSnapshot.id);
-      } else {
-        throw Exception(
-          "Member profile not found in database for ID: $memberId",
-        );
-      }
-    } catch (e) {
-      throw Exception("Firestore Fetch Member Error: $e");
-    }
-  }
-
-  @override
-  Future<void> updateMemberProfile(MemberModel member) async {
-    try {
-      await _firestore
-          .collection('members')
-          .doc(member.member_id)
-          .update(member.toJson());
-    } catch (e) {
-      throw Exception("Firestore Member Update Error: $e");
     }
   }
 
@@ -179,7 +138,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     try {
       // 1. Convert to Base64
       final base64String = await ImageChunkerService.fileToBase64(imageFile);
-      
+
       // 2. Split into chunks
       final chunks = ImageChunkerService.splitString(base64String);
 
@@ -210,10 +169,13 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       }
 
       // 6. Update metadata on parent document
-      batchWrite.update(_firestore.collection('business_profiles').doc(profileId), {
-        'has_custom_logo': true,
-        'logo_updated_at': FieldValue.serverTimestamp(),
-      });
+      batchWrite.update(
+        _firestore.collection('business_profiles').doc(profileId),
+        {
+          'has_custom_logo': true,
+          'logo_updated_at': FieldValue.serverTimestamp(),
+        },
+      );
 
       await batchWrite.commit();
     } catch (e) {
@@ -224,7 +186,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<String?> fetchBusinessLogoBase64(String profileId) async {
     if (profileId.isEmpty) return null;
-    
+
     try {
       final collectionRef = _firestore
           .collection('business_profiles')
@@ -243,6 +205,49 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       return buffer.toString();
     } catch (e) {
       throw Exception("Failed to fetch business logo chunks: $e");
+    }
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    final user = _auth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception("No user found.");
+    }
+
+    try {
+      // 1. Re-authenticate User (Required for account deletion)
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(cred);
+
+      // 2. Delete Firestore Data
+      // Delete Member Data
+      await _firestore.collection('members').doc(user.uid).delete();
+
+      // Delete Business Profile Data (if exists)
+      // Note: We use a query delete or just delete by ID if the ID matches uid
+      // Based on your logic: profile.profileId.isEmpty ? profile.memberId : profile.profileId
+      // We will attempt to delete the doc with the same ID as memberID just in case
+      await _firestore.collection('business_profiles').doc(user.uid).delete();
+
+      // Optional: Delete related reports or documents here if required by your logic
+
+      // 3. Delete Auth User
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password') {
+        throw Exception('Incorrect password.');
+      } else if (e.code == 'requires-recent-login') {
+        throw Exception(
+          'Please log out and log in again to delete your account.',
+        );
+      }
+      throw Exception('Failed to delete account: ${e.message}');
+    } catch (e) {
+      throw Exception("Delete Error: $e");
     }
   }
 }

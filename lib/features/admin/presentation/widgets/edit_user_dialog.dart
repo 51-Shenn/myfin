@@ -20,7 +20,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
   late TextEditingController _phoneController;
   late String _selectedStatus;
 
-  final List<String> _statusOptions = ['Active', 'Banned', 'Pending'];
+  final List<String> _statusOptions = ['Active', 'Banned'];
 
   @override
   void initState() {

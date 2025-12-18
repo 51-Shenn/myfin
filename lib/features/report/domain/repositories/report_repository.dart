@@ -39,6 +39,12 @@ abstract class ReportRepository {
     String status,
   );
 
+  /// Get documents filtered by member ID and multiple statuses
+  Future<List<Document>> getDocumentsByMemberIdAndStatuses(
+    String memberId,
+    List<String> statuses,
+  );
+
   /// Get documents filtered by member ID and date range
   Future<List<Document>> getDocumentsByMemberIdAndDateRange(
     String memberId,

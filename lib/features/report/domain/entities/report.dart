@@ -398,6 +398,7 @@ class ProfitAndLossReport extends Report {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     String dateMapToString(Map<String, DateTime> map) {
       final encodedMap = map.map(
@@ -582,6 +583,7 @@ class CashFlowStatement extends Report {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     String dateMapToString(Map<String, DateTime> map) {
       final encodedMap = map.map(
@@ -790,6 +792,7 @@ class BalanceSheet extends Report {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     String dateMapToString(Map<String, DateTime> map) {
       final encodedMap = map.map(
@@ -1032,14 +1035,56 @@ class AccountsReceivable extends Report {
   }
 
   factory AccountsReceivable.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<Customer> parseCustomers(dynamic value) {
+      if (value is! List) return [];
+      return value.map((customerData) {
+        final invoices = (customerData['invoices'] as List? ?? []).map((
+          invoiceData,
+        ) {
+          return AccountLineItem(
+            account_line_id: invoiceData['account_line_id'] as String? ?? '',
+            date_issued: toDateTime(invoiceData['date_issued']),
+            due_date: toDateTime(invoiceData['due_date']),
+            amount_due: (invoiceData['amount_due'] as num?)?.toDouble() ?? 0.0,
+            isReceivable: invoiceData['isReceivable'] as bool? ?? true,
+            isOverdue: invoiceData['isOverdue'] as bool? ?? false,
+          );
+        }).toList();
+
+        return Customer(
+          customer_name: customerData['customer_name'] as String? ?? '',
+          customer_contact: customerData['customer_contact'] as String? ?? '',
+          invoices: invoices,
+        );
+      }).toList();
+    }
+
     return AccountsReceivable(
       report_id: data['report_id'] as String? ?? '',
-      generated_at: data['generated_at'] is Timestamp
-          ? (data['generated_at'] as Timestamp).toDate()
-          : DateTime.now(),
-      fiscal_period: {'': DateTime.now()}, // Simplified for now
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
       member_id: data['member_id'] as String? ?? '',
-      customers: [], // Simplified for now
+      customers: parseCustomers(data['customers']),
       total_receivable: (data['total_receivable'] as num?)?.toDouble() ?? 0.0,
       total_overdue: (data['total_overdue'] as num?)?.toDouble() ?? 0.0,
       overdue_invoice_count: (data['overdue_invoice_count'] as int?) ?? 0,
@@ -1071,6 +1116,7 @@ class AccountsReceivable extends Report {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     String dateMapToString(Map<String, DateTime> map) {
       final encodedMap = map.map(
@@ -1174,14 +1220,54 @@ class AccountsPayable extends Report {
   }
 
   factory AccountsPayable.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<Supplier> parseSuppliers(dynamic value) {
+      if (value is! List) return [];
+      return value.map((supplierData) {
+        final bills = (supplierData['bills'] as List? ?? []).map((billData) {
+          return AccountLineItem(
+            account_line_id: billData['account_line_id'] as String? ?? '',
+            date_issued: toDateTime(billData['date_issued']),
+            due_date: toDateTime(billData['due_date']),
+            amount_due: (billData['amount_due'] as num?)?.toDouble() ?? 0.0,
+            isReceivable: billData['isReceivable'] as bool? ?? false,
+            isOverdue: billData['isOverdue'] as bool? ?? false,
+          );
+        }).toList();
+
+        return Supplier(
+          supplier_name: supplierData['supplier_name'] as String? ?? '',
+          supplier_contact: supplierData['supplier_contact'] as String? ?? '',
+          bills: bills,
+        );
+      }).toList();
+    }
+
     return AccountsPayable(
       report_id: data['report_id'] as String? ?? '',
-      generated_at: data['generated_at'] is Timestamp
-          ? (data['generated_at'] as Timestamp).toDate()
-          : DateTime.now(),
-      fiscal_period: {'': DateTime.now()}, // Simplified for now
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
       member_id: data['member_id'] as String? ?? '',
-      suppliers: [], // Simplified for now
+      suppliers: parseSuppliers(data['suppliers']),
       total_payable: (data['total_payable'] as num?)?.toDouble() ?? 0.0,
       total_overdue: (data['total_overdue'] as num?)?.toDouble() ?? 0.0,
       overdue_bill_count: (data['overdue_bill_count'] as int?) ?? 0,
@@ -1212,6 +1298,7 @@ class AccountsPayable extends Report {
     );
   }
 
+  @override
   Map<String, dynamic> toMap() {
     String dateMapToString(Map<String, DateTime> map) {
       final encodedMap = map.map(

@@ -25,14 +25,39 @@ class AccPayableGenerator {
 
     // Build supplier list
     for (var entry in groupedByMember.entries) {
-      final memberId = entry.key;
       final docs = entry.value;
 
-      // TODO: Fetch member details from repository/database using memberId
-      // For now, use memberId as the supplier name
-      final supplierName =
-          'Supplier $memberId'; // Replace with actual member name
-      final supplierContact = ''; // Replace with actual contact info
+      // Extract supplier details from first document's metadata
+      String supplierName = '';
+      String supplierContact = '';
+
+      if (docs.isNotEmpty && docs.first.metadata != null) {
+        final metadata = docs.first.metadata!;
+
+        // Extract supplier name
+        final nameEntry = metadata.firstWhere(
+          (m) => m.key == 'Supplier Name',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+        if (nameEntry.value.isNotEmpty) {
+          supplierName = nameEntry.value;
+        }
+
+        // Extract contact info (phone and email)
+        final phoneEntry = metadata.firstWhere(
+          (m) => m.key == 'Supplier Phone',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+        final emailEntry = metadata.firstWhere(
+          (m) => m.key == 'Supplier Email',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+
+        final contactParts = <String>[];
+        if (phoneEntry.value.isNotEmpty) contactParts.add(phoneEntry.value);
+        if (emailEntry.value.isNotEmpty) contactParts.add(emailEntry.value);
+        supplierContact = contactParts.join(' • ');
+      }
 
       final bills = docs
           .map((doc) => calculator.buildAccountLineItem(doc))

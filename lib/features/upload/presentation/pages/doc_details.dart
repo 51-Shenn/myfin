@@ -62,8 +62,7 @@ class DocumentDetailsScreen extends StatelessWidget {
         // 2. Otherwise, if an ID is passed, load from DB
         else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
-        }
-        else {
+        } else {
           cubit.loadDocument(null);
         }
 
@@ -248,20 +247,28 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                           builder: (dialogContext) => AlertDialog(
                             title: const Text('Delete Document'),
                             content: const Text(
-                                'Are you sure you want to delete this document permanently? This action cannot be undone.'),
+                              'Are you sure you want to delete this document permanently? This action cannot be undone.',
+                            ),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(dialogContext), // close dialog
+                                onPressed: () => Navigator.pop(
+                                  dialogContext,
+                                ), // close dialog
                                 child: const Text('Cancel'),
                               ),
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(dialogContext);
-                                  context.read<DocDetailCubit>().deleteDocument();
+                                  context
+                                      .read<DocDetailCubit>()
+                                      .deleteDocument();
                                 },
                                 child: const Text(
                                   'Delete',
-                                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -295,7 +302,10 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                   padding: const EdgeInsets.all(12.0),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.info, color: Colors.blue),
+                                      const Icon(
+                                        Icons.info,
+                                        color: Colors.blue,
+                                      ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
@@ -332,7 +342,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                       validator: AppValidators.required,
                                       items: docType,
                                       onChanged: (value) {
-                                        context.read<DocDetailCubit>().updateDocumentField('type', value);
+                                        context
+                                            .read<DocDetailCubit>()
+                                            .updateDocumentField('type', value);
                                       },
                                     ),
                                   ],
@@ -347,7 +359,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                     decoration: BoxDecoration(
                                       color: Colors.grey[200],
                                       borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                      ),
                                     ),
                                     width: 150,
                                     height: 150,
@@ -368,24 +382,76 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                             ),
                                           )
                                         else
-                                          Center(
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Icon(
-                                                  Icons.add_photo_alternate,
-                                                  size: 40,
-                                                  color: Colors.grey[500],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'Add Image',
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
+                                          Container(
+                                            // Wrap in Container to ensure background color
+                                            width: 150,
+                                            height: 150,
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey[200],
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  // Logic to choose icon
+                                                  Icon(
+                                                    // If it's empty/new, show add photo.
+                                                    // If doc exists but no image (Excel), show File Icon
+                                                    (state
+                                                                    .document
+                                                                    ?.id
+                                                                    .isEmpty ??
+                                                                true) &&
+                                                            state
+                                                                    .document
+                                                                    ?.name
+                                                                    .isEmpty ==
+                                                                true
+                                                        ? Icons
+                                                              .add_photo_alternate
+                                                        : Icons
+                                                              .insert_drive_file, // Generic File Icon
+                                                    size: 40,
+                                                    color:
+                                                        (state
+                                                                    .document
+                                                                    ?.id
+                                                                    .isEmpty ??
+                                                                true) &&
+                                                            state
+                                                                    .document
+                                                                    ?.name
+                                                                    .isEmpty ==
+                                                                true
+                                                        ? Colors.grey[500]
+                                                        : const Color(
+                                                            0xFF2B46F9,
+                                                          ), // Blue for file
                                                   ),
-                                                ),
-                                              ],
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    (state
+                                                                    .document
+                                                                    ?.id
+                                                                    .isEmpty ??
+                                                                true) &&
+                                                            state
+                                                                    .document
+                                                                    ?.name
+                                                                    .isEmpty ==
+                                                                true
+                                                        ? 'Add Image'
+                                                        : 'No Preview', // Or "Excel File"
+                                                    style: TextStyle(
+                                                      color: Colors.grey[600],
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         if (state.document?.imageBase64 != null)
@@ -400,7 +466,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                                       'imageBase64',
                                                       null,
                                                     );
-                                              }
+                                              },
                                             ),
                                           ),
                                       ],
@@ -470,8 +536,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 onUpdateValue: (idx, val) => context
                                     .read<DocDetailCubit>()
                                     .updateRowValue(idx, val),
-                                onDelete: (idx) =>
-                                    context.read<DocDetailCubit>().deleteRow(idx),
+                                onDelete: (idx) => context
+                                    .read<DocDetailCubit>()
+                                    .deleteRow(idx),
                               );
                             },
                           ),
@@ -487,7 +554,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                               clipBehavior: Clip.hardEdge,
                               child: InkWell(
                                 onTap: () {
-                                  context.read<DocDetailCubit>().addNewLineItem();
+                                  context
+                                      .read<DocDetailCubit>()
+                                      .addNewLineItem();
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
@@ -575,13 +644,26 @@ class DynamicKeyValueSection extends StatelessWidget {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Color(0xFFCCCCCC), width: 1)),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCCCCCC),
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5)),
-                      errorBorder: OutlineInputBorder( // Added error style
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        // Added error style
                         borderRadius: BorderRadius.circular(5),
-                          borderSide: const BorderSide(color: Colors.red, width: 1)),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1,
+                        ),
+                      ),
                     ),
                   ),
                 ),

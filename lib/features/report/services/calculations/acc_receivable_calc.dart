@@ -19,6 +19,7 @@ class AccountsReceivableCalculator {
   List<Document> getReceivableDocuments() {
     return documents.where((doc) {
       return doc.type == 'Invoice' &&
+          doc.status == 'Posted' &&
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }

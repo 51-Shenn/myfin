@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:printing/printing.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +12,10 @@ import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.da
 import 'package:uuid/uuid.dart';
 import 'dart:convert';
 import 'dart:io';
+// Add Excel package
+import 'package:excel/excel.dart';
+// Add Spreadsheet Decoder package
+import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 
 class UploadCubit extends Cubit<UploadState> {
   final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
@@ -19,31 +25,29 @@ class UploadCubit extends Cubit<UploadState> {
   UploadCubit({required this.getRecentDocumentsUseCase})
     : super(const UploadInitial());
 
+  // ... (Keep existing fetchDocument, recentUploadedDocClicked, viewAllClicked, manualKeyInSelected) ...
   Future<void> fetchDocument() async {
     try {
       emit(UploadLoading(state.document));
       final user = FirebaseAuth.instance.currentUser;
-
       if (user == null) {
         emit(UploadError(state.document, 'User not authenticated'));
         return;
       }
-
       final documents = await getRecentDocumentsUseCase(
         limit: 3,
         memberId: user.uid,
       );
-
+      if (isClosed) return;
       emit(UploadLoaded(documents));
     } catch (e) {
+      if (isClosed) return;
       emit(UploadError(state.document, 'Failed to load documents: $e'));
     }
   }
 
   void recentUploadedDocClicked(Document doc) {
-    // Navigate to details with existing document and let DocDetailCubit fetch line items
     emit(UploadNavigateToDocDetails(doc, extractedLineItems: null));
-    // Reset state to avoid repeated navigation
     emit(UploadLoaded(state.document));
   }
 
@@ -54,7 +58,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   void manualKeyInSelected() {
     emit(const UploadNavigateToManual([]));
-    fetchDocument(); // Reload list
+    fetchDocument();
   }
 
   // --- Image/File Selection Handlers ---
@@ -67,10 +71,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (image != null) {
-        // Emit image picked state first (optional)
-        emit(UploadImagePicked(state.document, image.path));
-        // Process immediately
-        await processPickedImage(image.path);
+        await _processFile(image.path, 'image');
       }
     } catch (e) {
       emit(UploadError(state.document, 'Failed to open gallery: $e'));
@@ -86,8 +87,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
 
       if (photo != null) {
-        emit(UploadImagePicked(state.document, photo.path));
-        await processPickedImage(photo.path);
+        await _processFile(photo.path, 'image');
       }
     } catch (e) {
       emit(UploadError(state.document, 'Camera error: $e'));
@@ -98,102 +98,242 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'png', 'jpeg'], // Restrict to images for OCR for now
+        allowedExtensions: [
+          'jpg',
+          'png',
+          'jpeg',
+          'pdf',
+          'xlsx',
+        ], // Allowed Extensions
       );
 
       if (result != null && result.files.single.path != null) {
         String path = result.files.single.path!;
-        String name = result.files.single.name;
+        String ext = result.files.single.extension?.toLowerCase() ?? '';
 
-        emit(UploadFilePicked(state.document, path, name));
-        await processPickedImage(path);
+        await _processFile(path, ext);
       }
     } catch (e) {
       emit(UploadError(state.document, 'File pick error: $e'));
     }
   }
 
-  // --- AI Processing Logic ---
+  // --- Main Processing Logic ---
 
-  Future<void> processPickedImage(String imagePath) async {
+  Future<void> _processFile(String path, String type) async {
     try {
-      // Show loading while AI processes
       emit(UploadLoading(state.document));
 
-      final user = FirebaseAuth.instance.currentUser;
-      final String currentMemberId = user?.uid ?? "";
+      Map<String, dynamic> jsonResult;
 
-      final jsonResult = await _ocrDataSource.extractDataFromImage(imagePath);
-
-      // convert image to base64
-      String? imageBase64;
-      try {
-        final imageFile = File(imagePath);
-        final bytes = await imageFile.readAsBytes();
-        imageBase64 = base64Encode(bytes);
-      } catch (e) {
-        print('Failed to encode image to base64: $e');
+      // 1. PDF Handling
+      if (type == 'pdf') {
+        jsonResult = await _ocrDataSource.extractDataFromMedia(
+          path,
+          'application/pdf',
+        );
       }
-
-      final docData = jsonResult['document'];
-      final document = Document(
-        id: '', // empty ID = New Document
-        memberId: currentMemberId,
-        name: docData['name'] ?? 'Scanned Document',
-        type: docData['type'] ?? 'Invoice',
-        status: 'Draft',
-        createdBy: 'AI OCR',
-        postingDate: DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now(),
-        imageBase64: imageBase64,
-        metadata: (jsonResult['metadata'] as List?)
-            ?.map(
-              (m) => AdditionalInfoRow(
-                id: const Uuid().v4(),
-                key: m['key'] ?? '',
-                value: m['value']?.toString() ?? '',
-              ),
-            )
-            .toList(),
-      );
-
-      final List<dynamic> linesData = jsonResult['line_items'] ?? [];
-      final List<DocumentLineItem> lineItems = [];
-
-      for (int i = 0; i < linesData.length; i++) {
-        final item = linesData[i];
-        lineItems.add(
-          DocumentLineItem(
-            lineItemId: 'TEMP_${const Uuid().v4()}', // Temp ID
-            documentId: '',
-            lineNo: i + 1,
-            lineDate: document.postingDate,
-            categoryCode: item['category'] ?? '',
-            description: item['description'] ?? '',
-            total: (item['amount'] as num?)?.toDouble() ?? 0.0,
-            debit: 0,
-            credit: 0,
-            attribute: [],
-          ),
+      // 2. Excel Handling (Convert to CSV Text -> Send to AI)
+      else if (type == 'xlsx') {
+        final String csvData = await _convertExcelToCsvString(path);
+        jsonResult = await _ocrDataSource.extractDataFromText(csvData);
+      }
+      // 3. Image Handling (Default)
+      else {
+        // Assume Image (jpg, png, etc.)
+        jsonResult = await _ocrDataSource.extractDataFromMedia(
+          path,
+          'image/jpeg',
         );
       }
 
-      // 4. Navigate to Details Screen with Pre-filled Data
-      emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
-
-      // 5. Reset state slightly so back button works
-      emit(UploadLoaded(state.document));
+      await _mapJsonToStateAndNavigate(jsonResult, path, type);
     } catch (e) {
-      emit(UploadError(state.document, 'AI Processing Failed: $e'));
+      if (isClosed) return;
+      emit(UploadError(state.document, 'Processing Failed: $e'));
+      emit(UploadLoaded(state.document));
     }
   }
 
-  // Placeholder if you add non-image file processing later
-  Future<void> processPickedFile(String path, String fileName) async {
-    // For now, redirect to image processing if it's an image
-    if (fileName.endsWith('.jpg') || fileName.endsWith('.png')) {
-      await processPickedImage(path);
-    } else {
-      emit(UploadError(state.document, "Only image files are supported for AI OCR currently."));
+  // Helper to read Excel and flatten it to text for the AI
+  Future<String> _convertExcelToCsvString(String path) async {
+    final file = File(path);
+
+    if (!await file.exists()) {
+      throw Exception("File not found at path: $path");
+    }
+
+    final Uint8List bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw Exception("The selected file is empty.");
+    }
+
+    // Attempt 1: Try using 'excel' package
+    try {
+      final excel = Excel.decodeBytes(bytes);
+      final buffer = StringBuffer();
+
+      for (var table in excel.tables.keys) {
+        final sheet = excel.tables[table];
+        if (sheet == null || sheet.maxRows == 0) continue;
+
+        buffer.writeln("Sheet: $table");
+
+        for (var row in sheet.rows) {
+          final rowString = row
+              .map((cell) {
+                if (cell == null || cell.value == null) return "";
+
+                final val = cell.value;
+                // Checks for Excel 4.0.0+
+                if (val is TextCellValue) return val.value.toString();
+                if (val is DoubleCellValue) return val.value.toString();
+                if (val is IntCellValue) return val.value.toString();
+                if (val is BoolCellValue) return val.value.toString();
+                if (val is DateCellValue)
+                  return val.asDateTimeLocal().toIso8601String();
+                if (val is TimeCellValue) return val.toString();
+                if (val is FormulaCellValue) return val.formula.toString();
+
+                return val.toString();
+              })
+              .join(", ");
+
+          if (rowString.trim().replaceAll(',', '').isNotEmpty) {
+            buffer.writeln(rowString);
+          }
+        }
+        buffer.writeln("---");
+      }
+
+      if (buffer.isNotEmpty) return buffer.toString();
+    } catch (e) {
+      print("Primary Excel decoder failed: $e. Attempting fallback...");
+    }
+
+    // Attempt 2: Try using 'spreadsheet_decoder' package as fallback
+    try {
+      final decoder = SpreadsheetDecoder.decodeBytes(bytes, update: true);
+      final buffer = StringBuffer();
+
+      for (var table in decoder.tables.keys) {
+        final sheet = decoder.tables[table];
+        if (sheet == null || sheet.maxRows == 0) continue;
+
+        buffer.writeln("Sheet: $table");
+        for (var row in sheet.rows) {
+          final rowString = row
+              .map((cell) => cell?.toString() ?? "")
+              .join(", ");
+          if (rowString.trim().replaceAll(',', '').isNotEmpty) {
+            buffer.writeln(rowString);
+          }
+        }
+        buffer.writeln("---");
+      }
+
+      if (buffer.isNotEmpty) return buffer.toString();
+    } catch (e) {
+      print("Fallback Excel decoder failed: $e");
+    }
+
+    throw Exception(
+      "Failed to process Excel file. The file might be corrupted, password protected, or in an unsupported format.",
+    );
+  }
+
+  Future<void> _mapJsonToStateAndNavigate(
+    Map<String, dynamic> jsonResult,
+    String filePath,
+    String type,
+  ) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final String currentMemberId = user?.uid ?? "";
+
+    // --- MODIFIED SECTION START ---
+    // Generate thumbnail based on file type
+    String? imageBase64 = await _generateThumbnail(filePath, type);
+    // --- MODIFIED SECTION END ---
+
+    final docData = jsonResult['document'];
+
+    // Create Document Object
+    final document = Document(
+      id: '', // New Document
+      memberId: currentMemberId,
+      name: docData['name'] ?? 'Uploaded Document',
+      type: docData['type'] ?? 'Invoice',
+      status: 'Draft',
+      createdBy: 'AI OCR',
+      postingDate: DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now(),
+      imageBase64: imageBase64, // Pass the generated thumbnail (or null)
+      metadata: (jsonResult['metadata'] as List?)
+          ?.map(
+            (m) => AdditionalInfoRow(
+              id: const Uuid().v4(),
+              key: m['key'] ?? '',
+              value: m['value']?.toString() ?? '',
+            ),
+          )
+          .toList(),
+    );
+
+    // Create Line Items
+    final List<dynamic> linesData = jsonResult['line_items'] ?? [];
+    final List<DocumentLineItem> lineItems = [];
+
+    for (int i = 0; i < linesData.length; i++) {
+      final item = linesData[i];
+      lineItems.add(
+        DocumentLineItem(
+          lineItemId: 'TEMP_${const Uuid().v4()}',
+          documentId: '',
+          lineNo: i + 1,
+          lineDate: document.postingDate,
+          categoryCode: item['category'] ?? '',
+          description: item['description'] ?? '',
+          total: (item['amount'] as num?)?.toDouble() ?? 0.0,
+          debit: 0,
+          credit: 0,
+          attribute: [],
+        ),
+      );
+    }
+
+    // Navigate
+    if (isClosed) return;
+    emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
+    emit(UploadLoaded(state.document));
+  }
+
+  Future<String?> _generateThumbnail(String filePath, String type) async {
+    final file = File(filePath);
+    if (!await file.exists()) return null;
+
+    try {
+      // HANDLE PDF: Rasterize the first page
+      if (type == 'pdf' || type == 'application/pdf') {
+        final pdfBytes = await file.readAsBytes();
+        // raster() returns a stream of pages. We take the first one.
+        // dpi: 72 is usually enough for a screen thumbnail
+        await for (var page in Printing.raster(pdfBytes, pages: [0], dpi: 72)) {
+          final pngBytes = await page.toPng();
+          return base64Encode(pngBytes);
+        }
+      }
+      // HANDLE IMAGES: Standard read
+      else if (['jpg', 'jpeg', 'png', 'image'].contains(type.toLowerCase())) {
+        final bytes = await file.readAsBytes();
+        return base64Encode(bytes);
+      }
+
+      // HANDLE EXCEL:
+      // We return null here.
+      // In the UI, we will check if imageBase64 is null and show an Icon instead.
+      return null;
+    } catch (e) {
+      print('Error generating thumbnail: $e');
+      return null;
     }
   }
 }

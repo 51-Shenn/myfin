@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data'; // Import
+import 'dart:typed_data'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,24 +18,28 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   late Member? member;
   late Uint8List? currentImageBytes;
+  
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
+  late TextEditingController _addressController; // Added Address Controller
+
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     // Extract data from arguments
     member = widget.arguments['member'] as Member?;
     currentImageBytes = widget.arguments['imageBytes'] as Uint8List?;
-    _firstNameController = TextEditingController(
-      text: member?.first_name ?? '',
-    );
+    
+    _firstNameController = TextEditingController(text: member?.first_name ?? '');
     _lastNameController = TextEditingController(text: member?.last_name ?? '');
     _emailController = TextEditingController(text: member?.email ?? '');
     _phoneController = TextEditingController(text: member?.phone_number ?? '');
+    _addressController = TextEditingController(text: member?.address ?? ''); // Initialize Address
   }
 
   @override
@@ -44,6 +48,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _addressController.dispose(); // Dispose Address
     super.dispose();
   }
 
@@ -51,8 +56,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
-        imageQuality: 50, // Reduce quality to 50% to save space
-        maxWidth: 800, // Resize width to max 800px
+        imageQuality: 50,
+        maxWidth: 800,
       );
 
       if (pickedFile != null) {
@@ -104,14 +109,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _onSave() {
     if (member == null) return;
+    
     final updatedMember = Member(
       member_id: member!.member_id,
       username: member!.username,
       first_name: _firstNameController.text.trim(),
       last_name: _lastNameController.text.trim(),
-      email: _emailController.text.trim(),
+      email: member!.email, // Keep original email (changes should go via Change Email screen)
       phone_number: _phoneController.text.trim(),
-      address: member!.address,
+      address: _addressController.text.trim(), // Save the new address
       created_at: member!.created_at,
       status: member!.status,
     );
@@ -123,21 +129,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- LOGIC TO DETERMINE IMAGE TO SHOW ---
     ImageProvider backgroundImage;
     if (_selectedImage != null) {
-      // 1. User picked a new file
       backgroundImage = FileImage(_selectedImage!);
     } else if (currentImageBytes != null) {
-      // 2. User hasn't picked new file, show existing from DB
       backgroundImage = MemoryImage(currentImageBytes!);
     } else {
-      // 3. Fallback
       backgroundImage = const NetworkImage(
         'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
       );
     }
-    // ----------------------------------------
 
     return BlocListener<ProfileBloc, ProfileState>(
       listener: (context, state) {
@@ -200,7 +201,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ],
                         image: DecorationImage(
-                          image: backgroundImage, // Use the determined provider
+                          image: backgroundImage,
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -250,10 +251,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
               const SizedBox(height: 20),
 
+              // Email is Read-Only here
               _buildTextField(
                 label: 'Email Address',
                 controller: _emailController,
                 inputType: TextInputType.emailAddress,
+                readOnly: true, 
               ),
               const SizedBox(height: 20),
 
@@ -261,6 +264,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 label: 'Phone Number',
                 controller: _phoneController,
                 inputType: TextInputType.phone,
+              ),
+              const SizedBox(height: 20),
+
+              // Replaced email editing with Address editing
+              _buildTextField(
+                label: 'Address',
+                controller: _addressController,
+                inputType: TextInputType.multiline,
+                maxLines: 4,
               ),
 
               const SizedBox(height: 40),
@@ -306,6 +318,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String label,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
+    bool readOnly = false,
+    int maxLines = 1,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,10 +337,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         TextField(
           controller: controller,
           keyboardType: inputType,
-          style: const TextStyle(
+          readOnly: readOnly,
+          maxLines: maxLines,
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
-            color: Colors.black,
+            color: readOnly ? Colors.grey[600] : Colors.black,
           ),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(
@@ -349,7 +365,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
           ),
         ),
       ],

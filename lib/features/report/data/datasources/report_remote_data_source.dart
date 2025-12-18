@@ -136,6 +136,27 @@ class FirestoreReportDataSource {
     }).toList();
   }
 
+  /// Get documents filtered by member ID and multiple statuses
+  Future<List<Map<String, dynamic>>> getDocumentsByMemberIdAndStatuses(
+    String memberId,
+    List<String> statuses,
+  ) async {
+    if (statuses.isEmpty) {
+      return [];
+    }
+
+    final querySnapshot = await _documentCollectionRef
+        .where('memberId', isEqualTo: memberId)
+        .where('status', whereIn: statuses)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      data['id'] = doc.id; // Inject the Document ID
+      return data;
+    }).toList();
+  }
+
   /// Get documents filtered by member ID and date range (using postingDate)
   Future<List<Map<String, dynamic>>> getDocumentsByMemberIdAndDateRange(
     String memberId,
