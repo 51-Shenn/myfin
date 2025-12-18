@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/upload_main.dart';
-import 'package:myfin/features/upload/presentation/pages/upload_history.dart'; 
+import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
 
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
+
+  // Public static getter to access the navigator key
+  static GlobalKey<NavigatorState> get navigatorKey =>
+      _UploadNavState.uploadNavKey;
 
   @override
   State<UploadNav> createState() => _UploadNavState();
 }
 
 class _UploadNavState extends State<UploadNav> {
-  GlobalKey<NavigatorState> uploadNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> uploadNavKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {

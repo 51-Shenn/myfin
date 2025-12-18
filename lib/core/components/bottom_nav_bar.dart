@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:myfin/core/navigation/report_nav.dart';
 import 'package:myfin/core/navigation/aichatbot_nav.dart';
@@ -33,8 +34,7 @@ class _TabItemBuilder extends DelegateBuilder {
           padding: EdgeInsets.all(padding),
           child: active ? (item.activeIcon ?? item.icon) : item.icon,
         ),
-        if (index == 2)
-          const SizedBox(height: 20),
+        if (index == 2) const SizedBox(height: 20),
         if (item.title?.isNotEmpty ?? false)
           Padding(
             padding: const EdgeInsets.only(top: 0),
@@ -203,20 +203,63 @@ class _BottomNavBarState extends State<BottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
-    return NavBarController(
-      toggleNavBar: toggleNavBar,
-      isVisible: _isVisible,
-      child: Scaffold(
-        bottomNavigationBar: _isVisible ? _buildNavigationBar() : null,
-        body: Stack(
-          children: [IndexedStack(index: _selectedIndex, children: _pages)],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+
+        NavigatorState? nestedNavigator;
+        switch (_selectedIndex) {
+          case 1: // AI Chatbot
+            nestedNavigator = AiChatbotNav.navigatorKey.currentState;
+            break;
+          case 2: // Upload
+            nestedNavigator = UploadNav.navigatorKey.currentState;
+            break;
+          case 3: // Reports
+            nestedNavigator = ReportsNav.navigatorKey.currentState;
+            break;
+          case 4: // Profile
+            nestedNavigator = ProfileNav.navigatorKey.currentState;
+            break;
+        }
+
+        if (nestedNavigator != null && nestedNavigator.canPop()) {
+          nestedNavigator.pop();
+          return;
+        }
+
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit App'),
+            content: const Text('Do you want to exit the app?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit ?? false) {
+          SystemNavigator.pop();
+        }
+      },
+      child: NavBarController(
+        toggleNavBar: toggleNavBar,
+        isVisible: _isVisible,
+        child: Scaffold(
+          bottomNavigationBar: _isVisible ? _buildNavigationBar() : null,
+          body: Stack(
+            children: [IndexedStack(index: _selectedIndex, children: _pages)],
+          ),
         ),
-        // TODO: remove later
-        // floatingActionButton: FloatingActionButton(
-        //   onPressed: toggleNavBar,
-        //   child: Icon(_isVisible ? Icons.visibility_off : Icons.visibility),
-        // ),
-        // floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
       ),
     );
   }

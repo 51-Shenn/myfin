@@ -41,7 +41,7 @@ class MemberModel extends Member with EquatableMixin {
       'email': email,
       'phone_number': phone_number,
       'address': address,
-      'created_at': Timestamp.fromDate(created_at), // store as Timestamp
+      'created_at': Timestamp.fromDate(created_at),
       'status': status,
     };
   }

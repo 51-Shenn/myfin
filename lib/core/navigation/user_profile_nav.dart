@@ -17,12 +17,16 @@ import 'package:myfin/features/authentication/domain/repositories/member_reposit
 class ProfileNav extends StatefulWidget {
   const ProfileNav({super.key});
 
+  // Public static getter to access the navigator key
+  static GlobalKey<NavigatorState> get navigatorKey =>
+      _ProfileNavState.profileNavKey;
+
   @override
   State<ProfileNav> createState() => _ProfileNavState();
 }
 
 class _ProfileNavState extends State<ProfileNav> {
-  GlobalKey<NavigatorState> profileNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> profileNavKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {

@@ -7,16 +7,17 @@ import 'package:myfin/features/upload/presentation/cubit/upload_state.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.dart';
-import 'package:uuid/uuid.dart'; // Ensure uuid package is in pubspec.yaml
+import 'package:uuid/uuid.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class UploadCubit extends Cubit<UploadState> {
   final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
   final ImagePicker _picker = ImagePicker();
   final GeminiOCRDataSource _ocrDataSource = GeminiOCRDataSource();
 
-  UploadCubit({
-    required this.getRecentDocumentsUseCase,
-  }) : super(const UploadInitial());
+  UploadCubit({required this.getRecentDocumentsUseCase})
+    : super(const UploadInitial());
 
   Future<void> fetchDocument() async {
     try {
@@ -29,8 +30,8 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       final documents = await getRecentDocumentsUseCase(
-        limit: 3, 
-        memberId: user.uid
+        limit: 3,
+        memberId: user.uid,
       );
 
       emit(UploadLoaded(documents));
@@ -81,7 +82,7 @@ class UploadCubit extends Cubit<UploadState> {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
         preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 80, 
+        imageQuality: 80,
       );
 
       if (photo != null) {
@@ -122,54 +123,65 @@ class UploadCubit extends Cubit<UploadState> {
       final user = FirebaseAuth.instance.currentUser;
       final String currentMemberId = user?.uid ?? "";
 
-      // 1. Call Gemini
       final jsonResult = await _ocrDataSource.extractDataFromImage(imagePath);
-      
-      // 2. Map JSON to Document Entity
+
+      // convert image to base64
+      String? imageBase64;
+      try {
+        final imageFile = File(imagePath);
+        final bytes = await imageFile.readAsBytes();
+        imageBase64 = base64Encode(bytes);
+      } catch (e) {
+        print('Failed to encode image to base64: $e');
+      }
+
       final docData = jsonResult['document'];
       final document = Document(
-        id: '', // Empty ID = New Document
+        id: '', // empty ID = New Document
         memberId: currentMemberId,
         name: docData['name'] ?? 'Scanned Document',
         type: docData['type'] ?? 'Invoice',
         status: 'Draft',
         createdBy: 'AI OCR',
         postingDate: DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now(),
-        metadata: (jsonResult['metadata'] as List?)?.map((m) => 
-          AdditionalInfoRow(
-            id: const Uuid().v4(), 
-            key: m['key'] ?? '', 
-            value: m['value']?.toString() ?? ''
-          )
-        ).toList(),
+        imageBase64: imageBase64,
+        metadata: (jsonResult['metadata'] as List?)
+            ?.map(
+              (m) => AdditionalInfoRow(
+                id: const Uuid().v4(),
+                key: m['key'] ?? '',
+                value: m['value']?.toString() ?? '',
+              ),
+            )
+            .toList(),
       );
 
-      // 3. Map JSON to Line Items
       final List<dynamic> linesData = jsonResult['line_items'] ?? [];
       final List<DocumentLineItem> lineItems = [];
 
       for (int i = 0; i < linesData.length; i++) {
         final item = linesData[i];
-        lineItems.add(DocumentLineItem(
-          lineItemId: 'TEMP_${const Uuid().v4()}', // Temp ID
-          documentId: '',
-          lineNo: i + 1,
-          lineDate: document.postingDate,
-          categoryCode: item['category'] ?? '',
-          description: item['description'] ?? '',
-          total: (item['amount'] as num?)?.toDouble() ?? 0.0,
-          debit: 0,
-          credit: 0,
-          attribute: [],
-        ));
+        lineItems.add(
+          DocumentLineItem(
+            lineItemId: 'TEMP_${const Uuid().v4()}', // Temp ID
+            documentId: '',
+            lineNo: i + 1,
+            lineDate: document.postingDate,
+            categoryCode: item['category'] ?? '',
+            description: item['description'] ?? '',
+            total: (item['amount'] as num?)?.toDouble() ?? 0.0,
+            debit: 0,
+            credit: 0,
+            attribute: [],
+          ),
+        );
       }
 
       // 4. Navigate to Details Screen with Pre-filled Data
       emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
-      
+
       // 5. Reset state slightly so back button works
       emit(UploadLoaded(state.document));
-
     } catch (e) {
       emit(UploadError(state.document, 'AI Processing Failed: $e'));
     }

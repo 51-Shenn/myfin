@@ -35,7 +35,7 @@ class AdminModel extends Admin with EquatableMixin {
       'first_name': first_name,
       'last_name': last_name,
       'email': email,
-      'created_at': Timestamp.fromDate(created_at), // store as Timestamp
+      'created_at': Timestamp.fromDate(created_at),
       'status': status,
     };
   }

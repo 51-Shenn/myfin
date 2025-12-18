@@ -69,14 +69,14 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
       if (memberId.isEmpty) {
          emit(state.copyWith(isLoading: false, errorMessage: 'User not logged in'));
-         return;
+        return;
       }
 
       final firestore = FirebaseFirestore.instance;
       final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
       final memberRepo = MemberRepositoryImpl(memberRemote);
       final memberUsername = (await memberRepo.getMember(memberId)).username;
-      
+
       // brand new doc template
       if (documentId == null || documentId.isEmpty) {
         final document = Document(
@@ -152,6 +152,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       case 'postingDate':
         updatedDoc = state.document!.copyWith(postingDate: value as DateTime);
         break;
+      case 'imageBase64':
+        updatedDoc = state.document!.copyWith(imageBase64: value as String);
+        break;
       default:
         updatedDoc = state.document!;
     }
@@ -226,7 +229,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       _deletedLineItemIds.clear();
 
       for (var item in state.lineItems) {
-
         bool isEmpty =
             (item.description == null || item.description!.trim().isEmpty) &&
             item.total == 0 &&
@@ -289,15 +291,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
       await _docRepository.deleteDocument(docId);
 
-      emit(state.copyWith(
-        isSaving: false,
-        successMessage: 'Document deleted successfully',
-      ));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          successMessage: 'Document deleted successfully',
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to delete: $e',
-      ));
+      emit(
+        state.copyWith(isSaving: false, errorMessage: 'Failed to delete: $e'),
+      );
     }
   }
 

@@ -24,20 +24,31 @@ import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/features/authentication/presentation/pages/auth_main.dart';
 import 'package:myfin/features/authentication/presentation/pages/forget_password_page.dart';
 import 'package:myfin/features/admin/presentation/pages/admin_main.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
+import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
+import 'package:myfin/features/report/presentation/pages/report_history.dart';
+import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
+import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
+import 'package:myfin/features/profile/presentation/pages/change_password.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
   static const String home = '/home';
-  static const String adminHome = '/admin-home'; 
+  static const String adminHome = '/admin-home';
   static const String forgetPassword = '/forget-password';
+  static const String docDetails = '/doc_details';
+  static const String uploadHistory = '/upload_history';
+  static const String reportHistory = '/report_history';
+  static const String businessProfile = '/business_profile';
+  static const String profileDetails = '/profile_details';
+  static const String changePassword = '/change_password';
+  static const String adminDashboard = '/admin_dashboard';
 
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
-    // 1. Initialize External Services
     final firebaseAuth = FirebaseAuth.instance;
     final firestore = FirebaseFirestore.instance;
     final googleSignIn = GoogleSignIn();
 
-    // 2. Initialize Data Sources
     final authRemote = AuthRemoteDataSourceImpl(
       firebaseAuth: firebaseAuth,
       googleSignIn: googleSignIn,
@@ -48,37 +59,44 @@ class AppRoutes {
     final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
     final adminRemote = AdminRemoteDataSourceImpl(firestore: firestore);
 
-    // 3. Initialize Repositories
     final authRepo = AuthRepositoryImpl(authRemote, authLocal);
     final memberRepo = MemberRepositoryImpl(memberRemote);
     final adminRepo = AdminRepositoryImpl(adminRemote);
 
-    // 4. Create and return AuthBloc
+    final signInUseCase = SignInUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final signUpUseCase = SignUpUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final getCurrentUserUseCase = GetCurrentUserUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final signOutUseCase = SignOutUseCase(authRepository: authRepo);
+    final resetPasswordUseCase = ResetPasswordUseCase(authRepository: authRepo);
+    final signInWithGoogleUseCase = SignInWithGoogleUseCase(
+      authRepository: authRepo,
+      memberRepository: memberRepo,
+      adminRepository: adminRepo,
+    );
+    final saveEmailUseCase = SaveEmailUseCase(authRepository: authRepo);
+    final getSavedEmailUseCase = GetSavedEmailUseCase(authRepository: authRepo);
+
     return AuthBloc(
-      signIn: SignInUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      signUp: SignUpUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      getCurrentUser: GetCurrentUserUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      signOut: SignOutUseCase(authRepository: authRepo),
-      resetPassword: ResetPasswordUseCase(authRepository: authRepo),
-      signInWithGoogle: SignInWithGoogleUseCase(
-        authRepository: authRepo,
-        adminRepository: adminRepo,
-        memberRepository: memberRepo,
-      ),
-      saveEmail: SaveEmailUseCase(authRepository: authRepo),
-      getSavedEmail: GetSavedEmailUseCase(authRepository: authRepo),
+      signIn: signInUseCase,
+      signUp: signUpUseCase,
+      getCurrentUser: getCurrentUserUseCase,
+      signOut: signOutUseCase,
+      resetPassword: resetPasswordUseCase,
+      signInWithGoogle: signInWithGoogleUseCase,
+      saveEmail: saveEmailUseCase,
+      getSavedEmail: getSavedEmailUseCase,
     )..add(AuthCheckRequested());
   }
 
@@ -101,12 +119,32 @@ class AppRoutes {
         );
       case adminHome:
         return MaterialPageRoute(builder: (_) => const AdminMainScreen());
-
-      default:
+      case docDetails:
+        final args = settings.arguments as DocDetailsArguments?;
         return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text('Page not found'))),
+          builder: (_) => DocumentDetailsScreen(
+            existingDocument: args?.existingDocument,
+            existingLineItems: args?.existingLineItems,
+            documentId: args?.documentId,
+          ),
         );
+      case uploadHistory:
+        return MaterialPageRoute(builder: (_) => const UploadHistoryScreen());
+      case reportHistory:
+        return MaterialPageRoute(builder: (_) => const ReportHistoryScreen());
+      case businessProfile:
+        return MaterialPageRoute(builder: (_) => const BusinessProfileScreen());
+      case profileDetails:
+        final arguments = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (_) => EditProfileScreen(arguments: arguments ?? {}),
+        );
+      case changePassword:
+        return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
+      case adminDashboard:
+        return MaterialPageRoute(builder: (_) => const AdminMainScreen());
+      default:
+        return MaterialPageRoute(builder: (_) => const BottomNavBar());
     }
   }
 }

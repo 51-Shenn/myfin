@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:equatable/equatable.dart';
-import 'package:myfin/features/admin/domain/entities/admin.dart';
 
 abstract class AdminEvent extends Equatable {
   @override

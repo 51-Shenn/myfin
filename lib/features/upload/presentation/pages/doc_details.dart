@@ -12,6 +12,8 @@ import 'package:myfin/features/upload/presentation/widgets/auto_complete_field.d
 import 'package:myfin/features/upload/presentation/widgets/custom_divider.dart';
 import 'package:myfin/features/upload/presentation/widgets/doc_line_item_field.dart';
 import 'package:myfin/features/upload/presentation/widgets/doc_text_form_field.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 
 class AppValidators {
   static String? required(String? value) {
@@ -98,6 +100,69 @@ class _DocDetailsViewState extends State<DocDetailsView> {
     }
   }
 
+  Future<void> _pickImage(BuildContext context) async {
+    final ImagePicker picker = ImagePicker();
+
+    // show dialog to choose source
+    final ImageSource? source = await showDialog<ImageSource>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Image Source'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Camera'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    try {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // read image bytes and convert to base64
+        final bytes = await image.readAsBytes();
+        final base64Image = base64Encode(bytes);
+
+        // update document with base64 image
+        if (context.mounted) {
+          context.read<DocDetailCubit>().updateDocumentField(
+            'imageBase64',
+            base64Image,
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<DocDetailCubit, DocDetailState>(
@@ -113,7 +178,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
 
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
-              Navigator.of(context).pop(); 
+              Navigator.of(context).pop();
             }
           });
         }
@@ -211,8 +276,8 @@ class _DocDetailsViewState extends State<DocDetailsView> {
           body: state.isLoading
               ? const Center(child: CircularProgressIndicator())
               : Form(
-                key: _formKey,
-                child: SingleChildScrollView(
+                  key: _formKey,
+                  child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -276,28 +341,70 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                               const SizedBox(width: 10),
                               Padding(
                                 padding: const EdgeInsets.all(5.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(12),
+                                child: GestureDetector(
+                                  onTap: () => _pickImage(context),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.grey[300]!),
-                                  ),
-                                  width: 150,
-                                  height: 150,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.image,
-                                        size: 40,
-                                        color: Colors.grey[500],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Add Image',
-                                        style: TextStyle(color: Colors.grey[600]),
-                                      ),
-                                    ],
+                                    ),
+                                    width: 150,
+                                    height: 150,
+                                    child: Stack(
+                                      children: [
+                                        if (state.document?.imageBase64 != null)
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            child: Image.memory(
+                                              base64Decode(
+                                                state.document!.imageBase64!,
+                                              ),
+                                              fit: BoxFit.cover,
+                                              width: 150,
+                                              height: 150,
+                                            ),
+                                          )
+                                        else
+                                          Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.add_photo_alternate,
+                                                  size: 40,
+                                                  color: Colors.grey[500],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Add Image',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (state.document?.imageBase64 != null)
+                                          Positioned(
+                                            top: 4,
+                                            right: 4,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                context
+                                                    .read<DocDetailCubit>()
+                                                    .updateDocumentField(
+                                                      'imageBase64',
+                                                      null,
+                                                    );
+                                              }
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -309,8 +416,8 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 child: AutoCompleteField(
                                   header: DocFieldHeader.status,
                                   value: state.document?.status ?? 'Draft',
-                                  items: docStatus, // Pass the list defined above
-                                  validator: AppValidators.required, // Ensure you have the AppValidators class from the previous step
+                                  items: docStatus,
+                                  validator: AppValidators.required,
                                   onChanged: (value) {
                                     context
                                         .read<DocDetailCubit>()
@@ -368,7 +475,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                               );
                             },
                           ),
-                
+
                           const SizedBox(height: 20),
                           DocLineItemField(),
                           CustomDivider(),
@@ -404,7 +511,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                       ),
                     ),
                   ),
-              ),
+                ),
         );
       },
     );
@@ -473,7 +580,7 @@ class DynamicKeyValueSection extends StatelessWidget {
                         borderRadius: BorderRadius.circular(5),
                         borderSide: const BorderSide(color: Colors.blue, width: 1.5)),
                       errorBorder: OutlineInputBorder( // Added error style
-                          borderRadius: BorderRadius.circular(5),
+                        borderRadius: BorderRadius.circular(5),
                           borderSide: const BorderSide(color: Colors.red, width: 1)),
                     ),
                   ),
