@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
@@ -75,6 +76,22 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   context.read<ReportBLoC>().add(ClearErrorEvent());
+                }
+              });
+            }
+
+            // Navigate to generated report after successful creation
+            if (!state.generatingReport &&
+                state.loadedReportDetails.report_id.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  final report = state.loadedReportDetails;
+                  NavBarController.of(context)?.toggleNavBar();
+                  Navigator.pushNamed(
+                    context,
+                    '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',
+                    arguments: report,
+                  );
                 }
               });
             }
@@ -208,6 +225,7 @@ class ReportCard extends StatelessWidget {
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
+          NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(
             context,
             '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',

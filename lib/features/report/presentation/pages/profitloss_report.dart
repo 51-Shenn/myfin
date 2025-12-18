@@ -7,6 +7,7 @@ import 'package:myfin/features/report/domain/repositories/report_repository.dart
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
+import 'package:myfin/features/report/presentation/widgets/help_dialog.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
@@ -89,6 +90,57 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
         ],
       ),
       centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.help_outline, color: Colors.black),
+          onPressed: _showHelpDialog,
+          tooltip: 'Help',
+        ),
+      ],
+    );
+  }
+
+  void _showHelpDialog() {
+    ReportHelpDialog.show(
+      context,
+      reportType: 'profit_loss',
+      title: 'Profit & Loss Report Help',
+      sections: [
+        const HelpSection(
+          title: '📈 What is a Profit & Loss Report?',
+          content:
+              'Shows your business performance over a period of time. Calculates: Revenue - Expenses = Net Income.',
+        ),
+        const HelpSection(
+          title: 'Before Generating',
+          items: [
+            HelpItem(text: '- Upload ALL revenue and expense documents'),
+            HelpItem(text: '- Set all documents to "Posted" status'),
+            HelpItem(
+              text:
+                  '- Assign categories: Product Revenue, Sales Expenses, etc.',
+            ),
+          ],
+        ),
+        const HelpSection(
+          title: 'Key Categories',
+          items: [
+            HelpItem(text: 'Revenues: Product, Service, Subscription'),
+            HelpItem(text: 'Expenses: Purchases, Salaries, Rent, etc.'),
+            HelpItem(text: 'Missing categories = missing from report!'),
+          ],
+        ),
+        const HelpSection(
+          title: 'Report Generation Order',
+          content:
+              'Start here! P&L should be generated FIRST, before Cash Flow or Balance Sheet.',
+          items: [
+            HelpItem(text: '1. Profit & Loss Report (start here)'),
+            HelpItem(text: '2. Cash Flow Statement (uses Net Income)'),
+            HelpItem(text: '3. Balance Sheet (uses both)'),
+          ],
+        ),
+      ],
     );
   }
 
@@ -104,42 +156,58 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   }
 
   Widget _buildBody(BuildContext context, ReportState state) {
-    if (state.loadingReports && state.loadedReports.isEmpty) {
+    // Show loading indicator while loading report details
+    if (state.loadingReportDetails) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Show error if present
     if (state.error != null) {
       return Center(
         child: Text(state.error!, style: const TextStyle(color: Colors.red)),
       );
     }
 
+    // Get the loaded report from state
+    final loadedReport = state.loadedReportDetails;
+
+    // Check if we have a valid ProfitAndLossReport
+    if (loadedReport is! ProfitAndLossReport) {
+      return const Center(
+        child: Text(
+          'Invalid report type or report not loaded',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    // Use the loaded report from BLoC state (has full data with sections)
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildReportHeader(),
+            _buildReportHeader(loadedReport),
             const SizedBox(height: 12),
-            ..._report.sections.map(_buildReportSection),
+            ...loadedReport.sections.map(_buildReportSection),
             const SizedBox(height: 30),
-            _buildFinancialSummary(),
+            _buildFinancialSummary(loadedReport),
             const SizedBox(height: 20),
-            _buildActionButtons(),
+            _buildActionButtons(loadedReport),
             const SizedBox(height: 30),
-            _buildReportFooter(),
+            _buildReportFooter(loadedReport),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReportHeader() {
+  Widget _buildReportHeader(ProfitAndLossReport report) {
     final startDate =
-        _report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
+        report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
     final endDate =
-        _report.fiscal_period['endDate']?.toString().split(' ')[0] ?? 'N/A';
+        report.fiscal_period['endDate']?.toString().split(' ')[0] ?? 'N/A';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -169,7 +237,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
                 style: const TextStyle(fontSize: 12, color: Colors.black87),
               ),
               Text(
-                'Report ID: ${_report.report_id}',
+                'Report ID: ${report.report_id}',
                 style: const TextStyle(fontSize: 12, color: Colors.black87),
               ),
             ],
@@ -218,11 +286,19 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   }
 
   Widget _buildGroupSummaryTable(List<ReportGroup> groups) {
+    // Filter out groups with subtotals that round to 0.00
+    final nonZeroGroups = groups
+        .where((group) => group.subtotal.abs() >= 0.005)
+        .toList();
+
+    // If no groups remain, return empty widget
+    if (nonZeroGroups.isEmpty) return const SizedBox.shrink();
+
     return Table(
       border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
       columnWidths: const {
-        0: FlexColumnWidth(3), // Item column takes 75% width
-        1: FlexColumnWidth(1), // Amount column takes 25% width
+        0: FlexColumnWidth(3), // Item column takes 60% width
+        1: FlexColumnWidth(2), // Amount column takes 40% width
       },
       children: [
         // Header row
@@ -252,8 +328,8 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
             ),
           ],
         ),
-        // Data rows
-        ...groups.map(
+        // Data rows (filtered)
+        ...nonZeroGroups.map(
           (group) => TableRow(
             children: [
               Padding(
@@ -266,6 +342,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
                   _formatCurrency(group.subtotal),
                   textAlign: TextAlign.right,
                   style: TextStyle(
+                    fontSize: 13,
                     color: _getAmountColor(group.subtotal),
                     fontWeight: FontWeight.w500,
                   ),
@@ -313,6 +390,14 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   Widget _buildReportGroup(ReportGroup group) {
     if (group.line_items.isEmpty) return const SizedBox.shrink();
 
+    // Filter line items to exclude those that round to 0.00
+    final nonZeroItems = group.line_items
+        .where((item) => item.amount.abs() >= 0.005)
+        .toList();
+
+    // If no items remain after filtering, don't show the group
+    if (nonZeroItems.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -327,7 +412,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
             ),
           ),
         ),
-        _buildLineItemsTable(group.line_items),
+        _buildLineItemsTable(group.line_items), // This will filter internally
         _buildGroupSubtotal(group),
         const SizedBox(height: 16),
       ],
@@ -335,11 +420,19 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
   }
 
   Widget _buildLineItemsTable(List<ReportLineItem> lineItems) {
+    // Filter out items that round to 0.00 (absolute value < 0.005)
+    final filteredItems = lineItems
+        .where((item) => item.amount.abs() >= 0.005)
+        .toList();
+
+    // If no items remain after filtering, return empty widget
+    if (filteredItems.isEmpty) return const SizedBox.shrink();
+
     return Table(
       border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
       columnWidths: const {
-        0: FlexColumnWidth(3), // Item column takes 75% width
-        1: FlexColumnWidth(1), // Amount column takes 25% width
+        0: FlexColumnWidth(3), // Item column takes 60% width
+        1: FlexColumnWidth(2), // Amount column takes 40% width
       },
       children: [
         // Header row
@@ -369,8 +462,8 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
             ),
           ],
         ),
-        // Data rows
-        ...lineItems.map(
+        // Data rows (filtered)
+        ...filteredItems.map(
           (item) => TableRow(
             children: [
               Padding(
@@ -383,6 +476,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
                   _formatCurrency(item.amount),
                   textAlign: TextAlign.right,
                   style: TextStyle(
+                    fontSize: 13,
                     color: item.isIncrease ? Colors.green : Colors.red,
                     fontWeight: FontWeight.w500,
                   ),
@@ -421,7 +515,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  Widget _buildFinancialSummary() {
+  Widget _buildFinancialSummary(ProfitAndLossReport report) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -442,15 +536,21 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
           ),
           const Divider(color: Colors.blue),
           const SizedBox(height: 8),
-          _buildMetricRow('Gross Profit', _report.gross_profit),
-          _buildMetricRow('Operating Income', _report.operating_income),
-          _buildMetricRow('Income Before Tax', _report.income_before_tax),
-          _buildMetricRow('Income Tax Expense', _report.income_tax_expense),
+
+          // Formula display row by row
+          _buildMetricRow('Gross Profit', report.gross_profit),
+          _buildMetricRow('Less: Total Expenses', report.total_expenses),
+          _buildMetricRow(
+            'Less: Income Tax Expense',
+            report.income_tax_expense,
+          ),
+
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Divider(color: Colors.blue.shade900, thickness: 2),
           ),
-          _buildMetricRow('NET INCOME', _report.net_income, isFinal: true),
+
+          _buildMetricRow('NET INCOME', report.net_income, isFinal: true),
         ],
       ),
     );
@@ -482,12 +582,12 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(ProfitAndLossReport report) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _handleDownloadPdf,
+            onPressed: () => _handleDownloadPdf(report),
             icon: const Icon(Icons.download),
             label: const Text('Download PDF'),
             style: ElevatedButton.styleFrom(
@@ -500,7 +600,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: _handleShare,
+            onPressed: () => _handleShare(report),
             icon: const Icon(Icons.share),
             label: const Text('Share'),
             style: ElevatedButton.styleFrom(
@@ -514,21 +614,48 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  Future<void> _handleDownloadPdf() async {
+  Future<void> _handleDownloadPdf(ProfitAndLossReport report) async {
     try {
-      final pdf = await _generatePdf();
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File(
-        '${directory.path}/profit_loss_${_report.report_id}.pdf',
-      );
+      final pdf = await _generatePdf(report);
+
+      // Get appropriate directory based on platform
+      Directory? directory;
+      String? directoryPath;
+
+      if (Platform.isAndroid) {
+        // On Android, try to save to Downloads folder
+        directory = Directory('/storage/emulated/0/Download');
+        if (!await directory.exists()) {
+          // Fallback to external storage if Downloads doesn't exist
+          directory = await getExternalStorageDirectory();
+        }
+      } else if (Platform.isIOS) {
+        // On iOS, use Documents directory (accessible through Files app)
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        // Fallback for other platforms
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      directoryPath = directory?.path;
+
+      if (directoryPath == null) {
+        throw Exception('Could not access storage directory');
+      }
+
+      final fileName =
+          'ProfitLoss_${report.report_id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('$directoryPath/$fileName');
       await file.writeAsBytes(await pdf.save());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PDF saved to ${file.path}'),
+            content: Text(
+              'PDF saved to ${Platform.isAndroid ? "Downloads" : "Documents"} folder\n$fileName',
+            ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -544,18 +671,18 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     }
   }
 
-  Future<void> _handleShare() async {
+  Future<void> _handleShare(ProfitAndLossReport report) async {
     try {
-      final pdf = await _generatePdf();
+      final pdf = await _generatePdf(report);
       final directory = await getTemporaryDirectory();
       final file = File(
-        '${directory.path}/profit_loss_${_report.report_id}.pdf',
+        '${directory.path}/profit_loss_${report.report_id}.pdf',
       );
       await file.writeAsBytes(await pdf.save());
 
       final params = ShareParams(
         files: [XFile(file.path)],
-        text: 'Profit & Loss Report - ${_report.report_id}',
+        text: 'Profit & Loss Report - ${report.report_id}',
       );
       await SharePlus.instance.share(params);
     } catch (e) {
@@ -570,12 +697,12 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     }
   }
 
-  Future<pw.Document> _generatePdf() async {
+  Future<pw.Document> _generatePdf(ProfitAndLossReport report) async {
     final pdf = pw.Document();
     final startDate =
-        _report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
+        report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
     final endDate =
-        _report.fiscal_period['endDate']?.toString().split(' ')[0] ?? 'N/A';
+        report.fiscal_period['endDate']?.toString().split(' ')[0] ?? 'N/A';
 
     pdf.addPage(
       pw.Page(
@@ -605,7 +732,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
                     ),
                     pw.SizedBox(height: 12),
                     pw.Text('Period: $startDate to $endDate'),
-                    pw.Text('Report ID: ${_report.report_id}'),
+                    pw.Text('Report ID: ${report.report_id}'),
                   ],
                 ),
               ),
@@ -629,23 +756,23 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
                     ),
                     pw.Divider(),
                     pw.SizedBox(height: 8),
-                    _buildPdfMetricRow('Gross Profit', _report.gross_profit),
+                    _buildPdfMetricRow('Gross Profit', report.gross_profit),
                     _buildPdfMetricRow(
                       'Operating Income',
-                      _report.operating_income,
+                      report.operating_income,
                     ),
                     _buildPdfMetricRow(
                       'Income Before Tax',
-                      _report.income_before_tax,
+                      report.income_before_tax,
                     ),
                     _buildPdfMetricRow(
                       'Income Tax Expense',
-                      _report.income_tax_expense,
+                      report.income_tax_expense,
                     ),
                     pw.Divider(thickness: 2),
                     _buildPdfMetricRow(
                       'NET INCOME',
-                      _report.net_income,
+                      report.net_income,
                       isBold: true,
                     ),
                   ],
@@ -693,7 +820,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  Widget _buildReportFooter() {
+  Widget _buildReportFooter(ProfitAndLossReport report) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -708,7 +835,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Report Type: ${_report.report_type.reportTypeToString}',
+            'Report Type: ${report.report_type.reportTypeToString}',
             style: const TextStyle(fontSize: 11, color: Colors.grey),
           ),
         ],

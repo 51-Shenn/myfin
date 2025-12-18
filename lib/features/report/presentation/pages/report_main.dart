@@ -24,8 +24,8 @@ class _MainReportScreenState extends State<MainReportScreen> {
 
   List<String> reportTypes = [
     ReportType.profitLoss,
-    ReportType.balanceSheet,
     ReportType.cashFlow,
+    ReportType.balanceSheet,
     ReportType.accountsPayable,
     ReportType.accountsReceivable,
   ].map((e) => e.reportTypeToString).toList();
@@ -557,6 +557,9 @@ class RecentReportCard extends StatelessWidget {
             context,
             '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',
             arguments: report,
+          );
+          print(
+            'report.report_id : ${report.report_id}, report.report_type.reportTypeToString : ${report.report_type.reportTypeToString}',
           );
         },
       ),

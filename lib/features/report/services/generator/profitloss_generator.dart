@@ -1,5 +1,5 @@
 import 'package:myfin/features/report/domain/entities/report.dart';
-import 'package:myfin/features/report/services/calculations/profitloss.calc.dart';
+import 'package:myfin/features/report/services/calculations/profitloss_calc.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
 /// Generator class for creating complete Profit & Loss Report
@@ -30,6 +30,7 @@ class ProfitLossGenerator {
       generated_at: DateTime.now(),
       sections: sections,
       gross_profit: calculator.calculateGrossProfit(),
+      total_expenses: calculator.calculateTotalOperatingExpenses(),
       operating_income: calculator.calculateOperatingIncome(),
       income_before_tax: calculator.calculateIncomeBeforeTax(),
       income_tax_expense: calculator.calculateCurrentTaxExpense(),

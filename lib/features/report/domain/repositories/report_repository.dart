@@ -10,8 +10,11 @@ abstract class ReportRepository {
   /// Get a specific report by its ID
   Future<Report> getReportByReportId(String reportId);
 
+  /// Get a generated report with full details (sections, calculations) by its ID
+  Future<dynamic> getGeneratedReportByReportId(String reportId);
+
   /// Create/generate a new report
-  Future<Report> createReport(
+  Future<dynamic> createReport(
     Report report,
     DateTime startDate,
     DateTime endDate,

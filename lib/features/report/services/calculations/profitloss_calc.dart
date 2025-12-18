@@ -26,17 +26,13 @@ class ProfitLossCalculator {
   }
 
   /// Sum amounts for a specific category using total field
-  /// Categories are classified as:
-  /// - Income/Revenue categories: use positive (add to profit)
-  /// - Expense/Cost categories: use negative (subtract from profit)
-  /// - Contra-revenue categories (returns, discounts): use negative
-  /// - Contra-expense categories (purchase returns, discounts): use negative
+  /// - isIncrease=true: Returns positive sum (revenue, income - increases profit)
+  /// - isIncrease=false: Returns negative sum (expenses, costs - decreases profit)
   double _sumCategory(String categoryCode, bool isIncrease) {
     final filteredItems = _filterByCategory(categoryCode);
     final sum = filteredItems.fold(0.0, (sum, item) => sum + item.total);
-    // If isIncrease is true, return positive (adds to profit/revenue)
-    // If isIncrease is false, return as-is for subtraction in formulas
-    return sum;
+    // Use isIncrease to determine if this adds to or subtracts from profit
+    return isIncrease ? sum : -sum;
   }
 
   // Revenue categories (isIncrease: true)
@@ -152,7 +148,7 @@ class ProfitLossCalculator {
   }
 
   double calculateNetOperatingRevenue() {
-    return calculateTotalOperatingRevenue() - calculateTotalDeductions();
+    return calculateTotalOperatingRevenue() + calculateTotalDeductions();
   }
 
   double calculateTotalOtherIncome() {
@@ -171,9 +167,9 @@ class ProfitLossCalculator {
   double calculateTotalCostOfGoodsSold() {
     return calculateOpeningInventory() +
         calculatePurchases() +
-        calculateDeliveryFees() -
-        calculatePurchaseReturns() -
-        calculatePurchaseDiscounts() -
+        calculateDeliveryFees() +
+        calculatePurchaseReturns() +
+        calculatePurchaseDiscounts() +
         calculateClosingInventory() +
         calculateOtherCostOfGoodsSold();
   }
@@ -185,8 +181,8 @@ class ProfitLossCalculator {
   }
 
   double calculateGrossProfit() {
-    return calculateTotalRevenue() -
-        calculateTotalCostOfGoodsSold() -
+    return calculateTotalRevenue() +
+        calculateTotalCostOfGoodsSold() +
         calculateTotalCostOfServices();
   }
 
@@ -238,14 +234,15 @@ class ProfitLossCalculator {
   }
 
   double calculateOperatingIncome() {
-    return calculateGrossProfit() - calculateTotalOperatingExpenses();
+    return calculateGrossProfit() + calculateTotalOperatingExpenses();
   }
 
+  /// Income Before Tax = Operating Income + Other Income (non-operating)
   double calculateIncomeBeforeTax() {
     return calculateOperatingIncome();
   }
 
   double calculateNetIncome() {
-    return calculateIncomeBeforeTax() - calculateCurrentTaxExpense();
+    return calculateIncomeBeforeTax() + calculateCurrentTaxExpense();
   }
 }

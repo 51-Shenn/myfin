@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:myfin/features/report/domain/entities/report.dart';
 
 abstract class ReportEvent extends Equatable {
   const ReportEvent();
@@ -39,7 +38,7 @@ class GenerateReportEvent extends ReportEvent {
 }
 
 class LoadReportDetailsEvent extends ReportEvent {
-  final Report reportCard;
+  final dynamic reportCard;
 
   const LoadReportDetailsEvent(this.reportCard);
 

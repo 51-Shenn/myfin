@@ -81,8 +81,8 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
       emit(state.copyWith(generatingReport: false));
 
       if (generatedReport.report_id.isNotEmpty) {
-        // TODO: display generated report after report creation
-        print("Generated Report: $generatedReport");
+        // Set the generated report in state so UI can navigate to display it
+        emit(state.copyWith(loadedReportDetails: generatedReport));
       }
 
       // reload reports list
@@ -111,14 +111,22 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     );
 
     try {
-      final report = await repo.getReportByReportId(event.reportCard.report_id);
+      // Use getGeneratedReportByReportId to fetch full report with sections
+      final report = await repo.getGeneratedReportByReportId(
+        event.reportCard.report_id,
+      );
 
-      emit(state.copyWith(loadingReports: false, loadedReportDetails: report));
+      emit(
+        state.copyWith(
+          loadingReportDetails: false,
+          loadedReportDetails: report,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
-          loadingReports: false,
-          error: "Failed to load reports: ${e.toString()}",
+          loadingReportDetails: false,
+          error: "Failed to load report details: ${e.toString()}",
         ),
       );
     }

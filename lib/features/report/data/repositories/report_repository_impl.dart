@@ -37,20 +37,55 @@ class ReportRepositoryImpl implements ReportRepository {
     return ReportFactory.createReportFromJson(rawData);
   }
 
+  @override
+  Future<dynamic> getGeneratedReportByReportId(String reportId) async {
+    // Fetch from reports collection (now contains full report data)
+    final rawData = await dataSource.getReportByReportId(reportId);
+
+    // Handle null case
+    if (rawData == null) {
+      throw Exception('Report with ID $reportId not found.');
+    }
+
+    // Determine report type and convert to appropriate entity
+    final reportTypeString = rawData['report_type'] as String?;
+
+    if (reportTypeString == null) {
+      throw Exception('Report type not found in report data.');
+    }
+
+    final reportType = stringToReportType(reportTypeString);
+
+    // Convert to specific report type based on report_type field
+    switch (reportType) {
+      case ReportType.profitLoss:
+        return ProfitAndLossReport.fromMap(rawData);
+      case ReportType.cashFlow:
+        return CashFlowStatement.fromMap(rawData);
+      case ReportType.balanceSheet:
+        return BalanceSheet.fromMap(rawData);
+      case ReportType.accountsReceivable:
+        return AccountsReceivable.fromMap(rawData);
+      case ReportType.accountsPayable:
+        return AccountsPayable.fromMap(rawData);
+    }
+  }
+
   // generate report
   @override
-  Future<Report> createReport(
+  Future<dynamic> createReport(
     Report report,
     DateTime startDate,
     DateTime endDate,
   ) async {
-    Report generatedReport = report;
+    dynamic generatedReport = report;
     String generatedReportId = '';
     List<Document> docData = [];
     List<DocumentLineItem> docLineData = [];
 
     try {
-      generatedReportId = await saveReportLog(report);
+      // Generate a document ID without saving yet
+      generatedReportId = dataSource.generateReportId();
       report = report.copyWith(report_id: generatedReportId);
 
       // 1. Fetch all Posted documents by memberId (status-based filtering)
@@ -87,6 +122,10 @@ class ReportRepositoryImpl implements ReportRepository {
         docData,
         docLineData,
       );
+
+      // 5. Save ONLY the full generated child report (e.g., ProfitAndLossReport) to Firestore
+      final reportData = generatedReport.toMap();
+      await dataSource.createReportLog(reportData);
     } on FirebaseException catch (e) {
       if (e.code == 'failed-precondition') {
         print(
@@ -94,8 +133,12 @@ class ReportRepositoryImpl implements ReportRepository {
         );
       }
       print("Error generating report: ${e.message}");
+      // Re-throw the exception so it can be handled by the BLoC
+      rethrow;
     } on Exception catch (e) {
       print("Error generating report: $e");
+      // Re-throw the exception so it can be handled by the BLoC
+      rethrow;
     }
 
     return generatedReport;

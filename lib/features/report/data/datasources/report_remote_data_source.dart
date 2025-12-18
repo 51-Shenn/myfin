@@ -19,11 +19,17 @@ class FirestoreReportDataSource {
   CollectionReference get _reportCollectionRef =>
       firestore.collection(reportCollectionPath);
 
+  /// Generate a report ID without saving the document
+  String generateReportId() {
+    return _reportCollectionRef.doc().id;
+  }
+
+  /// Create a report document in Firestore (supports all report types)
   Future<String> createReportLog(Map<String, dynamic> reportData) async {
     final reportRef = _reportCollectionRef.doc();
 
     // add current timestamp when creating report
-    reportData['generated_at'] = FieldValue.serverTimestamp();
+    reportData['generated_at'] = Timestamp.now();
 
     await reportRef.set(reportData);
     await reportRef.update({'report_id': reportRef.id});
