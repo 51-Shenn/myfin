@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/core/validators/auth_validator.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
@@ -12,6 +13,7 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _formKey = GlobalKey<FormState>(); // Added Form Key
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -20,15 +22,30 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureConfirm = true;
 
   @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // We use BlocConsumer to Listen (side effects) and Build (UI changes)
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.passwordStatus == FormStatus.submissionFailure) {
+          // Show backend error (e.g. "Wrong password")
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.error ?? "Update failed"),
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(state.error ?? "Update failed")),
+                ],
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         } else if (state.passwordStatus == FormStatus.submissionSuccess) {
@@ -36,9 +53,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             const SnackBar(
               content: Text('Password updated successfully'),
               backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
             ),
           );
-          Navigator.pop(context); // Go back on success
+          Navigator.pop(context);
         }
       },
       builder: (context, state) {
@@ -56,84 +74,106 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             centerTitle: true,
             title: const Text(
               'Change Password',
-              style: TextStyle(color: Colors.black, fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Inter',
+              ),
             ),
           ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Create a new password for your account.',
-                  style: TextStyle(color: Colors.grey, fontSize: 14, fontFamily: 'Inter'),
-                ),
-                const SizedBox(height: 30),
-                _buildPasswordField(
-                  controller: _currentPasswordController,
-                  label: 'Current Password',
-                  obscureText: _obscureCurrent,
-                  onToggleVisibility: () => setState(() => _obscureCurrent = !_obscureCurrent),
-                ),
-                const SizedBox(height: 20),
-                _buildPasswordField(
-                  controller: _newPasswordController,
-                  label: 'New Password',
-                  obscureText: _obscureNew,
-                  onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
-                ),
-                const SizedBox(height: 20),
-                _buildPasswordField(
-                  controller: _confirmPasswordController,
-                  label: 'Confirm New Password',
-                  obscureText: _obscureConfirm,
-                  onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: isSubmitting
-                        ? null // Disable button while loading
-                        : () {
-                            // Validation Logic UI Side
-                            if (_newPasswordController.text != _confirmPasswordController.text) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Passwords do not match')),
-                              );
-                              return;
-                            }
-                            if (_currentPasswordController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Enter current password')),
-                              );
-                              return;
-                            }
-
-                            // Trigger BLoC Event
-                            context.read<ProfileBloc>().add(
-                                  ChangePasswordEvent(
-                                    currentPassword: _currentPasswordController.text,
-                                    newPassword: _newPasswordController.text,
-                                  ),
-                                );
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2B46F9),
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: isSubmitting
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Update Password',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
-                          ),
+            child: Form(
+              key: _formKey, // Wrap in Form
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Create a new password for your account.',
+                    style: TextStyle(color: Colors.grey, fontSize: 14, fontFamily: 'Inter'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 30),
+                  
+                  // Current Password
+                  _buildPasswordField(
+                    controller: _currentPasswordController,
+                    label: 'Current Password',
+                    obscureText: _obscureCurrent,
+                    onToggleVisibility: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "Current password is required";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // New Password
+                  _buildPasswordField(
+                    controller: _newPasswordController,
+                    label: 'New Password',
+                    obscureText: _obscureNew,
+                    onToggleVisibility: () => setState(() => _obscureNew = !_obscureNew),
+                    validator: (val) {
+                      return AuthValidator.validatePassword(val ?? "");
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Confirm Password
+                  _buildPasswordField(
+                    controller: _confirmPasswordController,
+                    label: 'Confirm New Password',
+                    obscureText: _obscureConfirm,
+                    onToggleVisibility: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "Please confirm password";
+                      if (val != _newPasswordController.text) return "Passwords do not match";
+                      return null;
+                    },
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: isSubmitting
+                          ? null
+                          : () {
+                              // 1. Check frontend validation
+                              if (_formKey.currentState!.validate()) {
+                                // 2. Submit to BLoC
+                                context.read<ProfileBloc>().add(
+                                      ChangePasswordEvent(
+                                        currentPassword: _currentPasswordController.text,
+                                        newPassword: _newPasswordController.text,
+                                      ),
+                                    );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2B46F9),
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: isSubmitting
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Update Password',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -141,34 +181,60 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 
-  // _buildPasswordField helper remains the same as previous response
   Widget _buildPasswordField({
     required TextEditingController controller,
     required String label,
     required bool obscureText,
     required VoidCallback onToggleVisibility,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87, fontFamily: 'Inter'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+            fontFamily: 'Inter',
+          ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
+          validator: validator, // Hooked up validator
           style: const TextStyle(fontFamily: 'Inter', fontSize: 15, color: Colors.black),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF2B46F9), width: 1.5)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFF2B46F9), width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1.0),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
             filled: true,
             fillColor: Colors.white,
             suffixIcon: IconButton(
-              icon: Icon(obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey),
+              icon: Icon(
+                obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: Colors.grey,
+              ),
               onPressed: onToggleVisibility,
             ),
           ),
