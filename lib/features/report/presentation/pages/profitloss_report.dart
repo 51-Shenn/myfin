@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
+import 'package:myfin/features/report/presentation/widgets/help_dialog.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ProfitAndLossReportScreen extends StatefulWidget {
   const ProfitAndLossReportScreen({super.key});
@@ -16,11 +22,22 @@ class ProfitAndLossReportScreen extends StatefulWidget {
 }
 
 class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
-  ProfitAndLossReport profitAndLossReport = ProfitAndLossReport.initial();
+  late ProfitAndLossReport _report;
 
-  void _showErrorSnackBar(BuildContext context, String message) {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      _report =
+          ModalRoute.of(context)!.settings.arguments as ProfitAndLossReport;
+    } catch (e) {
+      _report = ProfitAndLossReport.initial();
+      _showErrorSnackBar('Failed to retrieve report details: $e');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
@@ -28,183 +45,164 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    profitAndLossReport =
-        ModalRoute.of(context)!.settings.arguments as ProfitAndLossReport;
-    ProfitAndLossReport report = profitAndLossReport.copyWith(
-      sections: [
-        ReportSection(
-          section_title: 'Revenue',
-          grand_total: 14000,
-          groups: [
-            ReportGroup(
-              group_title: 'Operating Revenue',
-              subtotal: 15000,
-              line_items: [
-                ReportLineItem(
-                  item_title: 'Sales Revenue',
-                  amount: 13000,
-                  isIncrease: true,
-                ),
-                ReportLineItem(
-                  item_title: 'Service Revenue',
-                  amount: 2000,
-                  isIncrease: true,
-                ),
-              ],
-            ),
-            ReportGroup(
-              group_title: 'Deductions from Revenue',
-              subtotal: -1000,
-              line_items: [
-                ReportLineItem(
-                  item_title: 'Sales Returns     ',
-                  amount: 1000,
-                  isIncrease: false,
-                ),
-              ],
-            ),
-          ],
-        ),
-        ReportSection(
-          section_title: 'Cost of Goods Sold',
-          grand_total: -4000,
-          groups: [
-            ReportGroup(
-              group_title: 'Opening Inventory',
-              line_items: [],
-              subtotal: -4000,
-            ),
-          ],
-        ),
-        ReportSection(
-          section_title: 'Operating Expenses',
-          grand_total: -1000,
-          groups: [
-            ReportGroup(
-              group_title: 'Selling & Marketing Expenses',
-              line_items: [
-                ReportLineItem(
-                  item_title: 'Advertising         ',
-                  amount: 1000,
-                  isIncrease: false,
-                ),
-              ],
-              subtotal: -1000,
-            ),
-          ],
-        ),
-      ],
-      gross_profit: 10000,
-      operating_income: 9000,
-      income_before_tax: 9000,
-      income_tax_expense: -1000,
-      net_income: 8000,
-    );
-
     return BlocProvider(
-      create: (_) =>
-          ReportBLoC(ReportRepository())..add(LoadReportDetailsEvent(report)),
+      create: (context) =>
+          ReportBLoC(context.read<ReportRepository>())
+            ..add(LoadReportDetailsEvent(_report)),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          scrolledUnderElevation: 0,
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            color: Colors.black,
-            onPressed: () {
-              NavBarController.of(context)?.toggleNavBar();
-              Navigator.pop(context);
-            },
-          ),
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.attach_file, color: Colors.black, size: 28),
-              const SizedBox(width: 8),
-              const Text(
-                'Reports',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter',
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-          centerTitle: true,
-        ),
+        appBar: _buildAppBar(),
         body: BlocListener<ReportBLoC, ReportState>(
-          listener: (context, state) {
-            if (state.error != null && mounted) {
-              _showErrorSnackBar(context, state.error!);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  context.read<ReportBLoC>().add(ClearErrorEvent());
-                }
-              });
-            }
-          },
-          child: BlocBuilder<ReportBLoC, ReportState>(
-            builder: (context, state) {
-              if (state.loadingReports && state.loadedReports.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (state.error != null) {
-                return Center(
-                  child: Text(
-                    state.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
-              return SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Report Header
-                      _buildReportHeader(report),
-                      const SizedBox(height: 12),
-
-                      // Report Sections
-                      ...report.sections.map(
-                        (section) => _buildReportSection(section),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // Financial Summary
-                      _buildFinancialSummary(report),
-
-                      const SizedBox(height: 20),
-
-                      // Action Buttons
-                      _buildActionButtons(context, report),
-
-                      const SizedBox(height: 30),
-
-                      // Report Footer
-                      _buildReportFooter(report),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          listener: _handleBlocStateChanges,
+          child: BlocBuilder<ReportBLoC, ReportState>(builder: _buildBody),
         ),
       ),
     );
   }
 
-  /// Build Report Header Section
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      scrolledUnderElevation: 0,
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () {
+          NavBarController.of(context)?.toggleNavBar();
+          Navigator.pop(context);
+        },
+      ),
+      title: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.attach_file, color: Colors.black, size: 28),
+          SizedBox(width: 8),
+          Text(
+            'Reports',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.help_outline, color: Colors.black),
+          onPressed: _showHelpDialog,
+          tooltip: 'Help',
+        ),
+      ],
+    );
+  }
+
+  void _showHelpDialog() {
+    ReportHelpDialog.show(
+      context,
+      reportType: 'profit_loss',
+      title: 'Profit & Loss Report Help',
+      sections: [
+        const HelpSection(
+          title: '📈 What is a Profit & Loss Report?',
+          content:
+              'Shows your business performance over a period of time. Calculates: Revenue - Expenses = Net Income.',
+        ),
+        const HelpSection(
+          title: 'Before Generating',
+          items: [
+            HelpItem(text: '- Upload ALL revenue and expense documents'),
+            HelpItem(text: '- Set all documents to "Posted" status'),
+            HelpItem(
+              text:
+                  '- Assign categories: Product Revenue, Sales Expenses, etc.',
+            ),
+          ],
+        ),
+        const HelpSection(
+          title: 'Key Categories',
+          items: [
+            HelpItem(text: 'Revenues: Product, Service, Subscription'),
+            HelpItem(text: 'Expenses: Purchases, Salaries, Rent, etc.'),
+            HelpItem(text: 'Missing categories = missing from report!'),
+          ],
+        ),
+        const HelpSection(
+          title: 'Report Generation Order',
+          content:
+              'Start here! P&L should be generated FIRST, before Cash Flow or Balance Sheet.',
+          items: [
+            HelpItem(text: '1. Profit & Loss Report (start here)'),
+            HelpItem(text: '2. Cash Flow Statement (uses Net Income)'),
+            HelpItem(text: '3. Balance Sheet (uses both)'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _handleBlocStateChanges(BuildContext context, ReportState state) {
+    if (state.error != null && mounted) {
+      _showErrorSnackBar(state.error!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<ReportBLoC>().add(ClearErrorEvent());
+        }
+      });
+    }
+  }
+
+  Widget _buildBody(BuildContext context, ReportState state) {
+    // Show loading indicator while loading report details
+    if (state.loadingReportDetails) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error if present
+    if (state.error != null) {
+      return Center(
+        child: Text(state.error!, style: const TextStyle(color: Colors.red)),
+      );
+    }
+
+    // Get the loaded report from state
+    final loadedReport = state.loadedReportDetails;
+
+    // Check if we have a valid ProfitAndLossReport
+    if (loadedReport is! ProfitAndLossReport) {
+      return const Center(
+        child: Text(
+          'Invalid report type or report not loaded',
+          style: TextStyle(color: Colors.red),
+        ),
+      );
+    }
+
+    // Use the loaded report from BLoC state (has full data with sections)
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildReportHeader(loadedReport),
+            const SizedBox(height: 12),
+            ...loadedReport.sections.map(_buildReportSection),
+            const SizedBox(height: 30),
+            _buildFinancialSummary(loadedReport),
+            const SizedBox(height: 20),
+            _buildActionButtons(loadedReport),
+            const SizedBox(height: 30),
+            _buildReportFooter(loadedReport),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReportHeader(ProfitAndLossReport report) {
     final startDate =
         report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
@@ -230,9 +228,8 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
               color: Colors.blue.shade900,
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -250,281 +247,274 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  /// Build Individual Report Section with Groups and Line Items
   Widget _buildReportSection(ReportSection section) {
+    final hasLineItems = section.groups.first.line_items.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            border: Border.all(color: Colors.blue.shade300),
-          ),
-          child: Text(
-            section.section_title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade900,
-            ),
-          ),
-        ),
+        _buildSectionHeader(section.section_title),
         const SizedBox(height: 12),
-
-        // Groups within section
-        ...section.groups.map((group) => _buildReportGroup(group)),
-
-        if (section.groups.first.line_items.isEmpty)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowHeight: 35.0,
-              headingRowColor: WidgetStateProperty.all(Colors.grey.shade200),
-              border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
-              columnSpacing: 100,
-              columns: [
-                DataColumn(
-                  label: Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Text(
-                        'Item',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Text(
-                        'Amount(RM)',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              rows: section.groups
-                  .map(
-                    (item) => DataRow(
-                      cells: [
-                        DataCell(
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10.0,
-                            ),
-                            child: Text(item.group_title),
-                          ),
-                        ),
-                        DataCell(
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10.0,
-                              ),
-                              child: Text(
-                                _formatCurrency(item.subtotal),
-                                style: TextStyle(
-                                  color: () {
-                                    if (item.subtotal > 0) return Colors.green;
-                                    if (item.subtotal < 0) return Colors.red;
-                                    return Colors.grey; // for zero
-                                  }(),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-
-        if (section.groups.first.line_items.isEmpty)
-          const SizedBox(height: 24),
-
-        // Section Total
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            border: Border(
-              top: BorderSide(color: Colors.grey.shade800, width: 2),
-              bottom: BorderSide(color: Colors.grey.shade800, width: 2),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Total ${section.section_title}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                _formatCurrency(section.grand_total),
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
+        if (hasLineItems)
+          ...section.groups.map(_buildReportGroup)
+        else
+          _buildGroupSummaryTable(section.groups),
+        if (!hasLineItems) const SizedBox(height: 24),
+        _buildSectionTotal(section),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  /// Build Group with Line Items Table
+  Widget _buildSectionHeader(String title) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade100,
+        border: Border.all(color: Colors.blue.shade300),
+      ),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue.shade900,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupSummaryTable(List<ReportGroup> groups) {
+    // Filter out groups with subtotals that round to 0.00
+    final nonZeroGroups = groups
+        .where((group) => group.subtotal.abs() >= 0.005)
+        .toList();
+
+    // If no groups remain, return empty widget
+    if (nonZeroGroups.isEmpty) return const SizedBox.shrink();
+
+    return Table(
+      border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
+      columnWidths: const {
+        0: FlexColumnWidth(3), // Item column takes 60% width
+        1: FlexColumnWidth(2), // Amount column takes 40% width
+      },
+      children: [
+        // Header row
+        TableRow(
+          decoration: BoxDecoration(color: Colors.grey.shade200),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                'Item',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                'Amount (RM)',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Data rows (filtered)
+        ...nonZeroGroups.map(
+          (group) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(group.group_title),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  _formatCurrency(group.subtotal),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _getAmountColor(group.subtotal),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _getAmountColor(double amount) {
+    if (amount > 0) return Colors.green;
+    if (amount < 0) return Colors.red;
+    return Colors.grey;
+  }
+
+  Widget _buildSectionTotal(ReportSection section) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade800, width: 2),
+          bottom: BorderSide(color: Colors.grey.shade800, width: 2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total ${section.section_title}',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            _formatCurrency(section.grand_total),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReportGroup(ReportGroup group) {
+    if (group.line_items.isEmpty) return const SizedBox.shrink();
+
+    // Filter line items to exclude those that round to 0.00
+    final nonZeroItems = group.line_items
+        .where((item) => item.amount.abs() >= 0.005)
+        .toList();
+
+    // If no items remain after filtering, don't show the group
+    if (nonZeroItems.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Group Title
-        if (group.line_items.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 10, top: 12, bottom: 8),
-            child: Text(
-              group.group_title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(left: 10, top: 12, bottom: 8),
+          child: Text(
+            group.group_title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
             ),
           ),
-
-        // Line Items Table
-        if (group.line_items.isNotEmpty)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingRowHeight: 35.0,
-              headingRowColor: WidgetStateProperty.all(Colors.grey.shade200),
-              border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
-              columnSpacing: 100,
-              columns: [
-                DataColumn(
-                  label: Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Text(
-                        'Item',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Text(
-                        'Amount(RM)',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              rows: group.line_items
-                  .map(
-                    (item) => DataRow(
-                      cells: [
-                        DataCell(
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10.0,
-                            ),
-                            child: Text(item.item_title),
-                          ),
-                        ),
-                        DataCell(
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10.0,
-                              ),
-                              child: Text(
-                                _formatCurrency(item.amount),
-                                style: TextStyle(
-                                  color: item.isIncrease
-                                      ? Colors.green
-                                      : Colors.red,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-
-        // Group Subtotal
-        if (group.line_items.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade400)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Total ${group.group_title}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                Text(
-                  _formatCurrency(group.subtotal),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ),
+        _buildLineItemsTable(group.line_items), // This will filter internally
+        _buildGroupSubtotal(group),
         const SizedBox(height: 16),
       ],
     );
   }
 
-  /// Build Financial Summary Box
+  Widget _buildLineItemsTable(List<ReportLineItem> lineItems) {
+    // Filter out items that round to 0.00 (absolute value < 0.005)
+    final filteredItems = lineItems
+        .where((item) => item.amount.abs() >= 0.005)
+        .toList();
+
+    // If no items remain after filtering, return empty widget
+    if (filteredItems.isEmpty) return const SizedBox.shrink();
+
+    return Table(
+      border: TableBorder.all(color: Colors.grey.shade300, width: 1.0),
+      columnWidths: const {
+        0: FlexColumnWidth(3), // Item column takes 60% width
+        1: FlexColumnWidth(2), // Amount column takes 40% width
+      },
+      children: [
+        // Header row
+        TableRow(
+          decoration: BoxDecoration(color: Colors.grey.shade200),
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                'Item',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Text(
+                'Amount (RM)',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Data rows (filtered)
+        ...filteredItems.map(
+          (item) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(item.item_title),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  _formatCurrency(item.amount),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: item.isIncrease ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupSubtotal(ReportGroup group) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.grey.shade400)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Total ${group.group_title}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          Text(
+            _formatCurrency(group.subtotal),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildFinancialSummary(ProfitAndLossReport report) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -546,21 +536,26 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
           ),
           const Divider(color: Colors.blue),
           const SizedBox(height: 8),
+
+          // Formula display row by row
           _buildMetricRow('Gross Profit', report.gross_profit),
-          _buildMetricRow('Operating Income', report.operating_income),
-          _buildMetricRow('Income Before Tax', report.income_before_tax),
-          _buildMetricRow('Income Tax Expense', report.income_tax_expense),
+          _buildMetricRow('Less: Total Expenses', report.total_expenses),
+          _buildMetricRow(
+            'Less: Income Tax Expense',
+            report.income_tax_expense,
+          ),
+
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Divider(color: Colors.blue.shade900, thickness: 2),
           ),
+
           _buildMetricRow('NET INCOME', report.net_income, isFinal: true),
         ],
       ),
     );
   }
 
-  /// Build Metric Row for Summary
   Widget _buildMetricRow(String label, double value, {bool isFinal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -587,17 +582,12 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  /// Build Action Buttons
-  Widget _buildActionButtons(BuildContext context, ProfitAndLossReport report) {
+  Widget _buildActionButtons(ProfitAndLossReport report) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF Download initiated')),
-              );
-            },
+            onPressed: () => _handleDownloadPdf(report),
             icon: const Icon(Icons.download),
             label: const Text('Download PDF'),
             style: ElevatedButton.styleFrom(
@@ -610,11 +600,7 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('PDF Share initiated')),
-              );
-            },
+            onPressed: () => _handleShare(report),
             icon: const Icon(Icons.share),
             label: const Text('Share'),
             style: ElevatedButton.styleFrom(
@@ -628,7 +614,212 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  /// Build Report Footer
+  Future<void> _handleDownloadPdf(ProfitAndLossReport report) async {
+    try {
+      final pdf = await _generatePdf(report);
+
+      // Get appropriate directory based on platform
+      Directory? directory;
+      String? directoryPath;
+
+      if (Platform.isAndroid) {
+        // On Android, try to save to Downloads folder
+        directory = Directory('/storage/emulated/0/Download');
+        if (!await directory.exists()) {
+          // Fallback to external storage if Downloads doesn't exist
+          directory = await getExternalStorageDirectory();
+        }
+      } else if (Platform.isIOS) {
+        // On iOS, use Documents directory (accessible through Files app)
+        directory = await getApplicationDocumentsDirectory();
+      } else {
+        // Fallback for other platforms
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      directoryPath = directory?.path;
+
+      if (directoryPath == null) {
+        throw Exception('Could not access storage directory');
+      }
+
+      final fileName =
+          'ProfitLoss_${report.report_id}_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final file = File('$directoryPath/$fileName');
+      await file.writeAsBytes(await pdf.save());
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'PDF saved to ${Platform.isAndroid ? "Downloads" : "Documents"} folder\n$fileName',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to download PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleShare(ProfitAndLossReport report) async {
+    try {
+      final pdf = await _generatePdf(report);
+      final directory = await getTemporaryDirectory();
+      final file = File(
+        '${directory.path}/profit_loss_${report.report_id}.pdf',
+      );
+      await file.writeAsBytes(await pdf.save());
+
+      final params = ShareParams(
+        files: [XFile(file.path)],
+        text: 'Profit & Loss Report - ${report.report_id}',
+      );
+      await SharePlus.instance.share(params);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to share PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<pw.Document> _generatePdf(ProfitAndLossReport report) async {
+    final pdf = pw.Document();
+    final startDate =
+        report.fiscal_period['startDate']?.toString().split(' ')[0] ?? 'N/A';
+    final endDate =
+        report.fiscal_period['endDate']?.toString().split(' ')[0] ?? 'N/A';
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Container(
+                padding: const pw.EdgeInsets.all(20),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border(
+                    bottom: pw.BorderSide(color: PdfColors.blue900, width: 3),
+                  ),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'PROFIT & LOSS STATEMENT',
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue900,
+                      ),
+                    ),
+                    pw.SizedBox(height: 12),
+                    pw.Text('Period: $startDate to $endDate'),
+                    pw.Text('Report ID: ${report.report_id}'),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 20),
+
+              // Financial Summary
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.blue900),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'FINANCIAL SUMMARY',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.Divider(),
+                    pw.SizedBox(height: 8),
+                    _buildPdfMetricRow('Gross Profit', report.gross_profit),
+                    _buildPdfMetricRow(
+                      'Operating Income',
+                      report.operating_income,
+                    ),
+                    _buildPdfMetricRow(
+                      'Income Before Tax',
+                      report.income_before_tax,
+                    ),
+                    _buildPdfMetricRow(
+                      'Income Tax Expense',
+                      report.income_tax_expense,
+                    ),
+                    pw.Divider(thickness: 2),
+                    _buildPdfMetricRow(
+                      'NET INCOME',
+                      report.net_income,
+                      isBold: true,
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 10),
+              pw.Text(
+                'Generated on ${DateTime.now().toString().split('.')[0]}',
+                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf;
+  }
+
+  pw.Widget _buildPdfMetricRow(
+    String label,
+    double value, {
+    bool isBold = false,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+          pw.Text(
+            _formatCurrency(value),
+            style: pw.TextStyle(
+              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReportFooter(ProfitAndLossReport report) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -652,7 +843,6 @@ class _ProfitAndLossReportScreenState extends State<ProfitAndLossReportScreen> {
     );
   }
 
-  /// Format currency values
   String _formatCurrency(double amount) {
     final isNegative = amount < 0;
     final absAmount = amount.abs().toStringAsFixed(2);

@@ -1,8 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
@@ -15,7 +17,7 @@ class ReportHistoryScreen extends StatefulWidget {
 }
 
 class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
-  String member_id = "M123";
+  String member_id = "";
 
   void _showErrorSnackBar(BuildContext context, String message) {
     if (!mounted) return;
@@ -26,10 +28,21 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Get member_id from current authenticated user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      member_id = user.uid;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ReportBLoC(ReportRepository())..add(LoadReportsEvent(member_id)),
+      create: (context) =>
+          ReportBLoC(context.read<ReportRepository>())
+            ..add(LoadReportsEvent(member_id)),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -63,6 +76,22 @@ class _ReportHistoryScreenState extends State<ReportHistoryScreen> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
                   context.read<ReportBLoC>().add(ClearErrorEvent());
+                }
+              });
+            }
+
+            // Navigate to generated report after successful creation
+            if (!state.generatingReport &&
+                state.loadedReportDetails.report_id.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  final report = state.loadedReportDetails;
+                  NavBarController.of(context)?.toggleNavBar();
+                  Navigator.pushNamed(
+                    context,
+                    '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',
+                    arguments: report,
+                  );
                 }
               });
             }
@@ -196,6 +225,7 @@ class ReportCard extends StatelessWidget {
         ),
         trailing: Icon(Icons.chevron_right, color: Colors.grey[600]),
         onTap: () {
+          NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(
             context,
             '/report_${report.report_type.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}',

@@ -64,28 +64,27 @@ class UploadView extends StatelessWidget {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/doc_details').then((_) {
             if (!context.mounted) return;
-            context.read<UploadCubit>().fetchDocument();
             NavBarController.of(context)?.toggleNavBar();
+            context.read<UploadCubit>().fetchDocument();
           });
-        }
-        else if (state is UploadNavigateToDocDetails) {
+        } else if (state is UploadNavigateToDocDetails) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(
-            context, 
+            context,
             '/doc_details',
             arguments: DocDetailsArguments(
               existingDocument: state.selectedDocument,
-              existingLineItems: state.extractedLineItems, 
+              existingLineItems: state.extractedLineItems,
             ),
           ).then((_) {
-            if (!context.mounted) return; 
-            context.read<UploadCubit>().fetchDocument();
+            if (!context.mounted) return;
             NavBarController.of(context)?.toggleNavBar();
+            context.read<UploadCubit>().fetchDocument();
           });
         }
         // else if (state is UploadImagePicked) {
         //   uploadCubit.processPickedImage(state.imagePath);
-        // } 
+        // }
         // else if (state is UploadFilePicked) {
         //   uploadCubit.processPickedFile(state.filePath, state.fileName);
         // }
@@ -93,8 +92,8 @@ class UploadView extends StatelessWidget {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/upload_history').then((_) {
             if (!context.mounted) return;
-            context.read<UploadCubit>().fetchDocument();
             NavBarController.of(context)?.toggleNavBar();
+            context.read<UploadCubit>().fetchDocument();
           });
         }
       },
@@ -105,9 +104,9 @@ class UploadView extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 30,
-              fontWeight: FontWeight.bold
-              )
+              fontWeight: FontWeight.bold,
             ),
+          ),
           centerTitle: true,
         ),
         body: BlocBuilder<UploadCubit, UploadState>(
@@ -122,15 +121,15 @@ class UploadView extends StatelessWidget {
                       Expanded(
                         child: UploadOptionCard(
                           option: Option.gallery,
-                          customPadding: EdgeInsets.fromLTRB(20, 10, 10, 10)
-                        )
+                          customPadding: EdgeInsets.fromLTRB(20, 10, 10, 10),
+                        ),
                       ),
                       Expanded(
                         child: UploadOptionCard(
                           option: Option.scan,
-                          customPadding: EdgeInsets.fromLTRB(10, 10, 20, 10)
-                        )
-                      )
+                          customPadding: EdgeInsets.fromLTRB(10, 10, 20, 10),
+                        ),
+                      ),
                     ],
                   ),
                   Padding(
@@ -154,7 +153,8 @@ class UploadView extends StatelessWidget {
                               ),
                             ),
                             Spacer(),
-                            if (state.document.isNotEmpty && state.document.length > 2)
+                            if (state.document.isNotEmpty &&
+                                state.document.length > 2)
                               TextButton(
                                 onPressed: () {
                                   uploadCubit.viewAllClicked();
@@ -183,14 +183,20 @@ class UploadView extends StatelessWidget {
                                     SizedBox(height: 80),
                                     CircularProgressIndicator(),
                                   ],
-                                )
+                                ),
                               );
                             }
-                            
-                            if (state is UploadLoaded && state.document.isEmpty) {
+
+                            if (state is UploadLoaded &&
+                                state.document.isEmpty) {
                               return Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(0, 80, 0, 0),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    0,
+                                    80,
+                                    0,
+                                    0,
+                                  ),
                                   child: Text(
                                     'No recent uploads',
                                     style: TextStyle(
@@ -201,7 +207,7 @@ class UploadView extends StatelessWidget {
                                 ),
                               );
                             }
-      
+
                             if (state is UploadLoaded) {
                               return Column(
                                 children: [
@@ -209,20 +215,22 @@ class UploadView extends StatelessWidget {
                                     DocumentCard(
                                       document: doc,
                                       onTap: () {
-                                        uploadCubit.recentUploadedDocClicked(doc);
-                                      }
+                                        uploadCubit.recentUploadedDocClicked(
+                                          doc,
+                                        );
+                                      },
                                     ),
                                 ],
                               );
                             }
-      
+
                             return const Center(
                               child: Column(
                                 children: [
                                   SizedBox(height: 50),
                                   CircularProgressIndicator(),
                                 ],
-                              )
+                              ),
                             );
                           },
                         ),
@@ -232,9 +240,9 @@ class UploadView extends StatelessWidget {
                 ],
               ),
             );
-          }
-        )
-      )
+          },
+        ),
+      ),
     );
   }
 }

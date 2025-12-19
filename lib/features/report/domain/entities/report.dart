@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
 import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';
@@ -5,6 +8,7 @@ import 'package:myfin/features/report/services/generator/balance_sheet_generator
 import 'package:myfin/features/report/services/generator/cash_flow_generator.dart';
 import 'package:myfin/features/report/services/generator/profitloss_generator.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
+import 'package:myfin/features/upload/domain/entities/document.dart';
 
 // report types
 enum ReportType {
@@ -163,9 +167,10 @@ class Report extends Equatable {
     member_id: '',
   );
 
-  Future<Report> generateReport(
+  Future<dynamic> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     return Report.initial();
   }
@@ -183,6 +188,45 @@ class Report extends Equatable {
       fiscal_period: fiscal_period ?? this.fiscal_period,
       report_type: report_type ?? this.report_type,
       member_id: member_id ?? this.member_id,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+    };
+  }
+
+  factory Report.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> stringToDateMap(String source) {
+      final decoded = jsonDecode(source) as Map<String, dynamic>;
+      return decoded.map((key, value) => MapEntry(key, DateTime.parse(value)));
+    }
+
+    return Report(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: stringToDateMap(data['fiscal_period']),
+      report_type: stringToReportType(data['report_type']),
+      member_id: data['member_id'] as String? ?? '',
     );
   }
 
@@ -205,6 +249,7 @@ class Report extends Equatable {
 class ProfitAndLossReport extends Report {
   final List<ReportSection> sections;
   final double gross_profit;
+  final double total_expenses; // Total of all operating expenses
   final double operating_income;
   final double income_before_tax;
   final double income_tax_expense;
@@ -217,6 +262,7 @@ class ProfitAndLossReport extends Report {
     required super.member_id,
     required this.sections,
     required this.gross_profit,
+    required this.total_expenses,
     required this.operating_income,
     required this.income_before_tax,
     required this.income_tax_expense,
@@ -230,6 +276,7 @@ class ProfitAndLossReport extends Report {
     member_id: '',
     sections: List.empty(),
     gross_profit: 0,
+    total_expenses: 0,
     operating_income: 0,
     income_before_tax: 0,
     income_tax_expense: 0,
@@ -237,13 +284,13 @@ class ProfitAndLossReport extends Report {
   );
 
   @override
-  Future<Report> generateReport(
+  Future<ProfitAndLossReport> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = ProfitLossGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(this, businessName, docLineData);
   }
 
   @override
@@ -263,6 +310,7 @@ class ProfitAndLossReport extends Report {
     String? member_id,
     List<ReportSection>? sections,
     double? gross_profit,
+    double? total_expenses,
     double? operating_income,
     double? income_before_tax,
     double? income_tax_expense,
@@ -275,11 +323,129 @@ class ProfitAndLossReport extends Report {
       member_id: member_id ?? this.member_id,
       sections: sections ?? this.sections,
       gross_profit: gross_profit ?? this.gross_profit,
+      total_expenses: total_expenses ?? this.total_expenses,
       operating_income: operating_income ?? this.operating_income,
       income_before_tax: income_before_tax ?? this.income_before_tax,
       income_tax_expense: income_tax_expense ?? this.income_tax_expense,
       net_income: net_income ?? this.net_income,
     );
+  }
+
+  factory ProfitAndLossReport.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<ReportSection> parseSections(dynamic value) {
+      if (value is! List) return [];
+      return value.map((sectionData) {
+        final groups = (sectionData['groups'] as List? ?? []).map((groupData) {
+          final lineItems = (groupData['line_items'] as List? ?? []).map((
+            itemData,
+          ) {
+            return ReportLineItem(
+              item_title: itemData['item_title'] as String? ?? '',
+              description: itemData['description'] as String?,
+              amount: (itemData['amount'] as num?)?.toDouble() ?? 0.0,
+              isIncrease: itemData['isIncrease'] as bool? ?? false,
+            );
+          }).toList();
+
+          return ReportGroup(
+            group_title: groupData['group_title'] as String? ?? '',
+            line_items: lineItems,
+            subtotal: (groupData['subtotal'] as num?)?.toDouble() ?? 0.0,
+          );
+        }).toList();
+
+        return ReportSection(
+          section_title: sectionData['section_title'] as String? ?? '',
+          groups: groups,
+          grand_total: (sectionData['grand_total'] as num?)?.toDouble() ?? 0.0,
+        );
+      }).toList();
+    }
+
+    return ProfitAndLossReport(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
+      member_id: data['member_id'] as String? ?? '',
+      sections: parseSections(data['sections']),
+      gross_profit: (data['gross_profit'] as num?)?.toDouble() ?? 0.0,
+      total_expenses: (data['total_expenses'] as num?)?.toDouble() ?? 0.0,
+      operating_income: (data['operating_income'] as num?)?.toDouble() ?? 0.0,
+      income_before_tax: (data['income_before_tax'] as num?)?.toDouble() ?? 0.0,
+      income_tax_expense:
+          (data['income_tax_expense'] as num?)?.toDouble() ?? 0.0,
+      net_income: (data['net_income'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+      'sections': sections
+          .map(
+            (section) => {
+              'section_title': section.section_title,
+              'grand_total': section.grand_total,
+              'groups': section.groups
+                  .map(
+                    (group) => {
+                      'group_title': group.group_title,
+                      'subtotal': group.subtotal,
+                      'line_items': group.line_items
+                          .map(
+                            (item) => {
+                              'item_title': item.item_title,
+                              'description': item.description,
+                              'amount': item.amount,
+                              'isIncrease': item.isIncrease,
+                            },
+                          )
+                          .toList(),
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'gross_profit': gross_profit,
+      'total_expenses': total_expenses,
+      'operating_income': operating_income,
+      'income_before_tax': income_before_tax,
+      'income_tax_expense': income_tax_expense,
+      'net_income': net_income,
+    };
   }
 
   @override
@@ -327,13 +493,18 @@ class CashFlowStatement extends Report {
   );
 
   @override
-  Future<Report> generateReport(
+  Future<CashFlowStatement> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = CashFlowGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(
+      this,
+      businessName,
+      docData,
+      docLineData,
+    );
   }
 
   @override
@@ -343,6 +514,121 @@ class CashFlowStatement extends Report {
         'Total Investing Cash Flow: $total_investing_cash_flow, '
         'Total Financing Cash Flow: $total_financing_cash_flow, '
         'Cash Balance: $cash_balance';
+  }
+
+  factory CashFlowStatement.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<ReportSection> parseSections(dynamic value) {
+      if (value is! List) return [];
+      return value.map((sectionData) {
+        final groups = (sectionData['groups'] as List? ?? []).map((groupData) {
+          final lineItems = (groupData['line_items'] as List? ?? []).map((
+            itemData,
+          ) {
+            return ReportLineItem(
+              item_title: itemData['item_title'] as String? ?? '',
+              description: itemData['description'] as String?,
+              amount: (itemData['amount'] as num?)?.toDouble() ?? 0.0,
+              isIncrease: itemData['isIncrease'] as bool? ?? false,
+            );
+          }).toList();
+
+          return ReportGroup(
+            group_title: groupData['group_title'] as String? ?? '',
+            line_items: lineItems,
+            subtotal: (groupData['subtotal'] as num?)?.toDouble() ?? 0.0,
+          );
+        }).toList();
+
+        return ReportSection(
+          section_title: sectionData['section_title'] as String? ?? '',
+          groups: groups,
+          grand_total: (sectionData['grand_total'] as num?)?.toDouble() ?? 0.0,
+        );
+      }).toList();
+    }
+
+    return CashFlowStatement(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
+      member_id: data['member_id'] as String? ?? '',
+      sections: parseSections(data['sections']),
+      total_operating_cash_flow:
+          (data['total_operating_cash_flow'] as num?)?.toDouble() ?? 0.0,
+      total_investing_cash_flow:
+          (data['total_investing_cash_flow'] as num?)?.toDouble() ?? 0.0,
+      total_financing_cash_flow:
+          (data['total_financing_cash_flow'] as num?)?.toDouble() ?? 0.0,
+      cash_balance: (data['cash_balance'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+      'sections': sections
+          .map(
+            (section) => {
+              'section_title': section.section_title,
+              'grand_total': section.grand_total,
+              'groups': section.groups
+                  .map(
+                    (group) => {
+                      'group_title': group.group_title,
+                      'subtotal': group.subtotal,
+                      'line_items': group.line_items
+                          .map(
+                            (item) => {
+                              'item_title': item.item_title,
+                              'description': item.description,
+                              'amount': item.amount,
+                              'isIncrease': item.isIncrease,
+                            },
+                          )
+                          .toList(),
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'total_operating_cash_flow': total_operating_cash_flow,
+      'total_investing_cash_flow': total_investing_cash_flow,
+      'total_financing_cash_flow': total_financing_cash_flow,
+      'cash_balance': cash_balance,
+    };
   }
 
   @override
@@ -418,13 +704,18 @@ class BalanceSheet extends Report {
   );
 
   @override
-  Future<Report> generateReport(
+  Future<BalanceSheet> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = BalanceSheetGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(
+      this,
+      businessName,
+      docData,
+      docLineData,
+    );
   }
 
   @override
@@ -434,6 +725,119 @@ class BalanceSheet extends Report {
         'Total Liabilities: $total_liabilities, '
         'Total Equity: $total_equity, '
         'Total Liabilities + Equity: $total_liabilities_and_equity';
+  }
+
+  factory BalanceSheet.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<ReportSection> parseSections(dynamic value) {
+      if (value is! List) return [];
+      return value.map((sectionData) {
+        final groups = (sectionData['groups'] as List? ?? []).map((groupData) {
+          final lineItems = (groupData['line_items'] as List? ?? []).map((
+            itemData,
+          ) {
+            return ReportLineItem(
+              item_title: itemData['item_title'] as String? ?? '',
+              description: itemData['description'] as String?,
+              amount: (itemData['amount'] as num?)?.toDouble() ?? 0.0,
+              isIncrease: itemData['isIncrease'] as bool? ?? false,
+            );
+          }).toList();
+
+          return ReportGroup(
+            group_title: groupData['group_title'] as String? ?? '',
+            line_items: lineItems,
+            subtotal: (groupData['subtotal'] as num?)?.toDouble() ?? 0.0,
+          );
+        }).toList();
+
+        return ReportSection(
+          section_title: sectionData['section_title'] as String? ?? '',
+          groups: groups,
+          grand_total: (sectionData['grand_total'] as num?)?.toDouble() ?? 0.0,
+        );
+      }).toList();
+    }
+
+    return BalanceSheet(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
+      member_id: data['member_id'] as String? ?? '',
+      sections: parseSections(data['sections']),
+      total_assets: (data['total_assets'] as num?)?.toDouble() ?? 0.0,
+      total_liabilities: (data['total_liabilities'] as num?)?.toDouble() ?? 0.0,
+      total_equity: (data['total_equity'] as num?)?.toDouble() ?? 0.0,
+      total_liabilities_and_equity:
+          (data['total_liabilities_and_equity'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+      'sections': sections
+          .map(
+            (section) => {
+              'section_title': section.section_title,
+              'grand_total': section.grand_total,
+              'groups': section.groups
+                  .map(
+                    (group) => {
+                      'group_title': group.group_title,
+                      'subtotal': group.subtotal,
+                      'line_items': group.line_items
+                          .map(
+                            (item) => {
+                              'item_title': item.item_title,
+                              'description': item.description,
+                              'amount': item.amount,
+                              'isIncrease': item.isIncrease,
+                            },
+                          )
+                          .toList(),
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'total_assets': total_assets,
+      'total_liabilities': total_liabilities,
+      'total_equity': total_equity,
+      'total_liabilities_and_equity': total_liabilities_and_equity,
+    };
   }
 
   @override
@@ -608,13 +1012,18 @@ class AccountsReceivable extends Report {
   );
 
   @override
-  Future<Report> generateReport(
+  Future<AccountsReceivable> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = AccReceivableGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(
+      this,
+      businessName,
+      docData,
+      docLineData,
+    );
   }
 
   @override
@@ -623,6 +1032,63 @@ class AccountsReceivable extends Report {
         'Total Receivable: $total_receivable, '
         'Total Overdue: $total_overdue, '
         'Overdue Invoice Count: $overdue_invoice_count';
+  }
+
+  factory AccountsReceivable.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<Customer> parseCustomers(dynamic value) {
+      if (value is! List) return [];
+      return value.map((customerData) {
+        final invoices = (customerData['invoices'] as List? ?? []).map((
+          invoiceData,
+        ) {
+          return AccountLineItem(
+            account_line_id: invoiceData['account_line_id'] as String? ?? '',
+            date_issued: toDateTime(invoiceData['date_issued']),
+            due_date: toDateTime(invoiceData['due_date']),
+            amount_due: (invoiceData['amount_due'] as num?)?.toDouble() ?? 0.0,
+            isReceivable: invoiceData['isReceivable'] as bool? ?? true,
+            isOverdue: invoiceData['isOverdue'] as bool? ?? false,
+          );
+        }).toList();
+
+        return Customer(
+          customer_name: customerData['customer_name'] as String? ?? '',
+          customer_contact: customerData['customer_contact'] as String? ?? '',
+          invoices: invoices,
+        );
+      }).toList();
+    }
+
+    return AccountsReceivable(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
+      member_id: data['member_id'] as String? ?? '',
+      customers: parseCustomers(data['customers']),
+      total_receivable: (data['total_receivable'] as num?)?.toDouble() ?? 0.0,
+      total_overdue: (data['total_overdue'] as num?)?.toDouble() ?? 0.0,
+      overdue_invoice_count: (data['overdue_invoice_count'] as int?) ?? 0,
+    );
   }
 
   @override
@@ -648,6 +1114,47 @@ class AccountsReceivable extends Report {
       overdue_invoice_count:
           overdue_invoice_count ?? this.overdue_invoice_count,
     );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+      'customers': customers
+          .map(
+            (customer) => {
+              'customer_name': customer.customer_name,
+              'customer_contact': customer.customer_contact,
+              'invoices': customer.invoices
+                  .map(
+                    (invoice) => {
+                      'account_line_id': invoice.account_line_id,
+                      'date_issued': invoice.date_issued.toIso8601String(),
+                      'due_date': invoice.due_date.toIso8601String(),
+                      'amount_due': invoice.amount_due,
+                      'isReceivable': invoice.isReceivable,
+                      'isOverdue': invoice.isOverdue,
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'total_receivable': total_receivable,
+      'total_overdue': total_overdue,
+      'overdue_invoice_count': overdue_invoice_count,
+    };
   }
 
   @override
@@ -690,13 +1197,18 @@ class AccountsPayable extends Report {
   );
 
   @override
-  Future<Report> generateReport(
+  Future<AccountsPayable> generateReport(
     String businessName,
-    List<DocumentLineItem> reportData,
+    List<Document> docData,
+    List<DocumentLineItem> docLineData,
   ) async {
     final generator = AccPayableGenerator();
-    return generator.generateFullReport(this, businessName, reportData)
-        as ProfitAndLossReport;
+    return await generator.generateFullReport(
+      this,
+      businessName,
+      docData,
+      docLineData,
+    );
   }
 
   @override
@@ -705,6 +1217,61 @@ class AccountsPayable extends Report {
         'Total Payable: $total_payable, '
         'Total Overdue: $total_overdue, '
         'Overdue Bill Count: $overdue_bill_count';
+  }
+
+  factory AccountsPayable.fromMap(Map<String, dynamic> data) {
+    DateTime toDateTime(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    }
+
+    Map<String, DateTime> parseFiscalPeriod(dynamic value) {
+      if (value is Map) {
+        return value.map(
+          (key, val) => MapEntry(key.toString(), toDateTime(val)),
+        );
+      }
+      if (value is String) {
+        final decoded = jsonDecode(value) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, DateTime.parse(val)));
+      }
+      return {'': DateTime.now()};
+    }
+
+    List<Supplier> parseSuppliers(dynamic value) {
+      if (value is! List) return [];
+      return value.map((supplierData) {
+        final bills = (supplierData['bills'] as List? ?? []).map((billData) {
+          return AccountLineItem(
+            account_line_id: billData['account_line_id'] as String? ?? '',
+            date_issued: toDateTime(billData['date_issued']),
+            due_date: toDateTime(billData['due_date']),
+            amount_due: (billData['amount_due'] as num?)?.toDouble() ?? 0.0,
+            isReceivable: billData['isReceivable'] as bool? ?? false,
+            isOverdue: billData['isOverdue'] as bool? ?? false,
+          );
+        }).toList();
+
+        return Supplier(
+          supplier_name: supplierData['supplier_name'] as String? ?? '',
+          supplier_contact: supplierData['supplier_contact'] as String? ?? '',
+          bills: bills,
+        );
+      }).toList();
+    }
+
+    return AccountsPayable(
+      report_id: data['report_id'] as String? ?? '',
+      generated_at: toDateTime(data['generated_at']),
+      fiscal_period: parseFiscalPeriod(data['fiscal_period']),
+      member_id: data['member_id'] as String? ?? '',
+      suppliers: parseSuppliers(data['suppliers']),
+      total_payable: (data['total_payable'] as num?)?.toDouble() ?? 0.0,
+      total_overdue: (data['total_overdue'] as num?)?.toDouble() ?? 0.0,
+      overdue_bill_count: (data['overdue_bill_count'] as int?) ?? 0,
+    );
   }
 
   @override
@@ -729,6 +1296,47 @@ class AccountsPayable extends Report {
       total_overdue: total_overdue ?? this.total_overdue,
       overdue_bill_count: overdue_bill_count ?? this.overdue_bill_count,
     );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    String dateMapToString(Map<String, DateTime> map) {
+      final encodedMap = map.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      );
+      return jsonEncode(encodedMap);
+    }
+
+    return {
+      'report_id': report_id,
+      'generated_at': generated_at,
+      'fiscal_period': dateMapToString(fiscal_period),
+      'report_type': report_type.reportTypeToString,
+      'member_id': member_id,
+      'suppliers': suppliers
+          .map(
+            (supplier) => {
+              'supplier_name': supplier.supplier_name,
+              'supplier_contact': supplier.supplier_contact,
+              'bills': supplier.bills
+                  .map(
+                    (bill) => {
+                      'account_line_id': bill.account_line_id,
+                      'date_issued': bill.date_issued.toIso8601String(),
+                      'due_date': bill.due_date.toIso8601String(),
+                      'amount_due': bill.amount_due,
+                      'isReceivable': bill.isReceivable,
+                      'isOverdue': bill.isOverdue,
+                    },
+                  )
+                  .toList(),
+            },
+          )
+          .toList(),
+      'total_payable': total_payable,
+      'total_overdue': total_overdue,
+      'overdue_bill_count': overdue_bill_count,
+    };
   }
 
   @override

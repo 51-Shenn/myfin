@@ -12,14 +12,16 @@ class ReportsNav extends StatefulWidget {
   const ReportsNav({super.key});
 
   // Public static getter to access the navigator key
-  static GlobalKey<NavigatorState> get navigatorKey => _ReportsNavState.reportsNavKey;
+  static GlobalKey<NavigatorState> get navigatorKey =>
+      _ReportsNavState.reportsNavKey;
 
   @override
   State<ReportsNav> createState() => _ReportsNavState();
 }
 
 class _ReportsNavState extends State<ReportsNav> {
-  static final GlobalKey<NavigatorState> reportsNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> reportsNavKey =
+      GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -34,28 +36,33 @@ class _ReportsNavState extends State<ReportsNav> {
               return const ReportHistoryScreen(); // report history screen
             }
 
-            if (settings.name == '/report_${ReportType.profitLoss.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+            if (settings.name ==
+                '/report_${ReportType.profitLoss.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const ProfitAndLossReportScreen(); // profit & loss report screen
             }
 
-            if (settings.name == '/report_${ReportType.cashFlow.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+            if (settings.name ==
+                '/report_${ReportType.cashFlow.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const CashFlowStatementScreen(); // cash flow report screen
             }
 
-            if (settings.name == '/report_${ReportType.balanceSheet.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+            if (settings.name ==
+                '/report_${ReportType.balanceSheet.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const BalanceSheetReportScreen(); // balance sheet report screen
             }
 
-            if (settings.name == '/report_${ReportType.accountsPayable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+            if (settings.name ==
+                '/report_${ReportType.accountsPayable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const AccountsPayableReportScreen(); // accounts payable report screen
             }
 
-            if (settings.name == '/report_${ReportType.accountsReceivable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
+            if (settings.name ==
+                '/report_${ReportType.accountsReceivable.reportTypeToString.toLowerCase().trim().replaceAll(' ', '_')}') {
               return const AccountsReceivableReportScreen(); // accounts receivable report screen
             }
 
             return const MainReportScreen(); // main report screen
-          }
+          },
         );
       },
     );

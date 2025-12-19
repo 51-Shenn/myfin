@@ -38,8 +38,10 @@ class UploadCubit extends Cubit<UploadState> {
         limit: 3,
         memberId: user.uid,
       );
+      if (isClosed) return;
       emit(UploadLoaded(documents));
     } catch (e) {
+      if (isClosed) return;
       emit(UploadError(state.document, 'Failed to load documents: $e'));
     }
   }
@@ -158,6 +160,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       await _mapJsonToStateAndNavigate(jsonResult, path, type);
     } catch (e) {
+      if (isClosed) return;
       emit(UploadError(state.document, 'Processing Failed: $e'));
       emit(UploadLoaded(state.document));
     }
@@ -331,6 +334,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
+    // Navigate
+    if (isClosed) return;
     emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
     emit(UploadLoaded(state.document));
   }

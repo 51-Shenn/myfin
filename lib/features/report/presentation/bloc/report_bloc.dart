@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
 import 'package:myfin/features/report/services/generator/report_factory.dart';
@@ -21,15 +21,10 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     LoadReportsEvent event,
     Emitter<ReportState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        loadingReports: true,
-        error: null,
-      ),
-    );
+    emit(state.copyWith(loadingReports: true, error: null));
 
     try {
-      final reports = await repo.fetchReportsForMember(event.member_id);
+      final reports = await repo.getReportsByMemberId(event.member_id);
 
       emit(state.copyWith(loadingReports: false, loadedReports: reports));
     } catch (e) {
@@ -67,7 +62,11 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
         event.endDate,
       );
 
-      final generatedReport = await repo.createReport(report);
+      final generatedReport = await repo.createReport(
+        report,
+        event.startDate,
+        event.endDate,
+      );
 
       if (generatedReport.report_id.isEmpty) {
         emit(
@@ -82,8 +81,8 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
       emit(state.copyWith(generatingReport: false));
 
       if (generatedReport.report_id.isNotEmpty) {
-        // TODO: display generated report after report creation
-        print("Generated Report: $generatedReport");
+        // Set the generated report in state so UI can navigate to display it
+        emit(state.copyWith(loadedReportDetails: generatedReport));
       }
 
       // reload reports list
@@ -112,14 +111,22 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     );
 
     try {
-      final report = await repo.getReportByReportId(event.reportCard.report_id);
+      // Use getGeneratedReportByReportId to fetch full report with sections
+      final report = await repo.getGeneratedReportByReportId(
+        event.reportCard.report_id,
+      );
 
-      emit(state.copyWith(loadingReports: false, loadedReportDetails: report));
+      emit(
+        state.copyWith(
+          loadingReportDetails: false,
+          loadedReportDetails: report,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(
-          loadingReports: false,
-          error: "Failed to load reports: ${e.toString()}",
+          loadingReportDetails: false,
+          error: "Failed to load report details: ${e.toString()}",
         ),
       );
     }
@@ -129,11 +136,7 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     LoadReportDetailsFailure event,
     Emitter<ReportState> emit,
   ) async {
-    emit(
-      state.copyWith(
-        error: "Failed to load report details",
-      ),
-    );
+    emit(state.copyWith(error: "Failed to load report details"));
   }
 
   // format startDate and endDate to fiscal period

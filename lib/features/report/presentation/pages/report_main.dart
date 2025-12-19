@@ -1,9 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
-import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
+import 'package:myfin/features/report/domain/repositories/report_repository.dart';
 import 'package:myfin/features/report/presentation/bloc/report_bloc.dart';
 import 'package:myfin/features/report/presentation/bloc/report_event.dart';
 import 'package:myfin/features/report/presentation/bloc/report_state.dart';
@@ -19,12 +20,12 @@ class _MainReportScreenState extends State<MainReportScreen> {
   String? selectedReportType;
   DateTime? startDate;
   DateTime? endDate;
-  String member_id = "M123";
+  String member_id = "";
 
   List<String> reportTypes = [
     ReportType.profitLoss,
-    ReportType.balanceSheet,
     ReportType.cashFlow,
+    ReportType.balanceSheet,
     ReportType.accountsPayable,
     ReportType.accountsReceivable,
   ].map((e) => e.reportTypeToString).toList();
@@ -46,136 +47,149 @@ class _MainReportScreenState extends State<MainReportScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Get member_id from current authenticated user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      member_id = user.uid;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          ReportBLoC(ReportRepository())..add(LoadReportsEvent(member_id)),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          scrolledUnderElevation: 0,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.attach_file, color: Colors.black, size: 28),
-              const SizedBox(width: 8),
-              const Text(
-                'Reports',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter',
-                  letterSpacing: 1.0,
-                ),
+    return Builder(
+      builder: (context) {
+        return BlocProvider(
+          create: (_) =>
+              ReportBLoC(context.read<ReportRepository>())
+                ..add(LoadReportsEvent(member_id)),
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              scrolledUnderElevation: 0,
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.attach_file, color: Colors.black, size: 28),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Reports',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          centerTitle: true,
-        ),
-        body: BlocListener<ReportBLoC, ReportState>(
-          listener: (context, state) {
-            if (state.error != null && mounted) {
-              _showErrorSnackBar(context, state.error!);
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  context.read<ReportBLoC>().add(ClearErrorEvent());
+              centerTitle: true,
+            ),
+            body: BlocListener<ReportBLoC, ReportState>(
+              listener: (context, state) {
+                if (state.error != null && mounted) {
+                  _showErrorSnackBar(context, state.error!);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      context.read<ReportBLoC>().add(ClearErrorEvent());
+                    }
+                  });
                 }
-              });
-            }
-          },
-          child: BlocBuilder<ReportBLoC, ReportState>(
-            builder: (context, state) {
-              final reports = state.loadedReports;
+              },
+              child: BlocBuilder<ReportBLoC, ReportState>(
+                builder: (context, state) {
+                  final reports = state.loadedReports;
 
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Report Functions
-                    _buildReportFunctions(),
-                    const SizedBox(height: 16),
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Report Functions
+                      _buildReportFunctions(context),
+                      const SizedBox(height: 16),
 
-                    if (state.loadingReports && state.loadedReports.isEmpty)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(48.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-
-                    if (state.error != null)
-                      Center(
-                        child: Text(
-                          state.error!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-
-                    // Recent Reports List
-                    if (!state.loadingReports && state.loadedReports.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.description,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No reports found',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () {
-                                  if (mounted) {
-                                    context.read<ReportBLoC>().add(
-                                      LoadReportsEvent(member_id),
-                                    );
-                                  }
-                                },
-                                child: const Text('Refresh'),
-                              ),
-                            ],
+                      if (state.loadingReports && state.loadedReports.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(48.0),
+                            child: CircularProgressIndicator(),
                           ),
                         ),
-                      ),
 
-                    if (state.loadedReports.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: reports.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final report = reports[index];
-                            return RecentReportCard(report: report);
-                          },
+                      if (state.error != null)
+                        Center(
+                          child: Text(
+                            state.error!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-              );
-            },
+
+                      // Recent Reports List
+                      if (!state.loadingReports && state.loadedReports.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.description,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No reports found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    if (mounted) {
+                                      context.read<ReportBLoC>().add(
+                                        LoadReportsEvent(member_id),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('Refresh'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      if (state.loadedReports.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: reports.length > 2 ? 2 : reports.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final report = reports[index];
+                              return RecentReportCard(report: report);
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildReportFunctions() {
+  Widget _buildReportFunctions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -464,8 +478,8 @@ class _MainReportScreenState extends State<MainReportScreen> {
       initialDate: isStartDate
           ? (startDate ?? DateTime.now())
           : (endDate ?? DateTime.now()),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      firstDate: DateTime(DateTime.now().year - 100),
+      lastDate: DateTime(DateTime.now().year + 1),
     );
 
     if (picked != null && mounted) {
@@ -540,7 +554,7 @@ class RecentReportCard extends StatelessWidget {
             arguments: report,
           );
           print(
-            'Navigate report details: ${report.report_type} ${report.report_id}',
+            'report.report_id : ${report.report_id}, report.report_type.reportTypeToString : ${report.report_type.reportTypeToString}',
           );
         },
       ),
