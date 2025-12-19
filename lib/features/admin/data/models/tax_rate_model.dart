@@ -15,10 +15,10 @@ class TaxRateModel {
 
   factory TaxRateModel.fromMap(Map<String, dynamic> map) {
     return TaxRateModel(
-      id: map['id'] as String,
-      minimumIncome: (map['minimumIncome'] as num).toDouble(),
-      maximumIncome: (map['maximumIncome'] as num).toDouble(),
-      percentage: (map['percentage'] as num).toDouble(),
+      id: map['id'] as String? ?? '', // Added null safety
+      minimumIncome: (map['minimumIncome'] as num?)?.toDouble() ?? 0.0,
+      maximumIncome: (map['maximumIncome'] as num?)?.toDouble() ?? 0.0,
+      percentage: (map['percentage'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

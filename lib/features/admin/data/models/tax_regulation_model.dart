@@ -30,22 +30,45 @@ class TaxRegulationModel {
   factory TaxRegulationModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
+    // Handle 'rates' which might be a List, or incorrectly a Map in Firestore
+    var ratesData = data['rates'];
+    List<TaxRateModel> parsedRates = [];
+
+    try {
+      if (ratesData is List) {
+        // Safe iteration: check if element is a Map before casting
+        for (var element in ratesData) {
+          if (element is Map) {
+            parsedRates.add(
+                TaxRateModel.fromMap(Map<String, dynamic>.from(element)));
+          }
+        }
+      } else if (ratesData is Map) {
+        // Fallback: If rates were saved as a Map (e.g. index-keyed)
+        for (var element in ratesData.values) {
+          if (element is Map) {
+            parsedRates.add(
+                TaxRateModel.fromMap(Map<String, dynamic>.from(element)));
+          }
+        }
+      }
+    } catch (e) {
+      print("Error parsing rates for regulation ${doc.id}: $e");
+    }
+
     return TaxRegulationModel(
       id: doc.id,
-      name: data['name'] as String,
-      type: data['type'] as String,
-      description: data['description'] as String,
-      rates:
-          (data['rates'] as List<dynamic>?)
-              ?.map(
-                (rateMap) =>
-                    TaxRateModel.fromMap(rateMap as Map<String, dynamic>),
-              )
-              .toList() ??
-          [],
+      name: data['name'] as String? ?? '',
+      type: data['type'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      rates: parsedRates,
       createdBy: data['createdBy'] as String? ?? '',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
       deletedBy: data['deletedBy'] as String?,
       deletedAt: data['deletedAt'] != null
           ? (data['deletedAt'] as Timestamp).toDate()

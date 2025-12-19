@@ -126,9 +126,10 @@ class GeminiOCRDataSource {
        - "total": Grand total amount.
     
     2. Extract Party Details (Metadata):
-       - IF "Sales Invoice" or "Sales Order": Extract key "Customer Name", "Customer Address", "Customer Contact".
-       - IF "Supplier Invoice" or "Purchase Order": Extract key "Supplier Name", "Supplier Address", "Supplier Contact".
-       - Add these to the "metadata" list.
+       - IF "Sales Invoice" or "Sales Order": Check for "Customer Name", "Customer Address", "Customer Contact".
+       - IF "Supplier Invoice" or "Purchase Order": Check for "Supplier Name", "Supplier Address", "Supplier Contact".
+       - **CRITICAL**: Only add these keys to the "metadata" list IF the information is explicitly visible in the document.
+       - **DO NOT** include keys for missing information (e.g., if there is no Supplier Address on the receipt, do not include the "Supplier Address" key at all).
 
     3. Extract line items:
        - For "category", use the CATEGORY LIST below.
