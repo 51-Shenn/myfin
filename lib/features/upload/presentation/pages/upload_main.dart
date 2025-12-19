@@ -88,7 +88,9 @@ class UploadView extends StatelessWidget {
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.white,
         appBar: AppBar(
+          backgroundColor: Colors.white,
           title: const Text(
             'Upload',
             style: TextStyle(
