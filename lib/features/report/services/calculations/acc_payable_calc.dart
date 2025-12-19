@@ -50,12 +50,34 @@ class AccountsPayableCalculator {
     return docLineItems.fold(0.0, (sum, item) => sum + item.total);
   }
 
+  /// Get due date from document metadata
+  /// Returns the due date from metadata if available, otherwise defaults to 30 days from posting date
+  DateTime _getDueDate(Document doc) {
+    // Try to get due_date from metadata
+    if (doc.metadata != null) {
+      try {
+        final dueDateMetadata = doc.metadata!.firstWhere(
+          (m) => m.key == 'due_date',
+          orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
+        );
+
+        if (dueDateMetadata.value.isNotEmpty) {
+          // Parse YYYY-MM-DD format
+          return DateTime.parse(dueDateMetadata.value);
+        }
+      } catch (e) {
+        // If parsing fails, fall back to default
+        print('Error parsing due_date for document ${doc.id}: $e');
+      }
+    }
+
+    // Fallback: 30 days from posting date
+    return doc.postingDate.add(const Duration(days: 30));
+  }
+
   /// Check if a document is overdue
-  /// Note: Due date should be calculated or stored in metadata
   bool isOverdue(Document doc) {
-    // TODO: Get actual due date from metadata or calculate based on payment terms
-    // For now, assume 30 days from posting date
-    final dueDate = doc.postingDate.add(const Duration(days: 30));
+    final dueDate = _getDueDate(doc);
     return dueDate.isBefore(DateTime.now());
   }
 
@@ -64,9 +86,7 @@ class AccountsPayableCalculator {
     return AccountLineItem(
       account_line_id: doc.id,
       date_issued: doc.postingDate,
-      due_date: doc.postingDate.add(
-        const Duration(days: 30),
-      ), // TODO: Get from metadata
+      due_date: _getDueDate(doc),
       amount_due: getDocumentTotal(doc.id),
       isReceivable: false,
       isOverdue: isOverdue(doc),
