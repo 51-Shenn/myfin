@@ -62,7 +62,16 @@ class _MainReportScreenState extends State<MainReportScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
+      SnackBar(
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text(message, style: const TextStyle(fontSize: 16)),
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
