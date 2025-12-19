@@ -24,6 +24,9 @@ class EditBusinessProfileScreen extends StatefulWidget {
 }
 
 class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
+  // 1. Add Form Key
+  final _formKey = GlobalKey<FormState>();
+
   // Controllers
   late TextEditingController _companyNameController;
   late TextEditingController _regNoController;
@@ -111,9 +114,15 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   }
 
   void _saveProfile() {
-    // 1. Create updated object
+    // 2. Validate Form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all required fields")),
+      );
+      return;
+    }
+
     final updatedProfile = BusinessProfile(
-      // If editing, keep ID. If new, use memberId (simplification) or empty string for repo to handle
       profileId: widget.existingProfile?.profileId ?? widget.memberId,
       name: _companyNameController.text.trim(),
       registrationNo: _regNoController.text.trim(),
@@ -123,7 +132,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
       memberId: widget.memberId,
     );
 
-    // 2. Call Bloc to save
     context.read<ProfileBloc>().add(
       UpdateBusinessProfileEvent(updatedProfile, logoFile: _selectedImage),
     );
@@ -141,7 +149,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     return BlocListener<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (!state.isLoading && state.error == null) {
-          // Success
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Business profile saved successfully"),
@@ -150,7 +157,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
           );
           Navigator.pop(context);
         } else if (state.error != null) {
-          // Failure
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
           );
@@ -182,170 +188,181 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- Logo Section ---
-              Center(
-                child: GestureDetector(
-                  onTap: _showImageSourceModal,
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade200),
-                          image: imageProvider != null
-                              ? DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.cover,
+          // 3. Wrap content in Form
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: _showImageSourceModal,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(color: Colors.grey.shade200),
+                            image: imageProvider != null
+                                ? DecorationImage(
+                                    image: imageProvider,
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: imageProvider == null
+                              ? const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.layers_outlined,
+                                        size: 30,
+                                        color: Color(0xFF2B46F9),
+                                      ),
+                                      Text(
+                                        "UPLOAD",
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 )
                               : null,
                         ),
-                        child: imageProvider == null
-                            ? const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.layers_outlined,
-                                      size: 30,
-                                      color: Color(0xFF2B46F9),
-                                    ),
-                                    Text(
-                                      "UPLOAD",
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF2B46F9),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.white,
-                            size: 16,
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF2B46F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              // --- Details Header ---
-              const Text(
-                'COMPANY DETAILS',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: 0.5,
+                const Text(
+                  'COMPANY DETAILS',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // --- Fields ---
-              _buildTextField(
-                label: 'Company Name',
-                hint: 'Company Inc.',
-                controller: _companyNameController,
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Company Name',
+                  hint: 'Company Inc.',
+                  controller: _companyNameController,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Company name is required' : null,
+                ),
+                const SizedBox(height: 20),
 
-              _buildTextField(
-                label: 'Registration Number',
-                hint: '202301005921',
-                controller: _regNoController,
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Registration Number',
+                  hint: '202301005921',
+                  controller: _regNoController,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Registration No. is required' : null,
+                ),
+                const SizedBox(height: 20),
 
-              _buildTextField(
-                label: 'Email Address',
-                hint: 'company@gmail.com',
-                controller: _emailController,
-                inputType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Email Address',
+                  hint: 'company@gmail.com',
+                  controller: _emailController,
+                  inputType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Email is required';
+                    if (!v.contains('@')) return 'Invalid email address';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
 
-              _buildTextField(
-                label: 'Contact Number',
-                hint: '+60 123456789',
-                controller: _contactController,
-                inputType: TextInputType.phone,
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Contact Number',
+                  hint: '+60 123456789',
+                  controller: _contactController,
+                  inputType: TextInputType.phone,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Contact number is required' : null,
+                ),
+                const SizedBox(height: 20),
 
-              _buildTextField(
-                label: 'Registered Address',
-                hint: 'Level 23, Menara 1, KL Eco City...',
-                controller: _addressController,
-                maxLines: 4,
-              ),
+                _buildTextField(
+                  label: 'Registered Address',
+                  hint: 'Level 23, Menara 1, KL Eco City...',
+                  controller: _addressController,
+                  maxLines: 4,
+                  validator: (v) => v == null || v.trim().isEmpty ? 'Address is required' : null,
+                ),
 
-              const SizedBox(height: 40),
+                const SizedBox(height: 40),
 
-              // --- Save Button ---
-              BlocBuilder<ProfileBloc, ProfileState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: state.isLoading ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2B46F9),
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                BlocBuilder<ProfileBloc, ProfileState>(
+                  builder: (context, state) {
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: state.isLoading ? null : _saveProfile,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2B46F9),
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      child: state.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Inter',
+                        child: state.isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Save Changes',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
-                            ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // 4. Updated helper to use TextFormField
   Widget _buildTextField({
     required String label,
     required String hint,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
     int maxLines = 1,
+    String? Function(String?)? validator, // Added
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,10 +377,11 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
           keyboardType: inputType,
           maxLines: maxLines,
+          validator: validator, // Hooked up
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -390,6 +408,15 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
                 color: Color(0xFF2B46F9),
                 width: 1.5,
               ),
+            ),
+            // Added error styles
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
             filled: true,
             fillColor: Colors.white,

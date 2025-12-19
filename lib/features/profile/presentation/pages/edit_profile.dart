@@ -16,6 +16,9 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  // 1. Add Form Key
+  final _formKey = GlobalKey<FormState>();
+
   late Member? member;
   late Uint8List? currentImageBytes;
   
@@ -23,7 +26,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
-  late TextEditingController _addressController; // Added Address Controller
+  late TextEditingController _addressController;
 
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
@@ -31,7 +34,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Extract data from arguments
     member = widget.arguments['member'] as Member?;
     currentImageBytes = widget.arguments['imageBytes'] as Uint8List?;
     
@@ -39,7 +41,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _lastNameController = TextEditingController(text: member?.last_name ?? '');
     _emailController = TextEditingController(text: member?.email ?? '');
     _phoneController = TextEditingController(text: member?.phone_number ?? '');
-    _addressController = TextEditingController(text: member?.address ?? ''); // Initialize Address
+    _addressController = TextEditingController(text: member?.address ?? '');
   }
 
   @override
@@ -48,7 +50,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _addressController.dispose(); // Dispose Address
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -109,15 +111,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   void _onSave() {
     if (member == null) return;
+
+    // 2. Validate the form before saving
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all required fields")),
+      );
+      return;
+    }
     
     final updatedMember = Member(
       member_id: member!.member_id,
       username: member!.username,
       first_name: _firstNameController.text.trim(),
       last_name: _lastNameController.text.trim(),
-      email: member!.email, // Keep original email (changes should go via Change Email screen)
+      email: member!.email,
       phone_number: _phoneController.text.trim(),
-      address: _addressController.text.trim(), // Save the new address
+      address: _addressController.text.trim(),
       created_at: member!.created_at,
       status: member!.status,
     );
@@ -182,144 +192,153 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Column(
-            children: [
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+          // 3. Wrap content in Form
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                          image: DecorationImage(
+                            image: backgroundImage,
+                            fit: BoxFit.cover,
                           ),
-                        ],
-                        image: DecorationImage(
-                          image: backgroundImage,
-                          fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _showImageSourceModal,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2B46F9),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.white,
-                            size: 16,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _showImageSourceModal,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2B46F9),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // --- Fields ---
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        label: 'First Name',
+                        controller: _firstNameController,
+                        // 4. Add specific validators
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildTextField(
+                        label: 'Last Name',
+                        controller: _lastNameController,
+                        validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-              // --- Fields ---
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      label: 'First Name',
-                      controller: _firstNameController,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      label: 'Last Name',
-                      controller: _lastNameController,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Email Address',
+                  controller: _emailController,
+                  inputType: TextInputType.emailAddress,
+                  readOnly: true, 
+                ),
+                const SizedBox(height: 20),
 
-              // Email is Read-Only here
-              _buildTextField(
-                label: 'Email Address',
-                controller: _emailController,
-                inputType: TextInputType.emailAddress,
-                readOnly: true, 
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Phone Number',
+                  controller: _phoneController,
+                  inputType: TextInputType.phone,
+                  validator: (value) => value == null || value.trim().isEmpty ? 'Phone number is required' : null,
+                ),
+                const SizedBox(height: 20),
 
-              _buildTextField(
-                label: 'Phone Number',
-                controller: _phoneController,
-                inputType: TextInputType.phone,
-              ),
-              const SizedBox(height: 20),
+                _buildTextField(
+                  label: 'Address',
+                  controller: _addressController,
+                  inputType: TextInputType.multiline,
+                  maxLines: 4,
+                  validator: (value) => value == null || value.trim().isEmpty ? 'Address is required' : null,
+                ),
 
-              // Replaced email editing with Address editing
-              _buildTextField(
-                label: 'Address',
-                controller: _addressController,
-                inputType: TextInputType.multiline,
-                maxLines: 4,
-              ),
+                const SizedBox(height: 40),
 
-              const SizedBox(height: 40),
-
-              // --- Save Button ---
-              BlocBuilder<ProfileBloc, ProfileState>(
-                builder: (context, state) {
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: state.isLoading ? null : _onSave,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2B46F9),
-                        foregroundColor: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                // --- Save Button ---
+                BlocBuilder<ProfileBloc, ProfileState>(
+                  builder: (context, state) {
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: state.isLoading ? null : _onSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2B46F9),
+                          foregroundColor: Colors.white,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ),
-                      child: state.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Inter',
+                        child: state.isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Save Changes',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Inter',
+                                ),
                               ),
-                            ),
-                    ),
-                  );
-                },
-              ),
-            ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // 5. Updated Helper Method: Changed TextField to TextFormField and added validator
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
     bool readOnly = false,
     int maxLines = 1,
+    String? Function(String?)? validator, // Added parameter
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,11 +353,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField( // Changed from TextField to TextFormField
           controller: controller,
           keyboardType: inputType,
           readOnly: readOnly,
           maxLines: maxLines,
+          validator: validator, // Hooked up validation
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -361,6 +381,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(
                 color: Color(0xFF2B46F9),
+                width: 1.5,
+              ),
+            ),
+            // Added error border styling
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1.0,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: Colors.red,
                 width: 1.5,
               ),
             ),

@@ -17,6 +17,9 @@ class EditAdminProfileScreen extends StatefulWidget {
 }
 
 class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
+  // 1. Add Form Key
+  final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _firstNameController;
   late TextEditingController _lastNameController;
   late TextEditingController _emailController;
@@ -44,7 +47,7 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 800, // Optimize size
+        maxWidth: 800,
         imageQuality: 70,
       );
       if (pickedFile != null) {
@@ -60,6 +63,14 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
   }
 
   void _saveChanges() {
+    // 2. Validate Form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all required fields")),
+      );
+      return;
+    }
+
     context.read<AdminBloc>().add(
       UpdateAdminProfileEvent(
         firstName: _firstNameController.text.trim(),
@@ -128,140 +139,143 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- Profile Image ---
-              Center(
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFE0E7FF),
-                          image: DecorationImage(
-                            image: currentImageProvider,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF2B46F9),
+          // 3. Wrap in Form
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: GestureDetector(
+                    onTap: _pickImage,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // --- Personal Details Header ---
-              const Text(
-                'PERSONAL DETAILS',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // --- First Name & Last Name Row ---
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      label: 'First Name',
-                      controller: _firstNameController,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      label: 'Last Name',
-                      controller: _lastNameController,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // --- Email Field ---
-              _buildTextField(
-                label: 'Email',
-                controller: _emailController,
-                readOnly: true,
-              ),
-
-              const SizedBox(height: 40),
-
-              // --- Save Button ---
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: BlocBuilder<AdminBloc, AdminState>(
-                  builder: (context, state) {
-                    final isLoading = state is AdminLoading;
-                    return ElevatedButton(
-                      onPressed: isLoading ? null : _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2B46F9),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Inter',
-                              ),
+                            color: const Color(0xFFE0E7FF),
+                            image: DecorationImage(
+                              image: currentImageProvider,
+                              fit: BoxFit.cover,
                             ),
-                    );
-                  },
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF2B46F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 30),
+
+                const Text(
+                  'PERSONAL DETAILS',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildTextField(
+                        label: 'First Name',
+                        controller: _firstNameController,
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildTextField(
+                        label: 'Last Name',
+                        controller: _lastNameController,
+                        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  label: 'Email',
+                  controller: _emailController,
+                  readOnly: true,
+                ),
+
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: BlocBuilder<AdminBloc, AdminState>(
+                    builder: (context, state) {
+                      final isLoading = state is AdminLoading;
+                      return ElevatedButton(
+                        onPressed: isLoading ? null : _saveChanges,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2B46F9),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Save Changes',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Inter',
+                                ),
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // 4. Updated helper to accept validator
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     bool readOnly = false,
+    String? Function(String?)? validator, // Added
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,6 +293,7 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
         TextFormField(
           controller: controller,
           readOnly: readOnly,
+          validator: validator, // Hooked up
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -303,6 +318,15 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
                 color: Color(0xFF2B46F9),
                 width: 1.5,
               ),
+            ),
+            // Added error styles
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1.0),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
             filled: true,
             fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
