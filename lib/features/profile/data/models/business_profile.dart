@@ -11,7 +11,6 @@ class BusinessProfileModel extends BusinessProfile {
     required super.memberId,
   });
 
-  // 1. Convert Entity to Model
   factory BusinessProfileModel.fromEntity(BusinessProfile entity) {
     return BusinessProfileModel(
       profileId: entity.profileId,
@@ -24,7 +23,6 @@ class BusinessProfileModel extends BusinessProfile {
     );
   }
 
-  // 2. Convert Model to JSON (Map) for Firebase
   Map<String, dynamic> toMap() {
     return {
       'profile_id': profileId,
@@ -37,7 +35,6 @@ class BusinessProfileModel extends BusinessProfile {
     };
   }
 
-  // 3. Convert JSON (Map) from Firebase back to Model (For future use)
   factory BusinessProfileModel.fromMap(Map<String, dynamic> map) {
     return BusinessProfileModel(
       profileId: map['profile_id'] ?? '',

@@ -8,8 +8,6 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
   final ReportRepository repo;
 
   ReportBLoC(this.repo) : super(ReportState.initial()) {
-    // event handlers
-    // ui call event -> invoke function -> emit new state
     on<LoadReportsEvent>(_onLoadReports);
     on<ClearErrorEvent>(_onClearError);
     on<GenerateReportEvent>(_onGenerateReport);
@@ -54,7 +52,6 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     );
 
     try {
-      // Build report from event data
       final report = ReportFactory.createReportFromEvent(
         event.reportType,
         event.member_id,
@@ -81,7 +78,6 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
       emit(state.copyWith(generatingReport: false));
 
       if (generatedReport.report_id.isNotEmpty) {
-        // Set the generated report in state so UI can navigate to display it
         emit(state.copyWith(loadedReportDetails: generatedReport));
       }
 
@@ -111,7 +107,6 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
     );
 
     try {
-      // Use getGeneratedReportByReportId to fetch full report with sections
       final report = await repo.getGeneratedReportByReportId(
         event.reportCard.report_id,
       );
@@ -138,9 +133,4 @@ class ReportBLoC extends Bloc<ReportEvent, ReportState> {
   ) async {
     emit(state.copyWith(error: "Failed to load report details"));
   }
-
-  // format startDate and endDate to fiscal period
-  // Map<String, DateTime> _toFiscalPeriod(DateTime startDate, DateTime endDate) {
-  //   return {'startDate': startDate, 'endDate': endDate};
-  // }
 }

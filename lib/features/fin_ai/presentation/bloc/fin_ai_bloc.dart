@@ -3,11 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:myfin/features/fin_ai/data/repositories/chat_repository_impl.dart';
 import 'package:myfin/features/fin_ai/domain/entities/chat_message.dart';
 
-// --- STATE ---
 class ChatState {
   final List<ChatMessage> messages;
-  final bool isLoading; // For message sending
-  final bool isInitializing; // For loading initial data from Firebase
+  final bool isLoading;
+  final bool isInitializing;
   final String? error;
 
   ChatState({
@@ -19,7 +18,7 @@ class ChatState {
 
   factory ChatState.initial() => ChatState(
     messages: [],
-    isInitializing: true, // Start in initializing state
+    isInitializing: true, 
   );
   
   ChatState copyWith({
@@ -37,15 +36,13 @@ class ChatState {
   }
 }
 
-// --- BLOC (CUBIT) ---
 class ChatViewModel extends Cubit<ChatState> {
   final ChatRepository _repo;
 
   ChatViewModel(this._repo) : super(ChatState.initial()) {
-    _init(); // Automatically start the process
+    _init();
   }
 
-  // This is where the automatic data fetching happens
   Future<void> _init() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -54,10 +51,8 @@ class ChatViewModel extends Cubit<ChatState> {
         return;
       }
 
-      // Tell the repository to fetch data and prepare the AI
       await _repo.initializeSession(user.uid);
 
-      // Once done, show a greeting message
       final initialMessages = [
         ChatMessage(
           text: "Hello! I've analyzed your recent documents from Firebase. How can I help you today?", 
@@ -74,7 +69,6 @@ class ChatViewModel extends Cubit<ChatState> {
   Future<void> sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    // 1. Add user message immediately
     final updatedMessages = List<ChatMessage>.from(state.messages)
       ..add(ChatMessage(text: text, isUser: true));
     
@@ -83,8 +77,6 @@ class ChatViewModel extends Cubit<ChatState> {
     try {
       final responseText = await _repo.sendMessage(text);
 
-      // 2. Add ONLY the bot response. 
-      // state.messages already contains the user message from the previous emit.
       final finalMessages = List<ChatMessage>.from(state.messages)
         ..add(ChatMessage(text: responseText, isUser: false));
 

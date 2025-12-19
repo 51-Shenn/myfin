@@ -2,8 +2,6 @@ import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
-/// Calculator class for Accounts Receivable
-/// Note: Member/customer details should be fetched by the generator using repository calls
 class AccountsReceivableCalculator {
   final List<Document> documents;
   final List<DocumentLineItem> lineItems;
@@ -15,7 +13,6 @@ class AccountsReceivableCalculator {
     required this.asOfDate,
   });
 
-  /// Get all receivable documents (invoices and related documents)
   List<Document> getReceivableDocuments() {
     return documents.where((doc) {
       return (doc.status == 'Posted' || doc.status == 'Approved') &&
@@ -25,8 +22,6 @@ class AccountsReceivableCalculator {
     }).toList();
   }
 
-  /// Group documents by member ID (customer ID)
-  /// Returns map of memberId -> list of documents
   Map<String, List<Document>> groupByMemberId() {
     final receivables = getReceivableDocuments();
     final Map<String, List<Document>> grouped = {};
@@ -42,7 +37,6 @@ class AccountsReceivableCalculator {
     return grouped;
   }
 
-  /// Get total amount for a document by summing its line items
   double getDocumentTotal(String documentId) {
     final docLineItems = lineItems.where(
       (item) => item.documentId == documentId,
@@ -50,10 +44,7 @@ class AccountsReceivableCalculator {
     return docLineItems.fold(0.0, (sum, item) => sum + item.total);
   }
 
-  /// Get due date from document metadata
-  /// Returns the due date from metadata if available, otherwise defaults to 30 days from posting date
   DateTime _getDueDate(Document doc) {
-    // Try to get due_date from metadata
     if (doc.metadata != null) {
       try {
         final dueDateMetadata = doc.metadata!.firstWhere(
@@ -62,26 +53,21 @@ class AccountsReceivableCalculator {
         );
 
         if (dueDateMetadata.value.isNotEmpty) {
-          // Parse YYYY-MM-DD format
           return DateTime.parse(dueDateMetadata.value);
         }
       } catch (e) {
-        // If parsing fails, fall back to default
         print('Error parsing due_date for document ${doc.id}: $e');
       }
     }
 
-    // Fallback: 30 days from posting date
     return doc.postingDate.add(const Duration(days: 30));
   }
 
-  /// Check if a document is overdue
   bool isOverdue(Document doc) {
     final dueDate = _getDueDate(doc);
     return dueDate.isBefore(DateTime.now());
   }
 
-  /// Build AccountLineItem from a document
   AccountLineItem buildAccountLineItem(Document doc) {
     return AccountLineItem(
       account_line_id: doc.id,
@@ -93,7 +79,6 @@ class AccountsReceivableCalculator {
     );
   }
 
-  /// Calculate total receivable across all customers
   double calculateTotalReceivable() {
     return getReceivableDocuments().fold(
       0.0,
@@ -101,7 +86,6 @@ class AccountsReceivableCalculator {
     );
   }
 
-  /// Calculate total overdue amounts
   double calculateTotalOverdue() {
     return getReceivableDocuments()
         .where((doc) => isOverdue(doc))

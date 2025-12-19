@@ -34,8 +34,6 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   @override
   Future<void> banUser(String userId, String currentStatus) async {
     try {
-      // Toggle logic: if Active -> Banned, else -> Active
-      // Firestore usually stores status in lowercase
       final newStatus = (currentStatus.toLowerCase() == 'active') ? 'banned' : 'active';
       
       await _firestore.collection('members').doc(userId).update({
@@ -49,10 +47,8 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   @override
   Future<void> deleteUser(String userId) async {
     try {
-      // Hard delete from members collection
       await _firestore.collection('members').doc(userId).delete();
       
-      // Optional: Delete related data (business profiles, etc.) here if needed
     } catch (e) {
       throw Exception("Failed to delete user: $e");
     }
@@ -83,12 +79,10 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       for (var doc in docs) {
         final data = doc.data();
         
-        // Count Banned
         if (data['status'] == 'banned') {
           banned++;
         }
 
-        // Count New Today
         if (data['created_at'] != null) {
           final Timestamp createdAt = data['created_at'];
           if (createdAt.toDate().isAfter(startOfDay)) {
@@ -149,18 +143,14 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   @override
   Future<void> uploadAdminImage(String adminId, File imageFile) async {
     try {
-      // 1. Convert to Base64
       final base64String = await ImageChunkerService.fileToBase64(imageFile);
-      // 2. Split
       final chunks = ImageChunkerService.splitString(base64String);
 
-      // 3. Define collection: admins/{id}/profile_image_chunks
       final collectionRef = _firestore
           .collection('admins')
           .doc(adminId)
           .collection('profile_image_chunks');
 
-      // 4. Delete old chunks
       final existingDocs = await collectionRef.get();
       final batchDelete = _firestore.batch();
       for (var doc in existingDocs.docs) {
@@ -168,7 +158,6 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       }
       await batchDelete.commit();
 
-      // 5. Upload new chunks
       final batchWrite = _firestore.batch();
       for (int i = 0; i < chunks.length; i++) {
         final docRef = collectionRef.doc(i.toString());

@@ -17,8 +17,6 @@ class AdminLoaded extends AdminState {
   final List<AdminUserView> filteredUsers;
   final Map<String, int> stats;
   final Uint8List? adminImageBytes;
-  
-  // --- ADD THESE FIELDS ---
   final AdminPasswordStatus passwordStatus;
   final String? passwordError;
 
@@ -28,7 +26,6 @@ class AdminLoaded extends AdminState {
     required this.filteredUsers,
     required this.stats,
     this.adminImageBytes,
-    // --- Initialize them ---
     this.passwordStatus = AdminPasswordStatus.initial,
     this.passwordError,
   });
@@ -39,7 +36,6 @@ class AdminLoaded extends AdminState {
     List<AdminUserView>? filteredUsers,
     Map<String, int>? stats,
     Uint8List? adminImageBytes,
-    // --- Add to copyWith ---
     AdminPasswordStatus? passwordStatus,
     String? passwordError,
   }) {
@@ -49,7 +45,6 @@ class AdminLoaded extends AdminState {
       filteredUsers: filteredUsers ?? this.filteredUsers,
       stats: stats ?? this.stats,
       adminImageBytes: adminImageBytes ?? this.adminImageBytes,
-      // --- Assign them ---
       passwordStatus: passwordStatus ?? this.passwordStatus,
       passwordError: passwordError ?? this.passwordError,
     );
@@ -62,7 +57,6 @@ class AdminLoaded extends AdminState {
     filteredUsers,
     stats,
     adminImageBytes,
-    // --- Add to props ---
     passwordStatus,
     passwordError,
   ];

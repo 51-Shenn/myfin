@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:myfin/features/authentication/data/models/member_model.dart';
-import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/profile/data/models/business_profile.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
@@ -41,16 +39,13 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
 
     try {
-      // 1. Create credential with the CURRENT password to prove identity
       final cred = auth.EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
 
-      // 2. Re-authenticate (Required by Firebase for sensitive ops)
       await user.reauthenticateWithCredential(cred);
 
-      // 3. Update to NEW password
       await user.updatePassword(newPassword);
     } on auth.FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
@@ -135,22 +130,14 @@ class ProfileRepositoryImpl implements ProfileRepository {
     if (user.email == newEmail) return;
 
     try {
-      // 1. Re-authenticate User (Required for sensitive actions)
       final cred = auth.EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
       await user.reauthenticateWithCredential(cred);
 
-      // 2. Send Verification Email to the NEW address
-      // Firebase will NOT update the email immediately.
-      // It sends a link to [newEmail]. The user must click it to confirm.
       await user.verifyBeforeUpdateEmail(newEmail);
 
-      // OPTIONAL: If you want to update Firestore immediately (risky if they don't verify):
-      // final memberData = await remoteDataSource.fetchMember(user.uid);
-      // memberData.email = newEmail;
-      // await remoteDataSource.updateMember(memberData);
     } on auth.FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
         throw Exception('This email is already in use by another account.');

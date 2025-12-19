@@ -22,7 +22,6 @@ class UserAvatar extends StatefulWidget {
 class _UserAvatarState extends State<UserAvatar> {
   late Future<Uint8List?> _imageFuture;
   
-  // Reuse the existing Repository logic
   final _profileRepository = ProfileRepositoryImpl(
     remoteDataSource: ProfileRemoteDataSourceImpl(),
   );
@@ -34,7 +33,6 @@ class _UserAvatarState extends State<UserAvatar> {
   }
 
   void _loadImage() {
-    // This reuses the exact function used in the Profile Screen
     _imageFuture = _profileRepository.getProfileImage(widget.userId);
   }
 
@@ -46,7 +44,6 @@ class _UserAvatarState extends State<UserAvatar> {
       child: FutureBuilder<Uint8List?>(
         future: _imageFuture,
         builder: (context, snapshot) {
-          // 1. Loading State
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Container(
               decoration: BoxDecoration(
@@ -63,7 +60,6 @@ class _UserAvatarState extends State<UserAvatar> {
             );
           }
 
-          // 2. Image Found (Uint8List)
           if (snapshot.hasData && snapshot.data != null) {
             return ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -76,10 +72,9 @@ class _UserAvatarState extends State<UserAvatar> {
             );
           }
 
-          // 3. No Image / Error (Show Initials or Placeholder)
           return Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFC0C9FF), // Light blue background
+              color: const Color(0xFFC0C9FF), 
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,

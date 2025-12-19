@@ -17,7 +17,6 @@ class EditAdminProfileScreen extends StatefulWidget {
 }
 
 class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
-  // 1. Add Form Key
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _firstNameController;
@@ -63,7 +62,6 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
   }
 
   void _saveChanges() {
-    // 2. Validate Form
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all required fields")),
@@ -139,7 +137,6 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          // 3. Wrap in Form
           child: Form(
             key: _formKey,
             child: Column(
@@ -270,12 +267,11 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
     );
   }
 
-  // 4. Updated helper to accept validator
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     bool readOnly = false,
-    String? Function(String?)? validator, // Added
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,7 +289,7 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
         TextFormField(
           controller: controller,
           readOnly: readOnly,
-          validator: validator, // Hooked up
+          validator: validator, 
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -319,7 +315,6 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
                 width: 1.5,
               ),
             ),
-            // Added error styles
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.red, width: 1.0),

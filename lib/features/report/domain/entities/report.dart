@@ -250,7 +250,7 @@ class Report extends Equatable {
 class ProfitAndLossReport extends Report {
   final List<ReportSection> sections;
   final double gross_profit;
-  final double total_expenses; // Total of all operating expenses
+  final double total_expenses;
   final double operating_income;
   final double income_before_tax;
   final double income_tax_expense;

@@ -6,7 +6,7 @@ import 'package:myfin/features/admin/data/repositories/tax_regulation_repository
 import 'package:myfin/features/admin/presentation/cubit/tax_regulation_cubit.dart';
 import 'package:myfin/features/admin/presentation/pages/tax_regulations_list_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
-import 'package:myfin/features/admin/presentation/pages/admin_profile_screen.dart'; // Import the new file
+import 'package:myfin/features/admin/presentation/pages/admin_profile_screen.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_bloc.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_event.dart';
 import 'package:myfin/features/admin/data/repositories/admin_repository_impl.dart';
@@ -41,12 +41,10 @@ class AdminMainScreen extends StatefulWidget {
 class _AdminMainScreenState extends State<AdminMainScreen> {
   int _selectedIndex = 0;
 
-  // List of screens for the admin navigation
   final List<Widget> _pages = [
-    const UserManagementScreen(), // Tab 0
-    const AdminTaxScreen(),       // Tab 1
+    const UserManagementScreen(), 
+    const AdminTaxScreen(),       
     
-    // Tab 2: Provide the Bloc so the profile can load data
     BlocProvider(
       create: (context) => AdminBloc(
         AdminRepository(remoteDataSource: AdminRemoteDataSourceImpl()),
@@ -107,13 +105,12 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     );
   }
 
-  // Helper to create the styled icon background shown in your image
   Widget _buildIcon(IconData icon, int index, {bool isActive = false}) {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: isActive
           ? const BoxDecoration(
-              color: Color(0xFF2B46F9), // Blue background for active
+              color: Color(0xFF2B46F9),
               shape: BoxShape.circle,
             )
           : null,

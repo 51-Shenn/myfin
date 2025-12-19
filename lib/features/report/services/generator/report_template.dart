@@ -1,5 +1,3 @@
-// template for sections and groups of reports
-
 class ProfitAndLossTemplate {
   static const Map<String, dynamic> structure = {
     'Revenue': {
@@ -88,31 +86,31 @@ class ProfitAndLossTemplate {
 class CashFlowTemplate {
   static const Map<String, dynamic> structure = {
     'Cash Flow from Operating Activities': [
-      'Net Income / Loss', // get from profit & loss report
+      'Net Income / Loss',
       'Depreciation Expense',
       'Amortization Expense',
       'Impairment Losses',
       'Loss on Sale of Assets',
       'Gain on Sale of Assets',
-      'Unrealized Gains / Losses on Investments', // TODO: how calc
+      'Unrealized Gains / Losses on Investments', 
       'Change in Accounts',
     ],
 
     'Cash Flow from Investing Activities': [
-      'Purchase of Assets', // new
+      'Purchase of Assets',
       'Proceeds from Sale of Assets',
-      'Money Lent to Others', // new
-      'Money Collected from Others', // new
+      'Money Lent to Others', 
+      'Money Collected from Others', 
     ],
 
     'Cash Flow from Financing Activities': [
-      'Issuance of Common Stock / Preferred Stock', // stock
-      'Repurchase of Company Stock (Treasury Stock)', // stock repurchase
-      'Payment of Dividends to Shareholders', // dividend payment
-      'Issuance of Long-Term Debt', // debt
-      'Repayment of Long-Term Debt Principal', // debt repayment
-      'Issuance of Short-Term Notes Payable', // notes payable
-      'Repayment of Short-Term Notes Payable', // notes repayment
+      'Issuance of Common Stock / Preferred Stock', 
+      'Repurchase of Company Stock (Treasury Stock)', 
+      'Payment of Dividends to Shareholders', 
+      'Issuance of Long-Term Debt', 
+      'Repayment of Long-Term Debt Principal', 
+      'Issuance of Short-Term Notes Payable', 
+      'Repayment of Short-Term Notes Payable',
     ],
 
     'Cash Balance': [
@@ -127,7 +125,7 @@ class BalanceSheetTemplate {
   static const Map<String, dynamic> structure = {
     'Assets': {
       'Current Assets': [
-        'Cash & Cash Equivalents', // new
+        'Cash & Cash Equivalents', 
         'Accounts Receivable',
         'Notes Receivable',
         'Inventory',
@@ -136,9 +134,9 @@ class BalanceSheetTemplate {
       'Non-Current Assets': [
         'Property, Plant & Equipment (PP&E)',
         'Accumulated Depreciation',
-        'Intangible Assets', // new
-        'Long-term Investments', // new
-        'Other Assets', // new
+        'Intangible Assets', 
+        'Long-term Investments', 
+        'Other Assets', 
       ],
     },
 
@@ -162,21 +160,21 @@ class BalanceSheetTemplate {
     'Equity': {
       'Corporate Equity': [
         'Shared Capital',
-        'Shared Premium', // new
+        'Shared Premium', 
         'Retained Earnings',
         'Others',
       ],
 
       'Owner’s Equity': [
-        'Owner’s Capital', // new
-        'Owner’s Drawings', // new
+        'Owner’s Capital', 
+        'Owner’s Drawings', 
         'Net Income',
         'Others',
       ],
 
       'Partnership Equity': [
-        'Partner Capital Account', // new
-        'Partner Drawings', // new
+        'Partner Capital Account',
+        'Partner Drawings',
       ],
     },
   };

@@ -19,16 +19,15 @@ class FirestoreReportDataSource {
   CollectionReference get _reportCollectionRef =>
       firestore.collection(reportCollectionPath);
 
-  /// Generate a report ID without saving the document
+  // generate a report id
   String generateReportId() {
     return _reportCollectionRef.doc().id;
   }
 
-  /// Create a report document in Firestore (supports all report types)
+  // create a report document in firebase
   Future<String> createReportLog(Map<String, dynamic> reportData) async {
     final reportRef = _reportCollectionRef.doc();
 
-    // add current timestamp when creating report
     reportData['generated_at'] = Timestamp.now();
 
     await reportRef.set(reportData);
@@ -37,7 +36,7 @@ class FirestoreReportDataSource {
     return reportRef.id;
   }
 
-  /// Get all reports for a specific member
+  // get all reports by member id
   Future<List<Map<String, dynamic>>> getReportsByMemberId(
     String memberId,
   ) async {
@@ -48,18 +47,18 @@ class FirestoreReportDataSource {
 
     return querySnapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      data['report_id'] = doc.id; // Ensure report_id is set
+      data['report_id'] = doc.id;
       return data;
     }).toList();
   }
 
-  /// Get a specific report by report ID
+  // get a specific report by report id
   Future<Map<String, dynamic>?> getReportByReportId(String reportId) async {
     final docSnapshot = await _reportCollectionRef.doc(reportId).get();
 
     if (docSnapshot.exists) {
       final data = docSnapshot.data() as Map<String, dynamic>;
-      data['report_id'] = docSnapshot.id; // Ensure report_id is set
+      data['report_id'] = docSnapshot.id;
       return data;
     }
     return null;
@@ -72,8 +71,6 @@ class FirestoreReportDataSource {
   }) async {
     Query query = _docLineItemCollectionRef;
 
-    // 1. Apply Date Range Filtering
-    // Filtering documents where 'lineDate' is on or after startDate
     if (startDate != null) {
       query = query.where(
         'lineDate',
@@ -81,7 +78,6 @@ class FirestoreReportDataSource {
       );
     }
 
-    // Filtering documents where 'lineDate' is on or before endDate
     if (endDate != null) {
       query = query.where(
         'lineDate',
@@ -89,22 +85,20 @@ class FirestoreReportDataSource {
       );
     }
 
-    // 2. Apply Limit
     if (limit != null) {
       query = query.limit(limit);
     }
 
-    // 3. Fetch and Process
     final querySnapshot = await query.get();
 
     return querySnapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id; // Inject the Document ID
+      data['id'] = doc.id;
       return data;
     }).toList();
   }
 
-  /// Get all documents for a specific member
+  // get all documents for a specific member
   Future<List<Map<String, dynamic>>> getDocumentsByMemberId(
     String memberId,
   ) async {

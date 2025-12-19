@@ -35,17 +35,15 @@ class UserManagementScreen extends StatelessWidget {
             ),
           ),
         ),
-        // --- ADDED FLOATING ACTION BUTTON HERE ---
         floatingActionButton: Builder(
           builder: (ctx) {
             return FloatingActionButton(
-              mini: true, // Makes the button small
+              mini: true,
               backgroundColor: const Color(0xFF2B46F9),
               onPressed: () {
                 showDialog(
                   context: ctx,
                   builder: (dialogContext) {
-                    // Assuming AuthBloc is provided at the top of the widget tree (AppRoutes)
                     return const AddAdminDialog();
                   },
                 );
@@ -54,7 +52,6 @@ class UserManagementScreen extends StatelessWidget {
             );
           }
         ),
-        // ----------------------------------------
         body: BlocBuilder<AdminBloc, AdminState>(
           builder: (context, state) {
             if (state is AdminLoading) {
@@ -68,7 +65,6 @@ class UserManagementScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    // Search Bar
                     TextField(
                       onChanged: (val) =>
                           context.read<AdminBloc>().add(SearchUsersEvent(val)),
@@ -92,7 +88,6 @@ class UserManagementScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // Stats Cards
                     Row(
                       children: [
                         Expanded(
@@ -125,7 +120,6 @@ class UserManagementScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // User List
                     Expanded(
                       child: ListView.separated(
                         itemCount: state.filteredUsers.length,
@@ -153,7 +147,6 @@ class UserManagementScreen extends StatelessWidget {
                                   userName: user.name,
                                   size: 50,
                                 ),
-                                // -----------------------------------------------
                                 const SizedBox(width: 16),
                                 // Text Info
                                 Expanded(
@@ -180,7 +173,6 @@ class UserManagementScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                // Status & Menu
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
@@ -208,7 +200,6 @@ class UserManagementScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                // Inside ListView.separated -> itemBuilder -> Container -> Row
                                 PopupMenuButton<String>(
                                   icon: const Icon(
                                     Icons.more_vert,
@@ -219,7 +210,6 @@ class UserManagementScreen extends StatelessWidget {
                                   ),
                                   onSelected: (value) {
                                     if (value == 'edit') {
-                                      // --- OPEN EDIT DIALOG ---
                                       showDialog(
                                         context: context,
                                         builder: (dialogContext) {
@@ -230,7 +220,6 @@ class UserManagementScreen extends StatelessWidget {
                                         },
                                       );
                                     } else if (value == 'delete') {
-                                      // --- DELETE CONFIRMATION ---
                                       showDialog(
                                         context: context,
                                         builder: (ctx) => AlertDialog(

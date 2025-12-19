@@ -61,7 +61,6 @@ class _AddAdminDialogState extends State<AddAdminDialog> {
               ),
               const SizedBox(height: 24),
 
-              // Name Rows
               Row(
                 children: [
                   Expanded(
@@ -98,7 +97,6 @@ class _AddAdminDialogState extends State<AddAdminDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Password Field
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -141,14 +139,12 @@ class _AddAdminDialogState extends State<AddAdminDialog> {
 
               const SizedBox(height: 32),
 
-              // Create Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Trigger AuthBloc Event
                       context.read<AuthBloc>().add(
                         AuthRegisterAdminRequested(
                           _usernameController.text.trim(),
@@ -160,9 +156,6 @@ class _AddAdminDialogState extends State<AddAdminDialog> {
                       );
                       Navigator.pop(context);
                       
-                      // Note: Standard Firebase Auth createUser will log the *new* user in.
-                      // To prevent this in an Admin panel, you usually need a Cloud Function.
-                      // For this UI demo, we proceed with standard flow.
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Processing admin creation...")),
                       );

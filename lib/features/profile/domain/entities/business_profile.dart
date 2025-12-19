@@ -17,7 +17,6 @@ class BusinessProfile {
     required this.memberId,
   });
 
-  // Helper to create an empty/loading state if needed
   factory BusinessProfile.empty() {
     return BusinessProfile(
       profileId: '',

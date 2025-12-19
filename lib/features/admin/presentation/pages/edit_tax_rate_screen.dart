@@ -24,7 +24,6 @@ class _EditTaxRateScreenState extends State<EditTaxRateScreen> {
     super.initState();
     _rates = List.from(widget.rates);
 
-    // If no rates exist, create a default one
     if (_rates.isEmpty) {
       _rates.add(
         TaxRate(

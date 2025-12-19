@@ -6,14 +6,12 @@ import 'package:myfin/features/upload/domain/repositories/doc_line_item_reposito
 import 'package:myfin/features/fin_ai/data/repositories/chat_repository_impl.dart';
 import 'package:myfin/features/fin_ai/domain/entities/chat_message.dart';
 import 'package:myfin/features/fin_ai/presentation/bloc/fin_ai_bloc.dart';
-import 'package:myfin/core/components/bottom_nav_bar.dart';
 
 class AiChatbotScreen extends StatelessWidget {
   const AiChatbotScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Inject dependencies into ChatRepository and provide the ViewModel
     return BlocProvider(
       create: (context) => ChatViewModel(
         ChatRepository(
@@ -26,7 +24,6 @@ class AiChatbotScreen extends StatelessWidget {
   }
 }
 
-// --- DASHBOARD VIEW (Main Screen) ---
 class _AiInfoDashboardView extends StatelessWidget {
   const _AiInfoDashboardView();
 
@@ -84,7 +81,7 @@ class _AiInfoDashboardView extends StatelessWidget {
               color: Colors.blue,
               description: "Tracks the flow of cash in and out. Essential for understanding liquidity.",
             ),
-            const SizedBox(height: 100), // Space for FAB
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -250,7 +247,6 @@ class _AiInfoDashboardView extends StatelessWidget {
   }
 }
 
-// --- CHAT INTERFACE COMPONENTS ---
 
 class _ChatInterface extends StatelessWidget {
   final Color primaryBlue;

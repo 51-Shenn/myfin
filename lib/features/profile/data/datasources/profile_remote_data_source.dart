@@ -136,19 +136,15 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
   @override
   Future<void> uploadBusinessLogo(String profileId, File imageFile) async {
     try {
-      // 1. Convert to Base64
       final base64String = await ImageChunkerService.fileToBase64(imageFile);
 
-      // 2. Split into chunks
       final chunks = ImageChunkerService.splitString(base64String);
 
-      // 3. Define reference: business_profiles/{profileId}/logo_chunks
       final collectionRef = _firestore
           .collection('business_profiles')
           .doc(profileId)
           .collection('logo_chunks');
 
-      // 4. Delete existing chunks
       final existingDocs = await collectionRef.get();
       final batchDelete = _firestore.batch();
       for (var doc in existingDocs.docs) {
@@ -156,7 +152,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       }
       await batchDelete.commit();
 
-      // 5. Upload new chunks
       final batchWrite = _firestore.batch();
 
       for (int i = 0; i < chunks.length; i++) {
@@ -168,7 +163,6 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
         });
       }
 
-      // 6. Update metadata on parent document
       batchWrite.update(
         _firestore.collection('business_profiles').doc(profileId),
         {
@@ -216,26 +210,16 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     }
 
     try {
-      // 1. Re-authenticate User (Required for account deletion)
       final cred = EmailAuthProvider.credential(
         email: user.email!,
         password: password,
       );
       await user.reauthenticateWithCredential(cred);
 
-      // 2. Delete Firestore Data
-      // Delete Member Data
       await _firestore.collection('members').doc(user.uid).delete();
 
-      // Delete Business Profile Data (if exists)
-      // Note: We use a query delete or just delete by ID if the ID matches uid
-      // Based on your logic: profile.profileId.isEmpty ? profile.memberId : profile.profileId
-      // We will attempt to delete the doc with the same ID as memberID just in case
       await _firestore.collection('business_profiles').doc(user.uid).delete();
 
-      // Optional: Delete related reports or documents here if required by your logic
-
-      // 3. Delete Auth User
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {

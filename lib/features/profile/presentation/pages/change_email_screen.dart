@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/validators/auth_validator.dart'; // Import existing validator
+import 'package:myfin/core/validators/auth_validator.dart'; 
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
@@ -13,7 +13,7 @@ class ChangeEmailScreen extends StatefulWidget {
 }
 
 class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
-  final _formKey = GlobalKey<FormState>(); // Added Form Key
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -41,7 +41,6 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           );
           Navigator.pop(context);
         } else if (state.emailStatus == FormStatus.submissionFailure) {
-          // Display the specific error from the Repository (e.g., "Incorrect password")
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -82,7 +81,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Form(
-              key: _formKey, // Bind the key
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -92,7 +91,6 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   ),
                   const SizedBox(height: 30),
                   
-                  // New Email Field
                   _buildLabel("New Email Address"),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -109,7 +107,6 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   
                   const SizedBox(height: 20),
                   
-                  // Password Field
                   _buildLabel("Current Password"),
                   const SizedBox(height: 8),
                   TextFormField(
@@ -136,7 +133,6 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                   
                   const SizedBox(height: 40),
                   
-                  // Submit Button
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -144,9 +140,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                       onPressed: isLoading
                           ? null
                           : () {
-                              // 1. Validate inputs locally first
                               if (_formKey.currentState!.validate()) {
-                                // 2. Send event to Bloc
                                 context.read<ProfileBloc>().add(
                                       ChangeEmailEvent(
                                         newEmail: _emailController.text.trim(),
