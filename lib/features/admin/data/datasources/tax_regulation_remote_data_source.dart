@@ -67,8 +67,6 @@ class TaxRegulationRemoteDataSource {
     }
   }
 
-  /// Get the most recent tax regulation by type
-  /// Returns null if no regulation of the specified type exists
   Future<TaxRegulationModel?> getTaxRegulationByType(String type) async {
     try {
       final snapshot = await _firestore

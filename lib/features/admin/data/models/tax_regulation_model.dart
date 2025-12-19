@@ -30,13 +30,11 @@ class TaxRegulationModel {
   factory TaxRegulationModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
-    // Handle 'rates' which might be a List, or incorrectly a Map in Firestore
     var ratesData = data['rates'];
     List<TaxRateModel> parsedRates = [];
 
     try {
       if (ratesData is List) {
-        // Safe iteration: check if element is a Map before casting
         for (var element in ratesData) {
           if (element is Map) {
             parsedRates.add(
@@ -44,7 +42,6 @@ class TaxRegulationModel {
           }
         }
       } else if (ratesData is Map) {
-        // Fallback: If rates were saved as a Map (e.g. index-keyed)
         for (var element in ratesData.values) {
           if (element is Map) {
             parsedRates.add(
@@ -74,7 +71,6 @@ class TaxRegulationModel {
               )
               .toList();
         } else if (ratesData is Map) {
-          // rates is stored as a single object - convert to list
           return [TaxRateModel.fromMap(ratesData as Map<String, dynamic>)];
         } else {
           return <TaxRateModel>[];

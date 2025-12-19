@@ -16,7 +16,6 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // 1. Add Form Key
   final _formKey = GlobalKey<FormState>();
 
   late Member? member;
@@ -112,7 +111,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _onSave() {
     if (member == null) return;
 
-    // 2. Validate the form before saving
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all required fields")),
@@ -192,7 +190,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          // 3. Wrap content in Form
           child: Form(
             key: _formKey,
             child: Column(
@@ -244,14 +241,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // --- Fields ---
                 Row(
                   children: [
                     Expanded(
                       child: _buildTextField(
                         label: 'First Name',
                         controller: _firstNameController,
-                        // 4. Add specific validators
                         validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
                       ),
                     ),
@@ -293,7 +288,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                 const SizedBox(height: 40),
 
-                // --- Save Button ---
                 BlocBuilder<ProfileBloc, ProfileState>(
                   builder: (context, state) {
                     return SizedBox(
@@ -331,14 +325,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // 5. Updated Helper Method: Changed TextField to TextFormField and added validator
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
     bool readOnly = false,
     int maxLines = 1,
-    String? Function(String?)? validator, // Added parameter
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -353,12 +346,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField( // Changed from TextField to TextFormField
+        TextFormField(
           controller: controller,
           keyboardType: inputType,
           readOnly: readOnly,
           maxLines: maxLines,
-          validator: validator, // Hooked up validation
+          validator: validator,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -384,7 +377,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 width: 1.5,
               ),
             ),
-            // Added error border styling
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(

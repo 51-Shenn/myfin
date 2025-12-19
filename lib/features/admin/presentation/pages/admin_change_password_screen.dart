@@ -13,7 +13,7 @@ class AdminChangePasswordScreen extends StatefulWidget {
 }
 
 class _AdminChangePasswordScreenState extends State<AdminChangePasswordScreen> {
-  final _formKey = GlobalKey<FormState>(); // Added Form Key
+  final _formKey = GlobalKey<FormState>(); 
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -89,7 +89,7 @@ class _AdminChangePasswordScreenState extends State<AdminChangePasswordScreen> {
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Form(
-              key: _formKey, // Wrap in Form
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -142,9 +142,7 @@ class _AdminChangePasswordScreenState extends State<AdminChangePasswordScreen> {
                       onPressed: isSubmitting
                           ? null
                           : () {
-                              // 1. Validate Forms
                               if (_formKey.currentState!.validate()) {
-                                // 2. Trigger BLoC Event
                                 context.read<AdminBloc>().add(
                                       AdminChangePasswordEvent(
                                         currentPassword: _currentPasswordController.text,
@@ -203,7 +201,7 @@ class _AdminChangePasswordScreenState extends State<AdminChangePasswordScreen> {
         TextFormField(
           controller: controller,
           obscureText: obscureText,
-          validator: validator, // Hooked up validator
+          validator: validator,
           style: const TextStyle(fontFamily: 'Inter', fontSize: 15, color: Colors.black),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

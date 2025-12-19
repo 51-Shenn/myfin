@@ -24,10 +24,8 @@ class EditBusinessProfileScreen extends StatefulWidget {
 }
 
 class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
-  // 1. Add Form Key
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   late TextEditingController _companyNameController;
   late TextEditingController _regNoController;
   late TextEditingController _emailController;
@@ -35,7 +33,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   late TextEditingController _addressController;
   Uint8List? existingImageBytes;
 
-  // Image Picker
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
@@ -114,7 +111,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   }
 
   void _saveProfile() {
-    // 2. Validate Form
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all required fields")),
@@ -188,7 +184,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-          // 3. Wrap content in Form
           child: Form(
             key: _formKey,
             child: Column(
@@ -355,14 +350,13 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     );
   }
 
-  // 4. Updated helper to use TextFormField
   Widget _buildTextField({
     required String label,
     required String hint,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
     int maxLines = 1,
-    String? Function(String?)? validator, // Added
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +375,7 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
           controller: controller,
           keyboardType: inputType,
           maxLines: maxLines,
-          validator: validator, // Hooked up
+          validator: validator,
           style: const TextStyle(
             fontFamily: 'Inter',
             fontSize: 15,
@@ -409,7 +403,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
                 width: 1.5,
               ),
             ),
-            // Added error styles
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.red, width: 1),

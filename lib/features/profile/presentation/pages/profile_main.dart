@@ -8,16 +8,13 @@ import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
-import 'package:myfin/features/profile/presentation/pages/change_email_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
-      // Use MultiBlocListener to listen to both blocs
       listeners: [
-        // Existing AuthBloc listener
         BlocListener<AuthBloc, AuthState>(
           listener: (context, authState) {
             if (authState is AuthUnauthenticated) {
@@ -28,20 +25,14 @@ class UserProfileScreen extends StatelessWidget {
             }
           },
         ),
-        // NEW: ProfileBloc listener to catch token expiration
         BlocListener<ProfileBloc, ProfileState>(
           listener: (context, state) {
             if (state.error != null &&
                 (state.error!.contains('user-token-expired') ||
                     state.error!.contains('user-disabled') ||
                     state.error!.contains('user-not-found'))) {
-              // 1. Clear the error so it doesn't loop
-              // (Optional, depending on your Bloc logic, but good practice)
-
-              // 2. Trigger the Logout event in AuthBloc
               context.read<AuthBloc>().add(AuthLogoutRequested());
 
-              // 3. Show a snackbar explaining why
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
@@ -52,7 +43,6 @@ class UserProfileScreen extends StatelessWidget {
               );
             }
             if (state.deleteStatus == FormStatus.submissionSuccess) {
-              // Trigger AuthBloc to clean up session and go to login
               context.read<AuthBloc>().add(AuthLogoutRequested());
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +53,6 @@ class UserProfileScreen extends StatelessWidget {
               );
             }
 
-            // Listen for Account Deletion Failure
             if (state.deleteStatus == FormStatus.submissionFailure &&
                 state.error != null) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -100,7 +89,6 @@ class UserProfileScreen extends StatelessWidget {
                         onPressed: () {
                           final user = FirebaseAuth.instance.currentUser;
                           if (user != null) {
-                            // This now calls the event on the SHARED bloc
                             context.read<ProfileBloc>().add(
                               LoadProfileEvent(user.uid),
                             );
@@ -130,17 +118,14 @@ Widget _buildContent(BuildContext context, Member member) {
   final List<BoxShadow> commonShadow = [
     const BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
   ];
-  // Access the ProfileBloc state to get the image bytes
   final state = context.read<ProfileBloc>().state;
   final Uint8List? imageBytes = state.profileImageBytes;
-  // Determine which image provider to use
   final ImageProvider avatarImage = (imageBytes != null)
       ? MemoryImage(imageBytes)
       : const NetworkImage(
               'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
             )
             as ImageProvider;
-  // Get business profile from state to display in the card
   final businessProfile = context.read<ProfileBloc>().state.businessProfile;
   final companyName =
       (businessProfile != null && businessProfile.name.isNotEmpty)
@@ -163,7 +148,6 @@ Widget _buildContent(BuildContext context, Member member) {
           ),
         ),
         const SizedBox(height: 30),
-        // Profile Info Card
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -183,7 +167,7 @@ Widget _buildContent(BuildContext context, Member member) {
                         shape: BoxShape.circle,
                         color: Colors.grey.shade300,
                         image: DecorationImage(
-                          image: avatarImage, // Use the dynamic provider
+                          image: avatarImage, 
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -249,7 +233,6 @@ Widget _buildContent(BuildContext context, Member member) {
         ),
         const SizedBox(height: 30),
 
-        // SETTINGS
         const Padding(
           padding: EdgeInsets.only(bottom: 10.0, left: 4),
           child: Text(
@@ -283,7 +266,7 @@ Widget _buildContent(BuildContext context, Member member) {
                     arguments: {
                       'member': member,
                       'imageBytes': imageBytes,
-                      'bloc': profileBloc, // Pass Bloc explicitly
+                      'bloc': profileBloc, 
                     },
                   );
                 },
@@ -312,7 +295,6 @@ Widget _buildContent(BuildContext context, Member member) {
 
         const SizedBox(height: 30),
 
-        // SECURITY & ACTIONS (Same as before)
         const Padding(
           padding: EdgeInsets.only(bottom: 10.0, left: 4),
           child: Text(
@@ -389,7 +371,6 @@ Widget _buildContent(BuildContext context, Member member) {
                 Icons.logout_outlined,
                 "Log Out",
                 onTap: () {
-                  // CHANGED: Call the dialog instead of immediate logout
                   _showLogoutConfirmationDialog(context);
                 },
               ),
@@ -426,8 +407,7 @@ void _showLogoutConfirmationDialog(BuildContext context) {
         ),
         TextButton(
           onPressed: () {
-            Navigator.pop(ctx); // Close dialog
-            // Trigger Events
+            Navigator.pop(ctx);
             context.read<ProfileBloc>().add(LogoutEvent());
             context.read<AuthBloc>().add(AuthLogoutRequested());
           },
@@ -494,7 +474,7 @@ Widget _buildActionRow(
 
 void _showDeleteConfirmationDialog(BuildContext context) {
   final passwordController = TextEditingController();
-  final profileBloc = context.read<ProfileBloc>(); // Capture bloc context
+  final profileBloc = context.read<ProfileBloc>();
 
   showDialog(
     context: context,
@@ -562,12 +542,11 @@ void _showDeleteConfirmationDialog(BuildContext context) {
 
                         setState(() => isDeleting = true);
 
-                        // Fire event
                         profileBloc.add(
                           DeleteAccountEvent(passwordController.text),
                         );
 
-                        Navigator.pop(dialogContext); // Close dialog
+                        Navigator.pop(dialogContext);
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,

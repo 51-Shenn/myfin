@@ -1,6 +1,5 @@
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
-/// Calculator class for Profit & Loss calculations
 class ProfitLossCalculator {
   final List<DocumentLineItem> lineItems;
   final DateTime startDate;
@@ -12,7 +11,6 @@ class ProfitLossCalculator {
     required this.endDate,
   });
 
-  /// Filter line items by category code and date range
   List<DocumentLineItem> _filterByCategory(String categoryCode) {
     return lineItems.where((item) {
       final itemDate = item.lineDate ?? item.lineDate;
@@ -25,17 +23,12 @@ class ProfitLossCalculator {
     }).toList();
   }
 
-  /// Sum amounts for a specific category using total field
-  /// - isIncrease=true: Returns positive sum (revenue, income - increases profit)
-  /// - isIncrease=false: Returns negative sum (expenses, costs - decreases profit)
   double _sumCategory(String categoryCode, bool isIncrease) {
     final filteredItems = _filterByCategory(categoryCode);
     final sum = filteredItems.fold(0.0, (sum, item) => sum + item.total);
-    // Use isIncrease to determine if this adds to or subtracts from profit
     return isIncrease ? sum : -sum;
   }
 
-  // Revenue categories (isIncrease: true)
   double calculateProductRevenue() => _sumCategory('Product Revenue', true);
   double calculateServiceRevenue() => _sumCategory('Service Revenue', true);
   double calculateSubscriptionRevenue() =>
@@ -44,12 +37,10 @@ class ProfitLossCalculator {
   double calculateOtherOperatingRevenue() =>
       _sumCategory('Other Operating Revenue', true);
 
-  // Deductions from revenue (isIncrease: false - these reduce revenue)
   double calculateSalesReturns() => _sumCategory('Sales Returns', false);
   double calculateSalesDiscounts() => _sumCategory('Sales Discounts', false);
   double calculateSalesAllowances() => _sumCategory('Sales Allowances', false);
 
-  // Other income (isIncrease: true)
   double calculateInterestIncome() => _sumCategory('Interest Income', true);
   double calculateDividendIncome() => _sumCategory('Dividend Income', true);
   double calculateInvestmentGains() => _sumCategory('Investment Gains', true);
@@ -58,28 +49,25 @@ class ProfitLossCalculator {
       _sumCategory('Gain on Sale of Assets', true);
   double calculateOtherIncome() => _sumCategory('Other Income', true);
 
-  // Cost of Goods Sold (isIncrease: false for costs, true for reductions)
   double calculateOpeningInventory() =>
       _sumCategory('Opening Inventory', false);
   double calculatePurchases() => _sumCategory('Purchases', false);
   double calculateDeliveryFees() => _sumCategory('Delivery Fees', false);
   double calculatePurchaseReturns() =>
-      _sumCategory('Purchase Returns', true); // Reduces COGS
+      _sumCategory('Purchase Returns', true);
   double calculatePurchaseDiscounts() =>
-      _sumCategory('Purchase Discounts', true); // Reduces COGS
+      _sumCategory('Purchase Discounts', true);
   double calculateClosingInventory() =>
-      _sumCategory('Closing Inventory', true); // Reduces COGS
+      _sumCategory('Closing Inventory', true); 
   double calculateOtherCostOfGoodsSold() =>
       _sumCategory('Other Cost of Goods Sold', false);
 
-  // Cost of Services (isIncrease: false - all are expenses)
   double calculateDirectLaborCosts() =>
       _sumCategory('Direct Labor Costs', false);
   double calculateContractorCosts() => _sumCategory('Contractor Costs', false);
   double calculateOtherCostOfServices() =>
       _sumCategory('Other Cost of Services', false);
 
-  // Operating Expenses (isIncrease: false - all reduce profit)
   double calculateAdvertising() => _sumCategory('Advertising', false);
   double calculateSalesCommissions() =>
       _sumCategory('Sales Commissions', false);
@@ -132,7 +120,6 @@ class ProfitLossCalculator {
 
   double calculateCurrentTaxExpense() => _sumCategory('Tax Expense', false);
 
-  // totals
   double calculateTotalOperatingRevenue() {
     return calculateProductRevenue() +
         calculateServiceRevenue() +
@@ -237,7 +224,6 @@ class ProfitLossCalculator {
     return calculateGrossProfit() + calculateTotalOperatingExpenses();
   }
 
-  /// Income Before Tax = Operating Income + Other Income (non-operating)
   double calculateIncomeBeforeTax() {
     return calculateOperatingIncome();
   }

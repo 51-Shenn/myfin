@@ -4,7 +4,6 @@ import 'package:myfin/features/report/services/calculations/profitloss_calc.dart
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
-/// Generator class for creating complete Cash Flow Statement
 class CashFlowGenerator {
   Future<CashFlowStatement> generateFullReport(
     CashFlowStatement report,
@@ -15,7 +14,6 @@ class CashFlowGenerator {
     final startDate = report.fiscal_period['startDate']!;
     final endDate = report.fiscal_period['endDate']!;
 
-    // Calculate net income from P&L calculator
     final netIncome = ProfitLossCalculator(
       lineItems: docLineData,
       startDate: startDate,
@@ -187,7 +185,6 @@ class CashFlowGenerator {
   }
 
   ReportSection _buildCashBalanceSection(CashFlowCalculator calc) {
-    // Get starting cash balance from the calculator
     final startingCashBalance = calc.getStartingCashBalance();
 
     return ReportSection(

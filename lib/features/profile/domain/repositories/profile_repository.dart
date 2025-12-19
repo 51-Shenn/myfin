@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 
 abstract class ProfileRepository {

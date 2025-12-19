@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/navigation/app_routes.dart'; // Import AppRoutes
+import 'package:myfin/core/navigation/app_routes.dart'; 
 import 'package:myfin/features/admin/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/admin/data/repositories/admin_repository_impl.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_bloc.dart';
@@ -15,8 +15,6 @@ class AdminProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We don't need to re-provide AdminBloc here if it was provided in AdminMainScreen
-    // But if accessed directly, this ensures data is loaded.
     return const AdminProfileView();
   }
 }
@@ -26,11 +24,9 @@ class AdminProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Listen to AuthBloc to handle navigation upon logout
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthUnauthenticated) {
-          // Navigate to Auth Screen and clear stack
           Navigator.of(context, rootNavigator: true)
               .pushNamedAndRemoveUntil(AppRoutes.auth, (route) => false);
         }
@@ -87,7 +83,6 @@ class AdminProfileView extends StatelessWidget {
                       ),
                       const SizedBox(height: 30),
 
-                      // Profile Card
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: _cardDecoration(),
@@ -254,8 +249,6 @@ class AdminProfileView extends StatelessWidget {
       ),
     );
   }
-
-  // --- Styles & Widgets ---
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(

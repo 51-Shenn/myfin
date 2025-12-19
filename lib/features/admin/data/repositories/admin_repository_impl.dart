@@ -12,14 +12,12 @@ class AdminRepository {
   AdminRepository({required this.remoteDataSource});
 
   Future<Admin> getAdminDetails() async {
-    // 1. Get Current User ID
     final user = FirebaseAuth.instance.currentUser;
     
     if (user == null) {
       throw Exception("No user currently logged in.");
     }
 
-    // 2. Fetch Details from Firestore using the ID
     return await remoteDataSource.fetchCurrentAdmin(user.uid);
   }
 
@@ -53,19 +51,17 @@ class AdminRepository {
   Future<void> updateAdminProfile({
     required String firstName,
     required String lastName,
-    File? imageFile, // Changed: Add optional image file
+    File? imageFile,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("No user logged in.");
 
-    // 1. Update Text Data
     final data = {
       'first_name': firstName,
       'last_name': lastName,
     };
     await remoteDataSource.updateAdminProfile(user.uid, data);
 
-    // 2. Update Image if provided
     if (imageFile != null) {
       await remoteDataSource.uploadAdminImage(user.uid, imageFile);
     }
@@ -93,16 +89,13 @@ class AdminRepository {
     }
 
     try {
-      // 1. Create credential with the CURRENT password to prove identity
       final cred = auth.EmailAuthProvider.credential(
         email: user.email!,
         password: currentPassword,
       );
 
-      // 2. Re-authenticate (Required by Firebase for sensitive ops)
       await user.reauthenticateWithCredential(cred);
 
-      // 3. Update to NEW password
       await user.updatePassword(newPassword);
       
     } on auth.FirebaseAuthException catch (e) {

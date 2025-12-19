@@ -3,7 +3,6 @@ import 'package:myfin/features/report/services/calculations/acc_receivable_calc.
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
-/// Generator class for creating Accounts Receivable Report
 class AccReceivableGenerator {
   Future<AccountsReceivable> generateFullReport(
     AccountsReceivable report,
@@ -19,22 +18,18 @@ class AccReceivableGenerator {
       asOfDate: asOfDate,
     );
 
-    // Group documents by member ID
     final groupedByMember = calculator.groupByMemberId();
     final customers = <Customer>[];
 
-    // Build customer list
     for (var entry in groupedByMember.entries) {
       final docs = entry.value;
 
-      // Extract customer details from first document's metadata
       String customerName = '';
       String customerContact = '';
 
       if (docs.isNotEmpty && docs.first.metadata != null) {
         final metadata = docs.first.metadata!;
 
-        // Extract customer name
         final nameEntry = metadata.firstWhere(
           (m) => m.key == 'Customer Name',
           orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
@@ -43,7 +38,6 @@ class AccReceivableGenerator {
           customerName = nameEntry.value;
         }
 
-        // Extract contact info (phone and email)
         final phoneEntry = metadata.firstWhere(
           (m) => m.key == 'Customer Phone',
           orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Reusable help dialog for report pages
 class ReportHelpDialog extends StatelessWidget {
   final String reportType;
   final String title;
@@ -92,7 +91,6 @@ class ReportHelpDialog extends StatelessWidget {
     );
   }
 
-  /// Show help dialog
   static void show(
     BuildContext context, {
     required String reportType,
@@ -110,7 +108,6 @@ class ReportHelpDialog extends StatelessWidget {
   }
 }
 
-/// Help section model
 class HelpSection {
   final String? title;
   final String? content;
@@ -119,7 +116,6 @@ class HelpSection {
   const HelpSection({this.title, this.content, this.items});
 }
 
-/// Help item model
 class HelpItem {
   final String? icon;
   final String text;

@@ -1,65 +1,62 @@
-// Abstract repository interface for report feature
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
 abstract class ReportRepository {
-  /// Fetch all reports for a specific member
+  // get all reports for a specific member
   Future<List<Report>> getReportsByMemberId(String memberId);
 
-  /// Get a specific report by its ID
+  // get a specific report by its ID
   Future<Report> getReportByReportId(String reportId);
 
-  /// Get a generated report with full details (sections, calculations) by its ID
+  // get a generated report with full details by its ID
   Future<dynamic> getGeneratedReportByReportId(String reportId);
 
-  /// Create/generate a new report
+  // create/generate a new report
   Future<dynamic> createReport(
     Report report,
     DateTime startDate,
     DateTime endDate,
   );
 
-  /// Save report log to database
+  // save report to firebase
   Future<String> saveReportLog(Report report);
 
-  /// Get document line items within a date range
+  // get document line items within a date range
   Future<List<DocumentLineItem>> getDocLineItemsByDateRange({
     DateTime? startDate,
     DateTime? endDate,
     int? limit,
   });
 
-  /// Get all documents for a specific member
+  // get all documents for a specific member
   Future<List<Document>> getDocumentsByMemberId(String memberId);
 
-  /// Get documents filtered by member ID and status
+  // get documents filtered by member ID and status
   Future<List<Document>> getDocumentsByMemberIdAndStatus(
     String memberId,
     String status,
   );
 
-  /// Get documents filtered by member ID and multiple statuses
+  // get documents filtered by member ID and status
   Future<List<Document>> getDocumentsByMemberIdAndStatuses(
     String memberId,
     List<String> statuses,
   );
 
-  /// Get documents filtered by member ID and date range
+  // get documents filtered by member ID and date range
   Future<List<Document>> getDocumentsByMemberIdAndDateRange(
     String memberId,
     DateTime startDate,
     DateTime endDate,
   );
 
-  /// Get document line items filtered by document IDs
+  // get document line items filtered by document ID
   Future<List<DocumentLineItem>> getDocLineItemsByDocumentIds(
     List<String> documentIds,
   );
 
-  /// Get sales tax regulation (most recent by type)
   Future<dynamic> getSalesTaxRegulation();
 
-  /// Get income tax regulation (most recent by type)
   Future<dynamic> getIncomeTaxRegulation();
 }

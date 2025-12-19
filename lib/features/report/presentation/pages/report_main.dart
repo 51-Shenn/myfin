@@ -79,7 +79,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
   @override
   void initState() {
     super.initState();
-    // Get member_id from current authenticated user
+    // get member id of current user
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       member_id = user.uid;
@@ -137,7 +137,6 @@ class _MainReportScreenState extends State<MainReportScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Report Functions
                       _buildReportFunctions(context),
                       const SizedBox(height: 16),
 
@@ -157,7 +156,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
                           ),
                         ),
 
-                      // Recent Reports List
+                      // recent reports
                       if (!state.loadingReports && state.loadedReports.isEmpty)
                         Padding(
                           padding: const EdgeInsets.all(32.0),
@@ -240,11 +239,9 @@ class _MainReportScreenState extends State<MainReportScreen> {
                 ),
               ],
             ),
-            // Report Function Container
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Report Type Selector
                 const Text(
                   'Report Type',
                   style: TextStyle(
@@ -292,7 +289,6 @@ class _MainReportScreenState extends State<MainReportScreen> {
 
                 const SizedBox(height: 16),
 
-                // Fiscal Period
                 const Text(
                   'Fiscal Period',
                   style: TextStyle(
@@ -396,12 +392,11 @@ class _MainReportScreenState extends State<MainReportScreen> {
 
                 const SizedBox(height: 16),
 
-                // Generate Report Button
+                // generate report button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // simple validation
                       if (selectedReportType == null) {
                         _showErrorDialog(
                           context,
@@ -440,8 +435,6 @@ class _MainReportScreenState extends State<MainReportScreen> {
                         context,
                         'Report generation started!',
                       );
-
-                      // navigate to generated report after generation complete
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2B46F9),
@@ -468,7 +461,6 @@ class _MainReportScreenState extends State<MainReportScreen> {
 
           const SizedBox(height: 16),
 
-          // Recent Reports Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(

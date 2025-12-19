@@ -76,19 +76,15 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
-      // get user to get current status
       final userToBan = currentState.users.firstWhere(
         (u) => u.userId == event.userId,
       );
 
       try {
-        // Call Repo (Real Firebase Call)
         await _repo.banUser(event.userId, userToBan.status);
 
-        // Calculate new status for local update
         final newStatus = userToBan.status == 'Active' ? 'Banned' : 'Active';
 
-        // Update Local State
         final updatedUsers = currentState.users.map((user) {
           if (user.userId == event.userId) {
             return AdminUserView(
@@ -102,7 +98,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           return user;
         }).toList();
 
-        // Update stats locally (simple +/- 1 adjustment)
         final Map<String, int> newStats = Map.from(currentState.stats);
         if (newStatus == 'Banned') {
           newStats['banned'] = (newStats['banned'] ?? 0) + 1;
@@ -114,12 +109,11 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           AdminLoaded(
             admin: currentState.admin,
             users: updatedUsers,
-            filteredUsers: updatedUsers, // Or re-apply filter
+            filteredUsers: updatedUsers, 
             stats: newStats,
           ),
         );
       } catch (e) {
-        // Handle error (maybe emit side effect, but for now stick to state)
         print("Error banning user: $e");
       }
     }
@@ -133,15 +127,12 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final currentState = state as AdminLoaded;
 
       try {
-        // Call Repo (Real Firebase Call)
         await _repo.deleteUser(event.userId);
 
-        // Remove from local lists
         final updatedUsers = currentState.users
             .where((user) => user.userId != event.userId)
             .toList();
 
-        // Update stats
         final Map<String, int> newStats = Map.from(currentState.stats);
         newStats['total'] = (newStats['total'] ?? 1) - 1;
 
@@ -167,7 +158,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final currentState = state as AdminLoaded;
 
       try {
-        // 1. Call Repo to update Firestore
         await _repo.updateUser(
           event.userId,
           event.firstName,
@@ -177,7 +167,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           event.status,
         );
 
-        // 2. Update Local State to reflect changes immediately
         final updatedUsers = currentState.users.map((user) {
           if (user.userId == event.userId) {
             return AdminUserView(
@@ -212,7 +201,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
-      // Show loading (optional: could introduce a specific loading state)
       emit(AdminLoading());
 
       try {
@@ -222,11 +210,9 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           imageFile: event.imageFile,
         );
 
-        // Reload dashboard to get fresh data
         add(LoadAdminDashboardEvent());
       } catch (e) {
         emit(AdminError("Failed to update profile: $e"));
-        // Recover state if possible, or stay in error
       }
     }
   }
@@ -238,7 +224,6 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
-      // Emit Loading State for Password only
       emit(currentState.copyWith(
         passwordStatus: AdminPasswordStatus.loading,
         passwordError: null,
@@ -247,19 +232,16 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       try {
         await _repo.changePassword(event.currentPassword, event.newPassword);
 
-        // Emit Success State
         emit(currentState.copyWith(
           passwordStatus: AdminPasswordStatus.success,
         ));
 
-        // Reset status to initial after a short delay
         await Future.delayed(const Duration(seconds: 1));
         if (!isClosed) {
            emit(currentState.copyWith(passwordStatus: AdminPasswordStatus.initial));
         }
 
       } catch (e) {
-        // Emit Failure State
         emit(currentState.copyWith(
           passwordStatus: AdminPasswordStatus.failure,
           passwordError: e.toString().replaceAll("Exception: ", ""),

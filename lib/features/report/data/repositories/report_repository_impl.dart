@@ -23,38 +23,32 @@ class ReportRepositoryImpl implements ReportRepository {
 
   @override
   Future<List<Report>> getReportsByMemberId(String memberId) async {
-    // 1. Call Data Source to get raw report data
+    // call data source to get raw report data
     final rawList = await dataSource.getReportsByMemberId(memberId);
 
-    // 2. Map raw list to Report entities
+    // map raw list to report entities
     return rawList.map(ReportFactory.createReportFromJson).toList();
   }
 
   @override
   Future<Report> getReportByReportId(String reportId) async {
-    // 1. Call Data Source to get raw report data
     final rawData = await dataSource.getReportByReportId(reportId);
 
-    // 2. Handle null case
     if (rawData == null) {
       throw Exception('Report with ID $reportId not found.');
     }
 
-    // 3. Map raw data to Report entity
     return ReportFactory.createReportFromJson(rawData);
   }
 
   @override
   Future<dynamic> getGeneratedReportByReportId(String reportId) async {
-    // Fetch from reports collection (now contains full report data)
     final rawData = await dataSource.getReportByReportId(reportId);
 
-    // Handle null case
     if (rawData == null) {
       throw Exception('Report with ID $reportId not found.');
     }
 
-    // Determine report type and convert to appropriate entity
     final reportTypeString = rawData['report_type'] as String?;
 
     if (reportTypeString == null) {
@@ -63,7 +57,6 @@ class ReportRepositoryImpl implements ReportRepository {
 
     final reportType = stringToReportType(reportTypeString);
 
-    // Convert to specific report type based on report_type field
     switch (reportType) {
       case ReportType.profitLoss:
         return ProfitAndLossReport.fromMap(rawData);
@@ -91,26 +84,22 @@ class ReportRepositoryImpl implements ReportRepository {
     List<DocumentLineItem> docLineData = [];
 
     try {
-      // Generate a document ID without saving yet
       generatedReportId = dataSource.generateReportId();
       report = report.copyWith(report_id: generatedReportId);
 
-      // 1. Fetch all Posted, Paid, and Approved documents by memberId
       docData = await getDocumentsByMemberIdAndStatuses(report.member_id, [
         'Posted',
         'Paid',
         'Approved',
       ]);
 
-      // 2. Extract document IDs from Posted documents
       final documentIds = docData.map((doc) => doc.id).toList();
 
-      // 3. Fetch doc line items using the document IDs
       if (documentIds.isNotEmpty) {
         docLineData = await getDocLineItemsByDocumentIds(documentIds);
       }
 
-      // Fetch business profile to get the name
+      // getch business profile to get the name
       String businessName = "My Business";
       try {
         final businessProfile = await profileDataSource.fetchBusinessProfile(
@@ -121,10 +110,8 @@ class ReportRepositoryImpl implements ReportRepository {
         }
       } catch (e) {
         print("Error fetching business profile: $e");
-        // Fallback to default name is already set
       }
 
-      // Fetch tax regulations for balance sheet reports
       TaxRegulation? salesTaxRegulation;
       TaxRegulation? incomeTaxRegulation;
 
@@ -134,11 +121,9 @@ class ReportRepositoryImpl implements ReportRepository {
           incomeTaxRegulation = await getIncomeTaxRegulation();
         } catch (e) {
           print("Error fetching tax regulations: $e");
-          // Continue without tax regulations - will use fallback calculations
         }
       }
 
-      // 4. Pass both documents and line items to report generation
       if (report is BalanceSheet) {
         generatedReport = await report.generateReport(
           businessName,
@@ -155,7 +140,6 @@ class ReportRepositoryImpl implements ReportRepository {
         );
       }
 
-      // 5. Save ONLY the full generated child report (e.g., ProfitAndLossReport) to Firestore
       final reportData = generatedReport.toMap();
       await dataSource.createReportLog(reportData);
     } on FirebaseException catch (e) {
@@ -165,11 +149,9 @@ class ReportRepositoryImpl implements ReportRepository {
         );
       }
       print("Error generating report: ${e.message}");
-      // Re-throw the exception so it can be handled by the BLoC
       rethrow;
     } on Exception catch (e) {
       print("Error generating report: $e");
-      // Re-throw the exception so it can be handled by the BLoC
       rethrow;
     }
 
@@ -191,23 +173,19 @@ class ReportRepositoryImpl implements ReportRepository {
     DateTime? endDate,
     int? limit,
   }) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocLineItemsByDateRange(
       startDate: startDate,
       endDate: endDate,
       limit: limit,
     );
 
-    // 2. Map raw list to DocumentLineItem entities
     return rawList.map(DocumentLineItem.fromMap).toList();
   }
 
   @override
   Future<List<Document>> getDocumentsByMemberId(String memberId) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocumentsByMemberId(memberId);
 
-    // 2. Map raw list to Document entities
     return rawList.map(Document.fromMap).toList();
   }
 
@@ -216,13 +194,11 @@ class ReportRepositoryImpl implements ReportRepository {
     String memberId,
     String status,
   ) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocumentsByMemberIdAndStatus(
       memberId,
       status,
     );
 
-    // 2. Map raw list to Document entities
     return rawList.map(Document.fromMap).toList();
   }
 
@@ -231,13 +207,11 @@ class ReportRepositoryImpl implements ReportRepository {
     String memberId,
     List<String> statuses,
   ) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocumentsByMemberIdAndStatuses(
       memberId,
       statuses,
     );
 
-    // 2. Map raw list to Document entities
     return rawList.map(Document.fromMap).toList();
   }
 
@@ -247,14 +221,12 @@ class ReportRepositoryImpl implements ReportRepository {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocumentsByMemberIdAndDateRange(
       memberId,
       startDate,
       endDate,
     );
 
-    // 2. Map raw list to Document entities
     return rawList.map(Document.fromMap).toList();
   }
 
@@ -262,10 +234,8 @@ class ReportRepositoryImpl implements ReportRepository {
   Future<List<DocumentLineItem>> getDocLineItemsByDocumentIds(
     List<String> documentIds,
   ) async {
-    // 1. Call Data Source
     final rawList = await dataSource.getDocLineItemsByDocumentIds(documentIds);
 
-    // 2. Map raw list to DocumentLineItem entities
     return rawList.map(DocumentLineItem.fromMap).toList();
   }
 

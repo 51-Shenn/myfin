@@ -2,7 +2,6 @@ import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/services/calculations/profitloss_calc.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
-/// Generator class for creating complete Profit & Loss Report
 class ProfitLossGenerator {
   Future<ProfitAndLossReport> generateFullReport(
     ProfitAndLossReport report,

@@ -13,7 +13,7 @@ class ChangePasswordScreen extends StatefulWidget {
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  final _formKey = GlobalKey<FormState>(); // Added Form Key
+  final _formKey = GlobalKey<FormState>();
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -34,7 +34,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listener: (context, state) {
         if (state.passwordStatus == FormStatus.submissionFailure) {
-          // Show backend error (e.g. "Wrong password")
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -85,7 +84,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Form(
-              key: _formKey, // Wrap in Form
+              key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -95,7 +94,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 30),
                   
-                  // Current Password
                   _buildPasswordField(
                     controller: _currentPasswordController,
                     label: 'Current Password',
@@ -108,7 +106,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // New Password
                   _buildPasswordField(
                     controller: _newPasswordController,
                     label: 'New Password',
@@ -120,7 +117,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   ),
                   const SizedBox(height: 20),
                   
-                  // Confirm Password
                   _buildPasswordField(
                     controller: _confirmPasswordController,
                     label: 'Confirm New Password',
@@ -135,7 +131,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   
                   const SizedBox(height: 40),
                   
-                  // Submit Button
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -143,9 +138,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       onPressed: isSubmitting
                           ? null
                           : () {
-                              // 1. Check frontend validation
                               if (_formKey.currentState!.validate()) {
-                                // 2. Submit to BLoC
                                 context.read<ProfileBloc>().add(
                                       ChangePasswordEvent(
                                         currentPassword: _currentPasswordController.text,
@@ -204,7 +197,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         TextFormField(
           controller: controller,
           obscureText: obscureText,
-          validator: validator, // Hooked up validator
+          validator: validator,
           style: const TextStyle(fontFamily: 'Inter', fontSize: 15, color: Colors.black),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

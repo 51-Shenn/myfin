@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/core/validators/auth_validator.dart'; // Import validators
+import 'package:myfin/core/validators/auth_validator.dart'; 
 import 'package:myfin/features/admin/domain/entities/admin.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_bloc.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_event.dart';
@@ -15,7 +15,6 @@ class EditUserDialog extends StatefulWidget {
 }
 
 class _EditUserDialogState extends State<EditUserDialog> {
-  // 1. Create a GlobalKey for the Form
   final _formKey = GlobalKey<FormState>();
 
   late TextEditingController _firstNameController;
@@ -29,7 +28,6 @@ class _EditUserDialogState extends State<EditUserDialog> {
   @override
   void initState() {
     super.initState();
-    // Logic to split the full name into First and Last name
     List<String> names = widget.user.name.split(' ');
     String firstName = names.isNotEmpty ? names.first : '';
     String lastName = names.length > 1 ? names.sublist(1).join(' ') : '';
@@ -37,7 +35,6 @@ class _EditUserDialogState extends State<EditUserDialog> {
     _firstNameController = TextEditingController(text: firstName);
     _lastNameController = TextEditingController(text: lastName);
     _emailController = TextEditingController(text: widget.user.email);
-    // Since phone isn't in AdminUserView yet, we use a placeholder or empty string
     _phoneController = TextEditingController(text: '+60 123456789'); 
     _selectedStatus = widget.user.status;
   }
@@ -59,7 +56,6 @@ class _EditUserDialogState extends State<EditUserDialog> {
       insetPadding: const EdgeInsets.all(20),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
-        // 2. Wrap content in a Form widget
         child: Form(
           key: _formKey,
           child: Column(
@@ -76,9 +72,8 @@ class _EditUserDialogState extends State<EditUserDialog> {
               ),
               const SizedBox(height: 24),
 
-              // First Name & Last Name Row
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start, // Align to top for error messages
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildTextField(
@@ -115,7 +110,6 @@ class _EditUserDialogState extends State<EditUserDialog> {
               ),
               const SizedBox(height: 16),
 
-              // Status Dropdown
               const Text(
                 'Status',
                 style: TextStyle(
@@ -154,15 +148,12 @@ class _EditUserDialogState extends State<EditUserDialog> {
 
               const SizedBox(height: 32),
 
-              // Save Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    // 3. Trigger Validation
                     if (_formKey.currentState!.validate()) {
-                      // Dispatch Update Event
                       context.read<AdminBloc>().add(
                         EditUserEvent(
                           userId: widget.user.userId,
@@ -173,7 +164,7 @@ class _EditUserDialogState extends State<EditUserDialog> {
                           status: _selectedStatus,
                         ),
                       );
-                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context); 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("User details updated successfully"), backgroundColor: Colors.green),
                       );
@@ -204,12 +195,11 @@ class _EditUserDialogState extends State<EditUserDialog> {
     );
   }
 
-  // 4. Update helper to use TextFormField
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
-    String? Function(String?)? validator, // Added validator parameter
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,8 +217,8 @@ class _EditUserDialogState extends State<EditUserDialog> {
         TextFormField(
           controller: controller,
           keyboardType: inputType,
-          validator: validator, // Hook up validator
-          autovalidateMode: AutovalidateMode.onUserInteraction, // Show error on type/focus loss
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           style: const TextStyle(fontFamily: 'Inter', fontSize: 14),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

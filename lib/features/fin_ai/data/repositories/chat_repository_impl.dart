@@ -1,7 +1,6 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
-// FIX 1: Corrected the import path from 'package.' to 'package:'
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 
 class ChatRepository {
@@ -18,14 +17,11 @@ class ChatRepository {
   })  : _docRepo = docRepo,
         _lineRepo = lineRepo;
 
-  /// Initializes the chat session by loading user data and setting the system prompt.
   Future<void> initializeSession(String memberId) async {
     final apiKey = dotenv.env['GEMINI_API_KEY_4'] ?? "";
     
-    // 1. Fetch data from Firestore and format it as text
     final contextString = await _buildFinancialContext(memberId);
 
-    // 2. Create the "System Instruction" for the AI
     final systemPrompt = Content.text('''
       You are FinAI, an expert financial assistant.
       
@@ -39,7 +35,6 @@ class ChatRepository {
       4. Do not invent information. If the data is insufficient, state that.
     ''');
 
-    // 3. Initialize the AI Model with this context
     _model = GenerativeModel(
       model: 'gemini-2.5-flash',
       apiKey: apiKey,
@@ -64,7 +59,6 @@ class ChatRepository {
     }
   }
 
-  // This is the core data-fetching logic
   Future<String> _buildFinancialContext(String memberId) async {
     try {
       final docs = await _docRepo.getDocuments(memberId: memberId, limit: 25);
@@ -79,7 +73,6 @@ class ChatRepository {
         double docTotal = lines.fold(0, (sum, item) => sum + item.total);
 
         buffer.writeln(
-          // FIX 2: Corrected the method name from 'toIso8101String' to 'toIso8601String'
           "- Document: '${doc.name}' (Type: ${doc.type}, Date: ${doc.postingDate.toIso8601String().split('T')[0]}, Total: $docTotal)"
         );
         

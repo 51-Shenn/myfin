@@ -6,22 +6,20 @@ import 'package:myfin/features/report/services/calculations/cashflow_calc.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/entities/document.dart';
 
-/// Generator class for creating complete Balance Sheet
 class BalanceSheetGenerator {
   Future<BalanceSheet> generateFullReport(
     BalanceSheet report,
     String businessName,
     List<Document> docData,
     List<DocumentLineItem> docLineData, {
-    double? netIncomeFromProfitLoss, // Accept net income from P&L
-    double? endingCashFromCashFlow, // Accept ending cash from Cash Flow
-    TaxRegulation? salesTaxRegulation, // Accept sales tax regulation
-    TaxRegulation? incomeTaxRegulation, // Accept income tax regulation
+    double? netIncomeFromProfitLoss,
+    double? endingCashFromCashFlow,
+    TaxRegulation? salesTaxRegulation, 
+    TaxRegulation? incomeTaxRegulation,
   }) async {
     final asOfDate = report.fiscal_period['endDate']!;
     final startDate = report.fiscal_period['startDate']!;
 
-    // Get net income from P&L calculator if not provided
     final netIncome =
         netIncomeFromProfitLoss ??
         ProfitLossCalculator(
@@ -30,7 +28,6 @@ class BalanceSheetGenerator {
           endDate: asOfDate,
         ).calculateNetIncome();
 
-    // Get ending cash from Cash Flow calculator if not provided
     final endingCash =
         endingCashFromCashFlow ??
         () {
@@ -48,9 +45,9 @@ class BalanceSheetGenerator {
     final calculator = BalanceSheetCalculator(
       lineItems: docLineData,
       asOfDate: asOfDate,
-      cashBalance: endingCash, // Pass ending cash from Cash Flow
-      salesTaxRegulation: salesTaxRegulation, // Pass sales tax regulation
-      incomeTaxRegulation: incomeTaxRegulation, // Pass income tax regulation
+      cashBalance: endingCash,
+      salesTaxRegulation: salesTaxRegulation, 
+      incomeTaxRegulation: incomeTaxRegulation, 
     );
 
     final sections = [
@@ -211,7 +208,6 @@ class BalanceSheetGenerator {
     BalanceSheetCalculator calc,
     double netIncome,
   ) {
-    // Using Corporate Equity as default
     final corporateEquityGroup = ReportGroup(
       group_title: 'Corporate Equity',
       line_items: [

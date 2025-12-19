@@ -1,11 +1,10 @@
 import 'package:myfin/features/admin/domain/entities/tax_regulation.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 
-/// Calculator class for Balance Sheet calculations
 class BalanceSheetCalculator {
   final List<DocumentLineItem> lineItems;
   final DateTime asOfDate;
-  final double cashBalance; // Ending cash from Cash Flow Statement
+  final double cashBalance; 
   final TaxRegulation? salesTaxRegulation;
   final TaxRegulation? incomeTaxRegulation;
 
@@ -17,7 +16,6 @@ class BalanceSheetCalculator {
     this.incomeTaxRegulation,
   });
 
-  /// Filter line items by category code up to the date
   List<DocumentLineItem> _filterByCategory(String categoryCode) {
     return lineItems.where((item) {
       final itemDate = item.lineDate ?? item.lineDate;
@@ -30,18 +28,12 @@ class BalanceSheetCalculator {
     }).toList();
   }
 
-  /// Sum amounts for a specific category using total field
-  /// - isIncrease=true: Returns positive sum (increases account balance)
-  /// - isIncrease=false: Returns negative sum (decreases account balance)
   double _sumCategory(String categoryCode, bool isIncrease) {
     final filteredItems = _filterByCategory(categoryCode);
     final sum = filteredItems.fold(0.0, (sum, item) => sum + item.total);
-    // Use isIncrease to determine if this adds to or subtracts from balance
     return isIncrease ? sum : -sum;
   }
 
-  /// Calculate tax using progressive tax brackets
-  /// Returns the total tax amount based on the taxable amount and tax regulation
   double _calculateProgressiveTax(
     double taxableAmount,
     TaxRegulation? regulation,
@@ -51,26 +43,21 @@ class BalanceSheetCalculator {
     double totalTax = 0.0;
 
     for (final rate in regulation.rates) {
-      // Determine the taxable portion in this bracket
       final bracketMin = rate.minimumIncome;
       final bracketMax = rate.maximumIncome;
 
       if (taxableAmount <= bracketMin) {
-        // Income doesn't reach this bracket
         break;
       }
 
-      // Calculate taxable amount in this bracket
       final taxableInBracket = taxableAmount > bracketMax
           ? (bracketMax - bracketMin)
           : (taxableAmount - bracketMin);
 
-      // Calculate tax for this bracket
       final taxInBracket = taxableInBracket * (rate.percentage / 100);
       totalTax += taxInBracket;
 
       if (taxableAmount <= bracketMax) {
-        // No need to check higher brackets
         break;
       }
     }
@@ -78,8 +65,6 @@ class BalanceSheetCalculator {
     return totalTax;
   }
 
-  // ASSETS - Current Assets
-  /// Cash & Cash Equivalents comes from Cash Flow Statement ending balance
   double calculateCashAndCashEquivalents() => cashBalance;
   double calculateAccountsReceivable() =>
       _sumCategory('Accounts Receivable', true);
@@ -93,14 +78,10 @@ class BalanceSheetCalculator {
         calculateInventory();
   }
 
-  // ASSETS - Non-Current Assets
   double calculatePropertyPlantEquipment() =>
       _sumCategory('Purchase of Assets', true);
 
-  /// Accumulated depreciation is a contra-asset (credit account that reduces assets)
-  /// Store it separately as accumulated on the credit side of the asset account
   double calculateAccumulatedDepreciation() {
-    // This should be tracked separately, but for now calculate as 20% of PPE
     return _sumCategory('Purchase of Assets', true) *
         0.2; // Shown as positive in reports
   }
@@ -114,7 +95,7 @@ class BalanceSheetCalculator {
 
   double calculateTotalNonCurrentAssets() {
     return calculatePropertyPlantEquipment() -
-        calculateAccumulatedDepreciation() + // Subtract because it's contra-asset
+        calculateAccumulatedDepreciation() +
         calculateIntangibleAssets() +
         calculateLongTermInvestments() +
         calculateOtherAssets();
@@ -124,29 +105,23 @@ class BalanceSheetCalculator {
     return calculateTotalCurrentAssets() + calculateTotalNonCurrentAssets();
   }
 
-  // LIABILITIES - Current Liabilities
   double calculateAccountsPayable() => _sumCategory('Accounts Payable', true);
   double calculateNotesPayable() => _sumCategory('Notes Payable', true);
 
-  /// Calculate income tax payable based on net income and tax regulation
   double calculateIncomeTaxPayable([double netIncome = 0.0]) {
     if (incomeTaxRegulation == null) {
-      // Fallback to summing 'Tax Expense' category if no regulation provided
       return _sumCategory('Tax Expense', true);
     }
     return _calculateProgressiveTax(netIncome, incomeTaxRegulation);
   }
 
-  /// Calculate sales tax payable based on total sales revenue
   double calculateSalesTaxesPayable() {
     if (salesTaxRegulation == null) return 0.0;
 
-    // Sum all revenue categories to get total taxable sales
     final productRevenue = _sumCategory('Product Revenue', true);
     final serviceRevenue = _sumCategory('Service Revenue', true);
     final totalRevenue = productRevenue + serviceRevenue;
 
-    // Apply first tax rate (assuming flat sales tax rate)
     if (salesTaxRegulation!.rates.isNotEmpty) {
       final salesTaxRate = salesTaxRegulation!.rates.first.percentage;
       return totalRevenue * (salesTaxRate / 100);
@@ -158,7 +133,7 @@ class BalanceSheetCalculator {
   double calculateProductReturnsLiability() =>
       _sumCategory('Sales Returns', true);
 
-  double calculateOtherCurrentLiabilities() => 0.0; // No specific category
+  double calculateOtherCurrentLiabilities() => 0.0;
 
   double calculateTotalCurrentLiabilities([double netIncome = 0.0]) {
     return calculateAccountsPayable() +
@@ -169,7 +144,6 @@ class BalanceSheetCalculator {
         calculateOtherCurrentLiabilities();
   }
 
-  // LIABILITIES - Long-term Liabilities
   double calculateLongTermDebt() => _sumCategory('Debt', true);
 
   double calculateDeferredRevenueLongTerm() => 0.0; // No specific category
@@ -187,15 +161,14 @@ class BalanceSheetCalculator {
         calculateTotalLongTermLiabilities();
   }
 
-  // EQUITY - Corporate Equity
   double calculateSharedCapital() => _sumCategory('Stock', true);
 
   double calculateSharedPremium() => _sumCategory('Shared Premium', true);
 
   double calculateRetainedEarnings(double netIncome) =>
-      netIncome; // Simplified - should accumulate over time
+      netIncome;
 
-  double calculateOtherCorporateEquity() => 0.0; // No specific category
+  double calculateOtherCorporateEquity() => 0.0;
 
   double calculateTotalCorporateEquity(double netIncome) {
     return calculateSharedCapital() +
@@ -204,31 +177,28 @@ class BalanceSheetCalculator {
         calculateOtherCorporateEquity();
   }
 
-  // EQUITY - Owner's Equity
   double calculateOwnersCapital() => _sumCategory('Owner Investment', true);
 
   double calculateOwnersDrawings() => _sumCategory('Owner Drawing', false);
 
-  double calculateOtherOwnersEquity() => 0.0; // No specific category
+  double calculateOtherOwnersEquity() => 0.0;
 
   double calculateTotalOwnersEquity(double netIncome) {
     return calculateOwnersCapital() -
-        calculateOwnersDrawings() + // Subtract drawings
+        calculateOwnersDrawings() +
         netIncome +
         calculateOtherOwnersEquity();
   }
 
-  // EQUITY - Partnership Equity
   double calculatePartnerCapital() => _sumCategory('Partner Investment', true);
 
   double calculatePartnerDrawings() =>
-      _sumCategory('Partner Drawing', false); // Debit balance, reduces equity
+      _sumCategory('Partner Drawing', false); 
 
   double calculateTotalPartnershipEquity() {
     return calculatePartnerCapital() - calculatePartnerDrawings();
   }
 
-  // Total Equity (use whichever equity type is applicable)
   double calculateTotalEquity(
     double netIncome, {
     String equityType = 'corporate',
@@ -253,14 +223,12 @@ class BalanceSheetCalculator {
         calculateTotalEquity(netIncome, equityType: equityType);
   }
 
-  /// Verify the accounting equation: Assets = Liabilities + Equity
   bool verifyBalanceSheet(double netIncome, {String equityType = 'corporate'}) {
     final assets = calculateTotalAssets();
     final liabilitiesAndEquity = calculateTotalLiabilitiesAndEquity(
       netIncome,
       equityType: equityType,
     );
-    // Allow for small floating point differences
     return (assets - liabilitiesAndEquity).abs() < 0.01;
   }
 }

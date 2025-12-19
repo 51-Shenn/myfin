@@ -37,18 +37,14 @@ class BusinessProfileScreen extends StatelessWidget {
       ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
-          // 1. Loading State
           if (state.isLoading && state.businessProfile == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // 2. Error State
           if (state.error != null) {
             return Center(child: Text("Error: ${state.error}"));
           }
 
-          // 3. Success State
-          // Even if null, we show the UI so user can click "Manage" to create one
           final business = state.businessProfile;
           final member = state.member;
           final logoBytes = state.businessImageBytes;
@@ -57,7 +53,6 @@ class BusinessProfileScreen extends StatelessWidget {
             return const Center(child: Text("Loading profile data..."));
           }
 
-          // Create a dummy/empty profile for display if one doesn't exist yet
           final displayProfile =
               business ??
               BusinessProfile(
@@ -95,7 +90,6 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- Dynamic Header Card ---
   Widget _buildHeaderCard(BusinessProfile business, Uint8List? logoBytes) {
     return Container(
       width: double.infinity,
@@ -155,7 +149,6 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- Dynamic Details Card ---
   Widget _buildDetailsCard(BusinessProfile business) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -218,19 +211,17 @@ class BusinessProfileScreen extends StatelessWidget {
 
           Navigator.of(context, rootNavigator: true).pushNamed(
             AppRoutes
-                .editBusinessProfile, // Ensure this matches AppRoutes const
+                .editBusinessProfile, 
             arguments: {
               'profile': business,
               'memberId': memberId ?? '',
-              'bloc': profileBloc, // Pass the bloc
+              'bloc': profileBloc,
             },
           );
         },
       ),
     );
   }
-
-  // --- Helpers ---
 
   BoxDecoration _boxDecoration() {
     return BoxDecoration(
