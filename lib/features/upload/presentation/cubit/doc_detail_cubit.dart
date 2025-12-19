@@ -109,13 +109,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         emit(
           state.copyWith(
             isLoading: false,
-            errorMessage: 'Unauthorized: You do not have permission to view this document.',
+            errorMessage:
+                'Unauthorized: You do not have permission to view this document.',
           ),
         );
         return;
       }
 
-      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(documentId);
+      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(
+        documentId,
+      );
 
       emit(
         state.copyWith(
@@ -254,7 +257,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         }
       }
 
-      final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(docId);
+      final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(
+        docId,
+      );
 
       emit(
         state.copyWith(

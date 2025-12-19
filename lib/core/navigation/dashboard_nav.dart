@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myfin/features/dashboard/presentation/pages/dashboard_page.dart';
 
 class DashboardNav extends StatefulWidget {
   const DashboardNav({super.key});
@@ -21,13 +22,13 @@ class _DashboardNavState extends State<DashboardNav> {
             // routes for dashboard navigation
             if (settings.name == '/dashboard_details') {
               return Container(); // dashboard details screen
-            } 
+            }
 
             // use in button
             // onPressed: () => Navigator.pushNamed(context, '/dashboard_details'),
 
-            return Container(); // dashboard screen
-          }
+            return const DashboardPage();
+          },
         );
       },
     );

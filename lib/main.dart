@@ -7,6 +7,7 @@ import 'package:myfin/features/profile/data/datasources/profile_remote_data_sour
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/data/repositories/report_repository_impl.dart';
 import 'package:myfin/features/report/domain/repositories/report_repository.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/authentication/data/datasources/member_remote_data_source.dart';
@@ -24,6 +25,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await Hive.initFlutter();
+  await Hive.openBox('dashboard_cache');
+
   final firestore = FirebaseFirestore.instance;
   final sharedPreferences = await SharedPreferences.getInstance();
   // Create Member Repository Dependencies
@@ -37,6 +42,7 @@ Future<void> main() async {
         RepositoryProvider<DocumentRepository>(
           create: (context) => DocumentRepositoryImpl(
             FirestoreDocumentDataSource(firestore: firestore),
+            FirestoreDocumentLineItemDataSource(firestore: firestore),
           ),
         ),
         RepositoryProvider<DocumentLineItemRepository>(
@@ -55,8 +61,13 @@ Future<void> main() async {
           ),
         ),
       ],
-      child: BlocProvider(
-        create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
+          ),
+          BlocProvider(create: (context) => AppRoutes.createDashboardBloc()),
+        ],
         child: MainApp(sharedPreferences: sharedPreferences),
       ),
     ),
