@@ -70,6 +70,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        margin: const EdgeInsets.only(bottom: 40.0, left: 16.0, right: 16.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
