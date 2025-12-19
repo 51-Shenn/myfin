@@ -1,3 +1,4 @@
+import 'package:myfin/features/admin/domain/entities/tax_regulation.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/services/calculations/balancesheet_calc.dart';
 import 'package:myfin/features/report/services/calculations/profitloss_calc.dart';
@@ -14,6 +15,8 @@ class BalanceSheetGenerator {
     List<DocumentLineItem> docLineData, {
     double? netIncomeFromProfitLoss, // Accept net income from P&L
     double? endingCashFromCashFlow, // Accept ending cash from Cash Flow
+    TaxRegulation? salesTaxRegulation, // Accept sales tax regulation
+    TaxRegulation? incomeTaxRegulation, // Accept income tax regulation
   }) async {
     final asOfDate = report.fiscal_period['endDate']!;
     final startDate = report.fiscal_period['startDate']!;
@@ -46,6 +49,8 @@ class BalanceSheetGenerator {
       lineItems: docLineData,
       asOfDate: asOfDate,
       cashBalance: endingCash, // Pass ending cash from Cash Flow
+      salesTaxRegulation: salesTaxRegulation, // Pass sales tax regulation
+      incomeTaxRegulation: incomeTaxRegulation, // Pass income tax regulation
     );
 
     final sections = [

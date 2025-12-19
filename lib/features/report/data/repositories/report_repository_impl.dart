@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:myfin/features/admin/data/datasources/tax_regulation_remote_data_source.dart';
+import 'package:myfin/features/admin/domain/entities/tax_regulation.dart';
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 import 'package:myfin/features/report/domain/entities/report.dart';
 import 'package:myfin/features/report/domain/repositories/report_repository.dart';
@@ -11,8 +13,13 @@ import 'package:myfin/features/profile/data/datasources/profile_remote_data_sour
 class ReportRepositoryImpl implements ReportRepository {
   final FirestoreReportDataSource dataSource;
   final ProfileRemoteDataSource profileDataSource;
+  final TaxRegulationRemoteDataSource taxRegulationDataSource;
 
-  ReportRepositoryImpl(this.dataSource, this.profileDataSource);
+  ReportRepositoryImpl(
+    this.dataSource,
+    this.profileDataSource,
+    this.taxRegulationDataSource,
+  );
 
   @override
   Future<List<Report>> getReportsByMemberId(String memberId) async {
@@ -117,12 +124,36 @@ class ReportRepositoryImpl implements ReportRepository {
         // Fallback to default name is already set
       }
 
+      // Fetch tax regulations for balance sheet reports
+      TaxRegulation? salesTaxRegulation;
+      TaxRegulation? incomeTaxRegulation;
+
+      if (report is BalanceSheet) {
+        try {
+          salesTaxRegulation = await getSalesTaxRegulation();
+          incomeTaxRegulation = await getIncomeTaxRegulation();
+        } catch (e) {
+          print("Error fetching tax regulations: $e");
+          // Continue without tax regulations - will use fallback calculations
+        }
+      }
+
       // 4. Pass both documents and line items to report generation
-      generatedReport = await report.generateReport(
-        businessName,
-        docData,
-        docLineData,
-      );
+      if (report is BalanceSheet) {
+        generatedReport = await report.generateReport(
+          businessName,
+          docData,
+          docLineData,
+          salesTaxRegulation: salesTaxRegulation,
+          incomeTaxRegulation: incomeTaxRegulation,
+        );
+      } else {
+        generatedReport = await report.generateReport(
+          businessName,
+          docData,
+          docLineData,
+        );
+      }
 
       // 5. Save ONLY the full generated child report (e.g., ProfitAndLossReport) to Firestore
       final reportData = generatedReport.toMap();
@@ -236,5 +267,31 @@ class ReportRepositoryImpl implements ReportRepository {
 
     // 2. Map raw list to DocumentLineItem entities
     return rawList.map(DocumentLineItem.fromMap).toList();
+  }
+
+  @override
+  Future<TaxRegulation?> getSalesTaxRegulation() async {
+    try {
+      final model = await taxRegulationDataSource.getTaxRegulationByType(
+        'Sales & Service',
+      );
+      return model?.toEntity();
+    } catch (e) {
+      print('Error fetching sales tax regulation: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<TaxRegulation?> getIncomeTaxRegulation() async {
+    try {
+      final model = await taxRegulationDataSource.getTaxRegulationByType(
+        'Income Tax',
+      );
+      return model?.toEntity();
+    } catch (e) {
+      print('Error fetching income tax regulation: $e');
+      return null;
+    }
   }
 }

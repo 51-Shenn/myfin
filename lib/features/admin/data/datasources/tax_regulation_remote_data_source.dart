@@ -66,4 +66,26 @@ class TaxRegulationRemoteDataSource {
       throw Exception('Failed to delete tax regulation: $e');
     }
   }
+
+  /// Get the most recent tax regulation by type
+  /// Returns null if no regulation of the specified type exists
+  Future<TaxRegulationModel?> getTaxRegulationByType(String type) async {
+    try {
+      final snapshot = await _firestore
+          .collection(_collectionName)
+          .where('type', isEqualTo: type)
+          .where('deletedAt', isNull: true)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
+
+      return TaxRegulationModel.fromFirestore(snapshot.docs.first);
+    } catch (e) {
+      throw Exception('Failed to fetch tax regulation by type: $e');
+    }
+  }
 }
