@@ -7,6 +7,11 @@ import 'package:myfin/features/admin/presentation/cubit/tax_regulation_cubit.dar
 import 'package:myfin/features/admin/presentation/pages/tax_regulations_list_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/user_management_screen.dart';
 import 'package:myfin/features/admin/presentation/pages/admin_profile_screen.dart'; // Import the new file
+import 'package:myfin/features/admin/presentation/bloc/admin_bloc.dart';
+import 'package:myfin/features/admin/presentation/bloc/admin_event.dart';
+import 'package:myfin/features/admin/data/repositories/admin_repository_impl.dart';
+import 'package:myfin/features/admin/data/datasources/admin_remote_data_source.dart';
+
 
 class AdminTaxScreen extends StatelessWidget {
   const AdminTaxScreen({super.key});
@@ -26,26 +31,6 @@ class AdminTaxScreen extends StatelessWidget {
   }
 }
 
-class AdminProfileScreen extends StatelessWidget {
-  const AdminProfileScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Admin Profile"),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-          child: const Text("Exit Admin Mode"),
-        ),
-      ),
-    );
-  }
-}
-
 class AdminMainScreen extends StatefulWidget {
   const AdminMainScreen({super.key});
 
@@ -60,7 +45,14 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Widget> _pages = [
     const UserManagementScreen(), // Tab 0
     const AdminTaxScreen(),       // Tab 1
-    const AdminProfileScreen(),   // Tab 2: Replaced the placeholder
+    
+    // Tab 2: Provide the Bloc so the profile can load data
+    BlocProvider(
+      create: (context) => AdminBloc(
+        AdminRepository(remoteDataSource: AdminRemoteDataSourceImpl()),
+      )..add(LoadAdminDashboardEvent()),
+      child: const AdminProfileScreen(),
+    ), 
   ];
 
   @override

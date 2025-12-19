@@ -212,6 +212,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
+      // Show loading (optional: could introduce a specific loading state)
       emit(AdminLoading());
 
       try {
@@ -221,25 +222,26 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           imageFile: event.imageFile,
         );
 
+        // Reload dashboard to get fresh data
         add(LoadAdminDashboardEvent());
       } catch (e) {
         emit(AdminError("Failed to update profile: $e"));
-        emit(currentState);
+        // Recover state if possible, or stay in error
       }
     }
   }
   
-  Future<void> _onChangePassword(
+   Future<void> _onChangePassword(
     AdminChangePasswordEvent event,
     Emitter<AdminState> emit,
   ) async {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
-      // Emit Loading State
+      // Emit Loading State for Password only
       emit(currentState.copyWith(
         passwordStatus: AdminPasswordStatus.loading,
-        passwordError: null, // Clear previous errors
+        passwordError: null,
       ));
 
       try {
@@ -250,8 +252,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
           passwordStatus: AdminPasswordStatus.success,
         ));
 
-        // Reset status to initial after a short delay so the user can try again later if needed
-        // Note: In UI we usually pop the screen on success, so this is just cleanup
+        // Reset status to initial after a short delay
         await Future.delayed(const Duration(seconds: 1));
         if (!isClosed) {
            emit(currentState.copyWith(passwordStatus: AdminPasswordStatus.initial));

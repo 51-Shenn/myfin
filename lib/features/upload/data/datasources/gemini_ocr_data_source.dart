@@ -86,33 +86,52 @@ class GeminiOCRDataSource {
     return docType.map((e) => "- $e").join("\n");
   }
 
-  // --- PROMPT GENERATION (Reused for all file types) ---
-  String _buildPrompt() {
+  // --- PROMPT GENERATION ---
+  String _buildPrompt(String? userCompanyName) {
     final String categoryList = _getFormattedCategories();
     final String docTypeList = _getFormattedDocTypes();
+    
+    // Logic instructions for the AI
+    String contextLogic = "";
+    if (userCompanyName != null && userCompanyName.isNotEmpty) {
+      contextLogic = """
+      MY COMPANY NAME: "$userCompanyName"
+
+      CRITICAL CLASSIFICATION RULES:
+      1. Look for the "Sender" (Who issued the document) and the "Receiver" (Bill To).
+      2. IF the Sender is "MY COMPANY NAME" (or similar):
+         - This is an OUTGOING document.
+         - Type must be "Sales Invoice" or "Sales Order".
+         - The other party is the "Customer".
+      3. IF the Receiver is "MY COMPANY NAME" (or similar):
+         - This is an INCOMING document.
+         - Type must be "Supplier Invoice" or "Purchase Order".
+         - The other party is the "Supplier".
+      """;
+    } else {
+      contextLogic = "Classify based on standard accounting practices. Distinguish between Sales (Outgoing) and Supplier (Incoming/Expense) documents.";
+    }
 
     return """
-    You are an expert accountant. Analyze the provided file (Image, PDF, or Text Data).
+    You are an expert accountant. Analyze the provided file.
     
-    1. Extract document details. 
-       - For "name", construct a descriptive title using the format: "**Supplier Name** - **Invoice Number**".
-         - Example: "Tenaga Nasional - INV-88291"
-         - If no Invoice Number is found, use: "**Supplier Name** - **Date**".
-       - For "type", you MUST pick the exact string from the DOCUMENT TYPE LIST below.
+    $contextLogic
     
-    2. Extract Key Entities to Metadata:
-       - Extract the raw **Supplier Name** (Merchant Name).
-       - Extract Contact Info: Address, Phone, and Email.
-       
-       - Add these to the "metadata" list. 
-       - Keys MUST be exactly: 
-         "Supplier Name", "Supplier Address", "Supplier Phone", "Supplier Email".
-       
-       - Do not include keys if the value is not visible on the document.
+    STEP 1: EXTRACTION
+    1. Extract document details:
+       - "name": Format as "Entity Name - Number".
+       - "type": Pick exact string from DOCUMENT TYPE LIST below.
+       - "date": Date of issue (YYYY-MM-DD).
+       - "due_date": The payment due date. If not explicitly stated, return null.
+       - "total": Grand total amount.
+    
+    2. Extract Party Details (Metadata):
+       - IF "Sales Invoice" or "Sales Order": Extract key "Customer Name", "Customer Address", "Customer Contact".
+       - IF "Supplier Invoice" or "Purchase Order": Extract key "Supplier Name", "Supplier Address", "Supplier Contact".
+       - Add these to the "metadata" list.
 
-    3. Extract line items.
-       - For "category", you MUST pick the exact string from the CATEGORY LIST below.
-       - Do not invent new categories.
+    3. Extract line items:
+       - For "category", use the CATEGORY LIST below.
 
     DOCUMENT TYPE LIST:
     $docTypeList
@@ -123,14 +142,14 @@ class GeminiOCRDataSource {
     Return strictly valid JSON:
     {
       "document": { 
-        "name": "Supplier Name - INV-001", 
+        "name": "Entity Name - INV-001", 
         "type": "EXACT_TYPE_FROM_LIST", 
         "date": "YYYY-MM-DD", 
+        "due_date": "YYYY-MM-DD",
         "total": 0.00 
       },
       "metadata": [
-        { "key": "Supplier Name", "value": "Tenaga Nasional" },
-        { "key": "Supplier Phone", "value": "+603-2222..." }
+        { "key": "Supplier Name", "value": "Example Supplier" }
       ],
       "line_items": [
         { "description": "Item Name", "category": "EXACT_CATEGORY_FROM_LIST", "amount": 0.00 }
@@ -139,15 +158,17 @@ class GeminiOCRDataSource {
     """;
   }
 
-  // --- PUBLIC METHODS ---
-
   // 1. Handle Images (JPG, PNG) and PDFs (Binary data)
-  Future<Map<String, dynamic>> extractDataFromMedia(String filePath, String mimeType) async {
+  Future<Map<String, dynamic>> extractDataFromMedia(
+    String filePath,
+    String mimeType,
+    String? userCompanyName,
+  ) async {
     final file = File(filePath);
     if (!await file.exists()) throw Exception("File does not exist");
     final bytes = await file.readAsBytes();
 
-    final prompt = _buildPrompt();
+    final prompt = _buildPrompt(userCompanyName);
 
     try {
       final content = [
@@ -162,8 +183,11 @@ class GeminiOCRDataSource {
   }
 
   // 2. Handle Text Data (Excel converted to CSV string)
-  Future<Map<String, dynamic>> extractDataFromText(String textData) async {
-    final prompt = _buildPrompt();
+  Future<Map<String, dynamic>> extractDataFromText(
+    String textData,
+    String? userCompanyName,
+  ) async {
+    final prompt = _buildPrompt(userCompanyName);
     final fullPrompt = "$prompt\n\nHERE IS THE DOCUMENT CONTENT:\n$textData";
 
     try {
@@ -175,8 +199,15 @@ class GeminiOCRDataSource {
   }
 
   // 3. Wrapper for Backward Compatibility (defaults to image/jpeg)
-  Future<Map<String, dynamic>> extractDataFromImage(String imagePath) async {
-    return extractDataFromMedia(imagePath, 'image/jpeg');
+  Future<Map<String, dynamic>> extractDataFromImage(
+    String imagePath,
+    String? userCompanyName,
+  ) async {
+    return extractDataFromMedia(
+      imagePath, 
+      'image/jpeg', 
+      userCompanyName, // Fixed: Now passing the 3rd argument
+    );
   }
 
   // --- PRIVATE HELPER ---

@@ -30,6 +30,13 @@ import 'package:myfin/features/report/presentation/pages/report_history.dart';
 import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/change_password.dart';
+import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
+import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
+import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
+import 'package:myfin/features/profile/presentation/pages/change_password.dart';
+import 'package:myfin/features/profile/presentation/pages/change_email_screen.dart';
+import 'package:myfin/features/profile/presentation/pages/edit_business_profile.dart';
+import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
@@ -43,6 +50,8 @@ class AppRoutes {
   static const String profileDetails = '/profile_details';
   static const String changePassword = '/change_password';
   static const String adminDashboard = '/admin_dashboard';
+  static const String editBusinessProfile = '/edit_business_profile';
+  static const String changeEmail = '/change_email';
 
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
     final firebaseAuth = FirebaseAuth.instance;
@@ -133,14 +142,52 @@ class AppRoutes {
       case reportHistory:
         return MaterialPageRoute(builder: (_) => const ReportHistoryScreen());
       case businessProfile:
-        return MaterialPageRoute(builder: (_) => const BusinessProfileScreen());
-      case profileDetails:
-        final arguments = settings.arguments as Map<String, dynamic>?;
+        // Expecting ProfileBloc passed in arguments
+        final bloc = settings.arguments as ProfileBloc;
         return MaterialPageRoute(
-          builder: (_) => EditProfileScreen(arguments: arguments ?? {}),
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: const BusinessProfileScreen(),
+          ),
+        );
+      case profileDetails:
+        // Expecting a Map with 'bloc' and 'args'
+        final args = settings.arguments as Map<String, dynamic>;
+        final bloc = args['bloc'] as ProfileBloc;
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: EditProfileScreen(arguments: args),
+          ),
+        );
+      case editBusinessProfile:
+        final args = settings.arguments as Map<String, dynamic>;
+        final bloc = args['bloc'] as ProfileBloc;
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: EditBusinessProfileScreen(
+              existingProfile: args['profile'] as BusinessProfile?,
+              memberId: args['memberId'] as String,
+            ),
+          ),
         );
       case changePassword:
-        return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
+        final bloc = settings.arguments as ProfileBloc;
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: const ChangePasswordScreen(),
+          ),
+        );
+      case changeEmail:
+        final bloc = settings.arguments as ProfileBloc;
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider.value(
+            value: bloc,
+            child: const ChangeEmailScreen(),
+          ),
+        );
       case adminDashboard:
         return MaterialPageRoute(builder: (_) => const AdminMainScreen());
       default:

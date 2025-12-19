@@ -12,17 +12,17 @@ import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.da
 import 'package:uuid/uuid.dart';
 import 'dart:convert';
 import 'dart:io';
-// Add Excel package
 import 'package:excel/excel.dart';
-// Add Spreadsheet Decoder package
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
+import 'package:myfin/features/profile/domain/repositories/profile_repository.dart';
 
 class UploadCubit extends Cubit<UploadState> {
   final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
+  final ProfileRepository profileRepository; // Add dependency
   final ImagePicker _picker = ImagePicker();
   final GeminiOCRDataSource _ocrDataSource = GeminiOCRDataSource();
 
-  UploadCubit({required this.getRecentDocumentsUseCase})
+  UploadCubit({required this.getRecentDocumentsUseCase, required this.profileRepository,})
     : super(const UploadInitial());
 
   // ... (Keep existing fetchDocument, recentUploadedDocClicked, viewAllClicked, manualKeyInSelected) ...
@@ -124,26 +124,37 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       emit(UploadLoading(state.document));
 
+      // 1. Fetch User Business Profile
+      final user = FirebaseAuth.instance.currentUser;
+      String? companyName;
+      if (user != null) {
+        try {
+          final profile = await profileRepository.getBusinessProfile(user.uid);
+          if (profile.name.isNotEmpty) {
+            companyName = profile.name;
+          }
+        } catch (e) {
+          print("Could not load business profile for OCR context: $e");
+        }
+      }
+
       Map<String, dynamic> jsonResult;
 
-      // 1. PDF Handling
+      // 2. Pass companyName to OCR methods
       if (type == 'pdf') {
         jsonResult = await _ocrDataSource.extractDataFromMedia(
           path,
           'application/pdf',
+          companyName,
         );
-      }
-      // 2. Excel Handling (Convert to CSV Text -> Send to AI)
-      else if (type == 'xlsx') {
+      } else if (type == 'xlsx') {
         final String csvData = await _convertExcelToCsvString(path);
-        jsonResult = await _ocrDataSource.extractDataFromText(csvData);
-      }
-      // 3. Image Handling (Default)
-      else {
-        // Assume Image (jpg, png, etc.)
+        jsonResult = await _ocrDataSource.extractDataFromText(csvData, companyName);
+      } else {
         jsonResult = await _ocrDataSource.extractDataFromMedia(
           path,
           'image/jpeg',
+          companyName,
         );
       }
 
@@ -250,24 +261,26 @@ class UploadCubit extends Cubit<UploadState> {
     final user = FirebaseAuth.instance.currentUser;
     final String currentMemberId = user?.uid ?? "";
 
-    // --- MODIFIED SECTION START ---
-    // Generate thumbnail based on file type
     String? imageBase64 = await _generateThumbnail(filePath, type);
-    // --- MODIFIED SECTION END ---
 
     final docData = jsonResult['document'];
+    
+    // Parse Document Date
+    final DateTime postingDate = DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now();
 
-    // Create Document Object
-    final document = Document(
-      id: '', // New Document
-      memberId: currentMemberId,
-      name: docData['name'] ?? 'Uploaded Document',
-      type: docData['type'] ?? 'Invoice',
-      status: 'Draft',
-      createdBy: 'AI OCR',
-      postingDate: DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now(),
-      imageBase64: imageBase64, // Pass the generated thumbnail (or null)
-      metadata: (jsonResult['metadata'] as List?)
+    // --- DUE DATE LOGIC ---
+    DateTime? parsedDueDate = DateTime.tryParse(docData['due_date'] ?? '');
+    String finalDueDateString;
+    
+    if (parsedDueDate != null) {
+      finalDueDateString = parsedDueDate.toIso8601String().split('T')[0]; // YYYY-MM-DD
+    } else {
+      // Default to 30 days if null
+      finalDueDateString = postingDate.add(const Duration(days: 30)).toIso8601String().split('T')[0];
+    }
+
+    // Process Metadata
+    List<AdditionalInfoRow> metadataList = (jsonResult['metadata'] as List?)
           ?.map(
             (m) => AdditionalInfoRow(
               id: const Uuid().v4(),
@@ -275,10 +288,31 @@ class UploadCubit extends Cubit<UploadState> {
               value: m['value']?.toString() ?? '',
             ),
           )
-          .toList(),
+          .toList() ?? [];
+
+    // Check if Due Date already exists in metadata (from AI), if not, add it
+    bool hasDueDate = metadataList.any((row) => row.key.toLowerCase().contains('due date'));
+    if (!hasDueDate) {
+      metadataList.add(AdditionalInfoRow(
+        id: const Uuid().v4(),
+        key: 'Due Date',
+        value: finalDueDateString,
+      ));
+    }
+
+    final document = Document(
+      id: '', 
+      memberId: currentMemberId,
+      name: docData['name'] ?? 'Uploaded Document',
+      type: docData['type'] ?? 'Invoice',
+      status: 'Draft',
+      createdBy: 'AI OCR',
+      postingDate: postingDate,
+      imageBase64: imageBase64,
+      metadata: metadataList, // Updated metadata with Due Date
     );
 
-    // Create Line Items
+    // ... (Rest of line item creation logic remains the same)
     final List<dynamic> linesData = jsonResult['line_items'] ?? [];
     final List<DocumentLineItem> lineItems = [];
 
@@ -305,6 +339,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
     emit(UploadLoaded(state.document));
   }
+
 
   Future<String?> _generateThumbnail(String filePath, String type) async {
     final file = File(filePath);

@@ -30,11 +30,31 @@ class _MainReportScreenState extends State<MainReportScreen> {
     ReportType.accountsReceivable,
   ].map((e) => e.reportTypeToString).toList();
 
-  void _showErrorSnackBar(BuildContext context, String message) {
+  void _showErrorDialog(BuildContext context, String message) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 28),
+              const SizedBox(width: 8),
+              const Text('Error'),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -42,7 +62,17 @@ class _MainReportScreenState extends State<MainReportScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
+      SnackBar(
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text(message, style: const TextStyle(fontSize: 16)),
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+        margin: const EdgeInsets.only(bottom: 40.0, left: 16.0, right: 16.0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
@@ -92,7 +122,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
             body: BlocListener<ReportBLoC, ReportState>(
               listener: (context, state) {
                 if (state.error != null && mounted) {
-                  _showErrorSnackBar(context, state.error!);
+                  _showErrorDialog(context, state.error!);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
                       context.read<ReportBLoC>().add(ClearErrorEvent());
@@ -373,21 +403,21 @@ class _MainReportScreenState extends State<MainReportScreen> {
                     onPressed: () {
                       // simple validation
                       if (selectedReportType == null) {
-                        _showErrorSnackBar(
+                        _showErrorDialog(
                           context,
                           'Please select a Report Type.',
                         );
                         return;
                       }
                       if (startDate == null || endDate == null) {
-                        _showErrorSnackBar(
+                        _showErrorDialog(
                           context,
                           'Please select a Start and End Date.',
                         );
                         return;
                       }
                       if (startDate!.isAfter(endDate!)) {
-                        _showErrorSnackBar(
+                        _showErrorDialog(
                           context,
                           'Start Date cannot be after End Date.',
                         );

@@ -50,6 +50,8 @@ class EditUserEvent extends AdminEvent {
   List<Object?> get props => [userId, firstName, lastName, email, phoneNumber, status];
 }
 
+// --- NEW EVENTS ---
+
 class UpdateAdminProfileEvent extends AdminEvent {
   final String firstName;
   final String lastName;

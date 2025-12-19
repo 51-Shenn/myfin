@@ -134,7 +134,7 @@ class _EditAdminProfileScreenState extends State<EditAdminProfileScreen> {
               // --- Profile Image ---
               Center(
                 child: GestureDetector(
-                  onTap: _pickImage, // Add Tap Handler
+                  onTap: _pickImage,
                   child: Stack(
                     children: [
                       Container(

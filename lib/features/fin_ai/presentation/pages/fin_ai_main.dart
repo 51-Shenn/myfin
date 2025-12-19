@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-
-// --- PROJECT IMPORTS ---
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 import 'package:myfin/features/fin_ai/data/repositories/chat_repository_impl.dart';
 import 'package:myfin/features/fin_ai/domain/entities/chat_message.dart';
 import 'package:myfin/features/fin_ai/presentation/bloc/fin_ai_bloc.dart';
+import 'package:myfin/core/components/bottom_nav_bar.dart';
 
 class AiChatbotScreen extends StatelessWidget {
   const AiChatbotScreen({super.key});
@@ -102,6 +101,7 @@ class _AiInfoDashboardView extends StatelessWidget {
     showModalBottomSheet(
       context: parentContext,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return BlocProvider.value(

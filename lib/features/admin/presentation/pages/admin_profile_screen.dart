@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/core/navigation/app_routes.dart'; // Import AppRoutes
 import 'package:myfin/features/admin/data/datasources/admin_remote_data_source.dart';
 import 'package:myfin/features/admin/data/repositories/admin_repository_impl.dart';
 import 'package:myfin/features/admin/presentation/bloc/admin_bloc.dart';
@@ -14,22 +15,9 @@ class AdminProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AdminBloc(
-        AdminRepository(remoteDataSource: AdminRemoteDataSourceImpl()),
-      )..add(LoadAdminDashboardEvent()),
-      child: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthUnauthenticated) {
-            Navigator.of(
-              context,
-              rootNavigator: true,
-            ).pushNamedAndRemoveUntil('/auth', (route) => false);
-          }
-        },
-        child: const AdminProfileView(),
-      ),
-    );
+    // We don't need to re-provide AdminBloc here if it was provided in AdminMainScreen
+    // But if accessed directly, this ensures data is loaded.
+    return const AdminProfileView();
   }
 }
 
@@ -38,231 +26,230 @@ class AdminProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: BlocBuilder<AdminBloc, AdminState>(
-          builder: (context, state) {
-            if (state is AdminLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    // FIX: Listen to AuthBloc to handle navigation upon logout
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthUnauthenticated) {
+          // Navigate to Auth Screen and clear stack
+          Navigator.of(context, rootNavigator: true)
+              .pushNamedAndRemoveUntil(AppRoutes.auth, (route) => false);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: BlocBuilder<AdminBloc, AdminState>(
+            builder: (context, state) {
+              if (state is AdminLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (state is AdminLoaded) {
-              final admin = state.admin;
-              final imageBytes = state.adminImageBytes;
+              if (state is AdminLoaded) {
+                final admin = state.admin;
+                final imageBytes = state.adminImageBytes;
 
-              ImageProvider avatarImage;
-              if (imageBytes != null) {
-                avatarImage = MemoryImage(imageBytes);
-              } else {
-                avatarImage = const NetworkImage(
-                  'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+                ImageProvider avatarImage;
+                if (imageBytes != null) {
+                  avatarImage = MemoryImage(imageBytes);
+                } else {
+                  avatarImage = const NetworkImage(
+                    'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+                  );
+                }
+
+                final String fullName =
+                    (admin.firstName.isNotEmpty || admin.lastName.isNotEmpty)
+                    ? "${admin.firstName} ${admin.lastName}".trim()
+                    : admin.username;
+
+                final String initials = fullName.isNotEmpty
+                    ? fullName[0].toUpperCase()
+                    : "A";
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 20.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Center(
+                        child: Text(
+                          'My Profile',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Inter',
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Profile Card
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: _cardDecoration(),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFFE0E7FF),
+                                border: Border.all(
+                                  color: const Color(0xFFC7D2FE),
+                                  width: 2,
+                                ),
+                                image: imageBytes != null ? DecorationImage(
+                                  image: avatarImage,
+                                  fit: BoxFit.cover,
+                                ) : null,
+                              ),
+                              child: imageBytes == null
+                                  ? Center(
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF2B46F9),
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    fullName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Inter',
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    admin.email,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Inter',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      _buildSectionHeader("SETTINGS"),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: _cardDecoration(),
+                        child: _buildListTile(
+                          icon: Icons.person_outline,
+                          title: "Manage Account",
+                          hasTrailing: true,
+                          onTap: () {
+                            final adminBloc = context.read<AdminBloc>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BlocProvider.value(
+                                  value: adminBloc, 
+                                  child: EditAdminProfileScreen(admin: admin),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      _buildSectionHeader("SECURITY"),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: _cardDecoration(),
+                        child: _buildListTile(
+                          icon: Icons.lock_outline,
+                          title: "Change Password",
+                          hasTrailing: true,
+                          onTap: () {
+                            final adminBloc = context.read<AdminBloc>();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => BlocProvider.value(
+                                  value: adminBloc,
+                                  child: const AdminChangePasswordScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      _buildSectionHeader("ACTIONS"),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: _cardDecoration(),
+                        child: Column(
+                          children: [
+                            _buildListTile(
+                              icon: Icons.logout_outlined,
+                              title: "Log Out",
+                              onTap: () {
+                                _showLogoutDialog(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
 
-              // Logic to handle missing first/last names (fallback to username)
-              final String fullName =
-                  (admin.firstName.isNotEmpty || admin.lastName.isNotEmpty)
-                  ? "${admin.firstName} ${admin.lastName}".trim()
-                  : admin.username;
-
-              // Construct Initials for Avatar
-              final String initials = fullName.isNotEmpty
-                  ? fullName[0].toUpperCase()
-                  : "A";
-
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 20.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- 1. Screen Title ---
-                    const Center(
-                      child: Text(
-                        'My Profile',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                          color: Colors.black,
-                        ),
+              if (state is AdminError) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        state.message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red),
                       ),
-                    ),
-                    const SizedBox(height: 30),
-
-                    // --- 2. Profile Card ---
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: _cardDecoration(),
-                      child: Row(
-                        children: [
-                          // Avatar (Dynamic Initials)
-                          Container(
-                            width: 70,
-                            height: 70,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFE0E7FF),
-                              border: Border.all(
-                                color: const Color(0xFFC7D2FE),
-                                width: 2,
-                              ),
-                              image: DecorationImage(
-                                image: avatarImage, // Use the provider here
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            child: imageBytes == null
-                                ? Center(
-                                    child: Text(
-                                      initials,
-                                      style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2B46F9),
-                                      ),
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 20),
-                          // Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  fullName,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Inter',
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  admin.email,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // --- 3. SETTINGS Section ---
-                    _buildSectionHeader("SETTINGS"),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: _cardDecoration(),
-                      child: _buildListTile(
-                        icon: Icons.person_outline,
-                        title: "Manage Account",
-                        hasTrailing: true,
-                        onTap: () {
-                          // Capture the current bloc instance
-                          final adminBloc = context.read<AdminBloc>();
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BlocProvider.value(
-                                value:
-                                    adminBloc, // Pass existing bloc to the new screen
-                                child: EditAdminProfileScreen(admin: admin),
-                              ),
-                            ),
+                      TextButton(
+                        onPressed: () {
+                          context.read<AdminBloc>().add(
+                            LoadAdminDashboardEvent(),
                           );
                         },
+                        child: const Text("Retry"),
                       ),
-                    ),
+                    ],
+                  ),
+                );
+              }
 
-                    const SizedBox(height: 30),
-
-                    _buildSectionHeader("SECURITY"),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: _cardDecoration(),
-                      child: _buildListTile(
-                        icon: Icons.lock_outline,
-                        title: "Change Password",
-                        hasTrailing: true,
-                        onTap: () {
-                          // Capture Bloc
-                          final adminBloc = context.read<AdminBloc>();
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BlocProvider.value(
-                                value: adminBloc,
-                                child: const AdminChangePasswordScreen(),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    // --- 4. ACTIONS Section ---
-                    _buildSectionHeader("ACTIONS"),
-                    const SizedBox(height: 10),
-                    Container(
-                      decoration: _cardDecoration(),
-                      child: Column(
-                        children: [
-                          _buildListTile(
-                            icon: Icons.logout_outlined,
-                            title: "Log Out",
-                            onTap: () {
-                              _showLogoutDialog(context);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            if (state is AdminError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        context.read<AdminBloc>().add(
-                          LoadAdminDashboardEvent(),
-                        );
-                      },
-                      child: const Text("Retry"),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return const SizedBox.shrink();
-          },
+              return const SizedBox.shrink();
+            },
+          ),
         ),
       ),
     );
