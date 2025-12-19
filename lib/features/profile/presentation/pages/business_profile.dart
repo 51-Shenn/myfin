@@ -1,6 +1,7 @@
-import 'dart:typed_data'; 
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
@@ -53,19 +54,21 @@ class BusinessProfileScreen extends StatelessWidget {
           final logoBytes = state.businessImageBytes;
 
           if (business == null && member == null) {
-             return const Center(child: Text("Loading profile data..."));
+            return const Center(child: Text("Loading profile data..."));
           }
 
           // Create a dummy/empty profile for display if one doesn't exist yet
-          final displayProfile = business ?? BusinessProfile(
-            profileId: '',
-            name: 'No Business Name',
-            registrationNo: '-',
-            contactNo: '-',
-            email: '-',
-            address: '-',
-            memberId: member?.member_id ?? '',
-          );
+          final displayProfile =
+              business ??
+              BusinessProfile(
+                profileId: '',
+                name: 'No Business Name',
+                registrationNo: '-',
+                contactNo: '-',
+                email: '-',
+                address: '-',
+                memberId: member?.member_id ?? '',
+              );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
@@ -107,9 +110,12 @@ class BusinessProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               color: Colors.white,
               boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 5)],
-              image: logoBytes != null 
-                ? DecorationImage(image: MemoryImage(logoBytes), fit: BoxFit.cover)
-                : null,
+              image: logoBytes != null
+                  ? DecorationImage(
+                      image: MemoryImage(logoBytes),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             child: logoBytes == null
                 ? Column(
@@ -188,7 +194,11 @@ class BusinessProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context, BusinessProfile? business, String? memberId) {
+  Widget _buildSettingsCard(
+    BuildContext context,
+    BusinessProfile? business,
+    String? memberId,
+  ) {
     return Container(
       decoration: _boxDecoration(),
       child: ListTile(
@@ -204,17 +214,15 @@ class BusinessProfileScreen extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF2B46F9)),
         onTap: () {
-          // Navigate to edit form
-          Navigator.pushNamed(
-            context,
-            '/edit_business_profile',
+          final profileBloc = context.read<ProfileBloc>();
+
+          Navigator.of(context, rootNavigator: true).pushNamed(
+            AppRoutes
+                .editBusinessProfile, // Ensure this matches AppRoutes const
             arguments: {
-              // No need to pass 'bloc' explicitly if using BlocProvider.value in nav
-              // but current nav setup expects it or uses context.
-              // We pass data to pre-fill fields:
-              'profile': business, 
-              // IMPORTANT: Pass the actual member ID, or empty string if not loaded yet
-              'memberId': memberId ?? '', 
+              'profile': business,
+              'memberId': memberId ?? '',
+              'bloc': profileBloc, // Pass the bloc
             },
           );
         },

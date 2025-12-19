@@ -26,7 +26,8 @@ class ProfileNav extends StatefulWidget {
 }
 
 class _ProfileNavState extends State<ProfileNav> {
-  static final GlobalKey<NavigatorState> profileNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> profileNavKey =
+      GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -58,45 +59,11 @@ class _ProfileNavState extends State<ProfileNav> {
       child: Navigator(
         key: profileNavKey,
         onGenerateRoute: (RouteSettings settings) {
+          // We only need the default route here now
+          // The sub-pages are handled by AppRoutes via rootNavigator
           return MaterialPageRoute(
             settings: settings,
             builder: (BuildContext context) {
-              // --- Edit User Profile ---
-              if (settings.name == '/profile_details') {
-                // Get the current state to pass the image bytes
-                final profileState = context.read<ProfileBloc>().state;
-
-                // We create a map or a custom argument class to pass both member and image
-                final args = {
-                  'member': settings.arguments as Member?,
-                  'imageBytes': profileState.profileImageBytes,
-                };
-
-                return EditProfileScreen(
-                  arguments: args,
-                ); // Updated Constructor usage
-              }
-
-              // --- View Business Profile ---
-              if (settings.name == '/business_profile') {
-                return const BusinessProfileScreen();
-              }
-
-              // --- Edit Business Profile ---
-              if (settings.name == '/edit_business_profile') {
-                final args = settings.arguments as Map<String, dynamic>;
-                return EditBusinessProfileScreen(
-                  existingProfile: args['profile'] as BusinessProfile?,
-                  memberId: args['memberId'] as String,
-                );
-              }
-
-              // --- Change Password ---
-              if (settings.name == '/change_password') {
-                return const ChangePasswordScreen();
-              }
-
-              // --- Main Profile Screen ---
               return const UserProfileScreen();
             },
           );
