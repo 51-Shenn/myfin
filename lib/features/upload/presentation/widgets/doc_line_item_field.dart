@@ -11,7 +11,8 @@ import 'package:myfin/features/upload/presentation/widgets/custom_divider.dart';
 import 'package:myfin/features/upload/presentation/widgets/doc_text_form_field.dart';
 
 class DocLineItemField extends StatelessWidget {
-  const DocLineItemField({super.key});
+  final bool isReadOnly;
+  const DocLineItemField({super.key, this.isReadOnly = false});
 
   Future<void> _pickDate(
     BuildContext context,
@@ -19,10 +20,10 @@ class DocLineItemField extends StatelessWidget {
     Function(DateTime) onDatePicked,
   ) async {
     final DateTime? picked = await showDatePicker(
-    context: context,
-    initialDate: initialDate,
-    firstDate: DateTime(2000),
-    lastDate: DateTime(2100),
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
     if (picked != null) {
       onDatePicked(picked);
@@ -81,36 +82,37 @@ class DocLineItemField extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (dialogContext) => AlertDialog(
-                    title: const Text('Delete Line Item'),
-                    content: const Text(
-                      'Are you sure you want to delete this line item?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Cancel'),
+            if (!isReadOnly)
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Delete Line Item'),
+                      content: const Text(
+                        'Are you sure you want to delete this line item?',
                       ),
-                      TextButton(
-                        onPressed: () {
-                          cubit.deleteLineItem(lineItem.lineItemId);
-                          Navigator.pop(dialogContext);
-                        },
-                        child: const Text(
-                          'Delete',
-                          style: TextStyle(color: Colors.red),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancel'),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                        TextButton(
+                          onPressed: () {
+                            cubit.deleteLineItem(lineItem.lineItemId);
+                            Navigator.pop(dialogContext);
+                          },
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
           ],
         ),
         Row(
@@ -122,8 +124,10 @@ class DocLineItemField extends StatelessWidget {
                     ? DateFormat('yyyy-MM-dd').format(lineItem.lineDate!)
                     : '',
                 isDate: true,
+                enabled: !isReadOnly,
                 validator: AppValidators.required,
                 onTap: () {
+                  if (isReadOnly) return;
                   final initialDate = lineItem.lineDate ?? DateTime.now();
                   _pickDate(context, initialDate, (pickedDate) {
                     cubit.updateLineItemField(
@@ -136,17 +140,17 @@ class DocLineItemField extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 1,
               child: AutoCompleteField(
                 header: DocFieldHeader.category,
                 value: lineItem.categoryCode,
                 items: lineCategory,
+                enabled: !isReadOnly,
                 validator: AppValidators.required,
                 onChanged: (value) {
                   cubit.updateLineItemField(
-                    lineItem.lineItemId, 
-                    'category', 
-                    value
+                    lineItem.lineItemId,
+                    'category',
+                    value,
                   );
                 },
               ),
@@ -157,6 +161,7 @@ class DocLineItemField extends StatelessWidget {
           header: DocFieldHeader.description,
           value: lineItem.description ?? '',
           multiLine: true,
+          enabled: !isReadOnly,
           validator: AppValidators.required,
           onChanged: (value) {
             cubit.updateLineItemField(
@@ -169,6 +174,7 @@ class DocLineItemField extends StatelessWidget {
         DocTextFormField(
           header: DocFieldHeader.total,
           value: lineItem.total.toStringAsFixed(2),
+          enabled: !isReadOnly,
           validator: AppValidators.number,
           onChanged: (value) {
             cubit.updateLineItemField(lineItem.lineItemId, 'amount', value);
@@ -178,6 +184,7 @@ class DocLineItemField extends StatelessWidget {
         DynamicKeyValueSection(
           title: 'Additional Line Info',
           rows: lineItem.attribute,
+          isReadOnly: isReadOnly,
           onAdd: () => cubit.addLineItemAttribute(lineItem.lineItemId),
           onUpdateKey: (idx, val) =>
               cubit.updateLineItemAttributeKey(lineItem.lineItemId, idx, val),
@@ -264,5 +271,5 @@ const List<String> lineCategory = [
   'Owner Drawing',
   'Partner Investment',
   'Partner Drawing',
-  'Tax Expense'
+  'Tax Expense',
 ];

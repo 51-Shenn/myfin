@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/upload_main.dart';
 import 'package:myfin/features/upload/presentation/pages/upload_history.dart';
+import 'package:myfin/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
@@ -15,7 +18,8 @@ class UploadNav extends StatefulWidget {
 }
 
 class _UploadNavState extends State<UploadNav> {
-  static final GlobalKey<NavigatorState> uploadNavKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> uploadNavKey =
+      GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +37,34 @@ class _UploadNavState extends State<UploadNav> {
                 existingDocument: args?.existingDocument,
                 existingLineItems: args?.existingLineItems,
                 documentId: args?.documentId,
+                onDocumentSaved: () {
+                  print(
+                    '🔄 [DASHBOARD UPDATE] Document saved callback triggered!',
+                  );
+                  // Get the root context's DashboardBloc and trigger refresh
+                  final rootContext = Navigator.of(
+                    context,
+                    rootNavigator: true,
+                  ).context;
+                  final authState = rootContext.read<AuthBloc>().state;
+                  if (authState is AuthAuthenticatedAsMember) {
+                    print(
+                      '🔄 [DASHBOARD UPDATE] Triggering DashboardLoadRequested for member: ${authState.member.member_id}',
+                    );
+                    rootContext.read<DashboardBloc>().add(
+                      DashboardLoadRequested(authState.member.member_id),
+                    );
+                    print(
+                      '✅ [DASHBOARD UPDATE] Dashboard refresh triggered successfully!',
+                    );
+                  } else {
+                    print(
+                      '❌ [DASHBOARD UPDATE] User not authenticated as member',
+                    );
+                  }
+                },
               );
-            } 
-            else if (settings.name == '/upload_history') {
+            } else if (settings.name == '/upload_history') {
               return const UploadHistoryScreen();
             }
 
@@ -43,7 +72,7 @@ class _UploadNavState extends State<UploadNav> {
             // onPressed: () => Navigator.pushNamed(context, '/upload_doc_details'),
 
             return const UploadScreen(); // upload screen
-          }
+          },
         );
       },
     );
