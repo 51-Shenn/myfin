@@ -23,12 +23,19 @@ class SignInWithGoogleUseCase {
     } catch (e) {
       try {
         final member = await memberRepository.getMember(uid);
+
+        if (member.status.toLowerCase() == 'banned') {
+          await authRepository.signOut();
+          throw Exception('This account has been banned by the administrator.');
+        }
+
         return SignInResult(
           uid: uid,
           userType: UserType.member,
           userData: member,
         );
       } catch (e) {
+        if (e.toString().contains('banned')) rethrow;
         throw Exception(
           'User profile not found. Please complete registration.',
         );

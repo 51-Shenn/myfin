@@ -205,29 +205,6 @@ class _SignInPageState extends State<SignInPage> {
                       },
               ),
             ),
-
-            // --- TEMPORARY SEED BUTTON ---
-            const SizedBox(height: 30),
-            TextButton.icon(
-              onPressed: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Seeding data...')),
-                );
-
-                await DataSeeder().seedData();
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Data Seeding Complete! Login now.'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(Icons.cloud_upload),
-              label: const Text("DEBUG: Generate Fake Data"),
-            ),
           ],
         );
       },

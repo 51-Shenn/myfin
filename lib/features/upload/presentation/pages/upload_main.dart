@@ -9,6 +9,8 @@ import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 import 'package:myfin/features/upload/presentation/pages/option.dart';
 import 'package:myfin/features/upload/presentation/widgets/document_card.dart';
 import 'package:myfin/features/upload/presentation/widgets/upload_option_card.dart';
+import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:myfin/features/profile/data/repositories/profile_repository_impl.dart';
 
 class UploadScreen extends StatelessWidget {
   const UploadScreen({super.key});
@@ -16,11 +18,19 @@ class UploadScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => UploadCubit(
-        getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
-          context.read<DocumentRepository>(),
-        ),
-      )..fetchDocument(),
+      create: (context) {
+        // Instantiate Profile Repository on the fly
+        final profileRepo = ProfileRepositoryImpl(
+          remoteDataSource: ProfileRemoteDataSourceImpl()
+        );
+
+        return UploadCubit(
+          getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
+            context.read<DocumentRepository>(),
+          ),
+          profileRepository: profileRepo, // Pass it here
+        )..fetchDocument();
+      },
       child: const UploadView(),
     );
   }

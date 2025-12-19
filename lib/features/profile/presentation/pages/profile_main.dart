@@ -7,7 +7,7 @@ import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_state.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
-// Add this import
+import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/profile/presentation/pages/change_email_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
@@ -54,7 +54,7 @@ class UserProfileScreen extends StatelessWidget {
             if (state.deleteStatus == FormStatus.submissionSuccess) {
               // Trigger AuthBloc to clean up session and go to login
               context.read<AuthBloc>().add(AuthLogoutRequested());
-              
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Account deleted successfully.'),
@@ -62,16 +62,18 @@ class UserProfileScreen extends StatelessWidget {
                 ),
               );
             }
-            
+
             // Listen for Account Deletion Failure
-            if (state.deleteStatus == FormStatus.submissionFailure && state.error != null) {
+            if (state.deleteStatus == FormStatus.submissionFailure &&
+                state.error != null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(state.error!),
                   backgroundColor: Colors.red,
                 ),
               );
-            };
+            }
+            ;
           },
         ),
       ],
@@ -273,11 +275,18 @@ Widget _buildContent(BuildContext context, Member member) {
                 Icons.person_outline,
                 "Manage Account",
                 hasArrow: true,
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '/profile_details',
-                  arguments: member,
-                ),
+                onTap: () {
+                  final profileBloc = context.read<ProfileBloc>();
+
+                  Navigator.of(context, rootNavigator: true).pushNamed(
+                    AppRoutes.profileDetails,
+                    arguments: {
+                      'member': member,
+                      'imageBytes': imageBytes,
+                      'bloc': profileBloc, // Pass Bloc explicitly
+                    },
+                  );
+                },
               ),
               Divider(
                 height: 1,
@@ -289,7 +298,13 @@ Widget _buildContent(BuildContext context, Member member) {
                 Icons.storefront_outlined,
                 "Switch to Business Profile",
                 hasArrow: true,
-                onTap: () => Navigator.pushNamed(context, '/business_profile'),
+                onTap: () {
+                  final profileBloc = context.read<ProfileBloc>();
+                  Navigator.of(context, rootNavigator: true).pushNamed(
+                    AppRoutes.businessProfile,
+                    arguments: profileBloc,
+                  );
+                },
               ),
             ],
           ),
@@ -323,21 +338,25 @@ Widget _buildContent(BuildContext context, Member member) {
                 Icons.lock_outline,
                 "Change Password",
                 hasArrow: true,
-                onTap: () => Navigator.pushNamed(context, '/change_password'),
+                onTap: () {
+                  final profileBloc = context.read<ProfileBloc>();
+                  Navigator.of(
+                    context,
+                    rootNavigator: true,
+                  ).pushNamed(AppRoutes.changePassword, arguments: profileBloc);
+                },
               ),
               _buildActionRow(
                 Icons.email_outlined,
                 "Change Email",
                 hasArrow: true,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BlocProvider.value(
-                      value: context.read<ProfileBloc>(),
-                      child: const ChangeEmailScreen(),
-                    ),
-                  ),
-                ),
+                onTap: () {
+                  final profileBloc = context.read<ProfileBloc>();
+                  Navigator.of(
+                    context,
+                    rootNavigator: true,
+                  ).pushNamed(AppRoutes.changeEmail, arguments: profileBloc);
+                },
               ),
             ],
           ),
@@ -370,8 +389,8 @@ Widget _buildContent(BuildContext context, Member member) {
                 Icons.logout_outlined,
                 "Log Out",
                 onTap: () {
-                  context.read<ProfileBloc>().add(LogoutEvent());
-                  context.read<AuthBloc>().add(AuthLogoutRequested());
+                  // CHANGED: Call the dialog instead of immediate logout
+                  _showLogoutConfirmationDialog(context);
                 },
               ),
               Divider(
@@ -381,14 +400,39 @@ Widget _buildContent(BuildContext context, Member member) {
                 indent: 50,
               ),
               _buildActionRow(
-                Icons.delete_outline, 
+                Icons.delete_outline,
                 "Delete Account",
-                onTap: () => _showDeleteConfirmationDialog(context), // Call Dialog
+                onTap: () => _showDeleteConfirmationDialog(context),
               ),
             ],
           ),
         ),
         const SizedBox(height: 40),
+      ],
+    ),
+  );
+}
+
+void _showLogoutConfirmationDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text("Log Out", style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold)),
+      content: const Text("Are you sure you want to log out?", style: TextStyle(fontFamily: 'Inter')),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(ctx); // Close dialog
+            // Trigger Events
+            context.read<ProfileBloc>().add(LogoutEvent());
+            context.read<AuthBloc>().add(AuthLogoutRequested());
+          },
+          child: const Text("Log Out", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        ),
       ],
     ),
   );
@@ -498,7 +542,10 @@ void _showDeleteConfirmationDialog(BuildContext context) {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  "Cancel",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
               ElevatedButton(
                 onPressed: isDeleting
@@ -506,27 +553,33 @@ void _showDeleteConfirmationDialog(BuildContext context) {
                     : () {
                         if (passwordController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Password is required")),
+                            const SnackBar(
+                              content: Text("Password is required"),
+                            ),
                           );
                           return;
                         }
-                        
+
                         setState(() => isDeleting = true);
-                        
+
                         // Fire event
                         profileBloc.add(
                           DeleteAccountEvent(passwordController.text),
                         );
-                        
+
                         Navigator.pop(dialogContext); // Close dialog
                       },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-                child: isDeleting 
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white))
-                  : const Text("Delete"),
+                child: isDeleting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : const Text("Delete"),
               ),
             ],
           );
