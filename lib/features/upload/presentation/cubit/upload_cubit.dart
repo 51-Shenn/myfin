@@ -18,14 +18,13 @@ import 'package:myfin/features/profile/domain/repositories/profile_repository.da
 
 class UploadCubit extends Cubit<UploadState> {
   final GetRecentDocumentsUseCase getRecentDocumentsUseCase;
-  final ProfileRepository profileRepository; // Add dependency
+  final ProfileRepository profileRepository;
   final ImagePicker _picker = ImagePicker();
   final GeminiOCRDataSource _ocrDataSource = GeminiOCRDataSource();
 
   UploadCubit({required this.getRecentDocumentsUseCase, required this.profileRepository,})
     : super(const UploadInitial());
 
-  // ... (Keep existing fetchDocument, recentUploadedDocClicked, viewAllClicked, manualKeyInSelected) ...
   Future<void> fetchDocument() async {
     try {
       emit(UploadLoading(state.document));
@@ -60,8 +59,6 @@ class UploadCubit extends Cubit<UploadState> {
     emit(const UploadNavigateToManual([]));
     fetchDocument();
   }
-
-  // --- Image/File Selection Handlers ---
 
   Future<void> selectFromGallery() async {
     try {
@@ -104,7 +101,7 @@ class UploadCubit extends Cubit<UploadState> {
           'jpeg',
           'pdf',
           'xlsx',
-        ], // Allowed Extensions
+        ], // extensions that are allowed in this app
       );
 
       if (result != null && result.files.single.path != null) {
@@ -118,13 +115,10 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  // --- Main Processing Logic ---
-
   Future<void> _processFile(String path, String type) async {
     try {
       emit(UploadLoading(state.document));
 
-      // 1. Fetch User Business Profile
       final user = FirebaseAuth.instance.currentUser;
       String? companyName;
       if (user != null) {
@@ -140,7 +134,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       Map<String, dynamic> jsonResult;
 
-      // 2. Pass companyName to OCR methods
       if (type == 'pdf') {
         jsonResult = await _ocrDataSource.extractDataFromMedia(
           path,
@@ -166,7 +159,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  // Helper to read Excel and flatten it to text for the AI
+  // helper func to read excel
   Future<String> _convertExcelToCsvString(String path) async {
     final file = File(path);
 
@@ -179,7 +172,6 @@ class UploadCubit extends Cubit<UploadState> {
       throw Exception("The selected file is empty.");
     }
 
-    // Attempt 1: Try using 'excel' package
     try {
       final excel = Excel.decodeBytes(bytes);
       final buffer = StringBuffer();
@@ -196,13 +188,12 @@ class UploadCubit extends Cubit<UploadState> {
                 if (cell == null || cell.value == null) return "";
 
                 final val = cell.value;
-                // Checks for Excel 4.0.0+
+                // checks for Excel 4.0.0+
                 if (val is TextCellValue) return val.value.toString();
                 if (val is DoubleCellValue) return val.value.toString();
                 if (val is IntCellValue) return val.value.toString();
                 if (val is BoolCellValue) return val.value.toString();
-                if (val is DateCellValue)
-                  return val.asDateTimeLocal().toIso8601String();
+                if (val is DateCellValue) return val.asDateTimeLocal().toIso8601String();
                 if (val is TimeCellValue) return val.toString();
                 if (val is FormulaCellValue) return val.formula.toString();
 
@@ -222,7 +213,6 @@ class UploadCubit extends Cubit<UploadState> {
       print("Primary Excel decoder failed: $e. Attempting fallback...");
     }
 
-    // Attempt 2: Try using 'spreadsheet_decoder' package as fallback
     try {
       final decoder = SpreadsheetDecoder.decodeBytes(bytes, update: true);
       final buffer = StringBuffer();
@@ -265,21 +255,17 @@ class UploadCubit extends Cubit<UploadState> {
 
     final docData = jsonResult['document'];
     
-    // Parse Document Date
     final DateTime postingDate = DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now();
 
-    // --- DUE DATE LOGIC ---
     DateTime? parsedDueDate = DateTime.tryParse(docData['due_date'] ?? '');
     String finalDueDateString;
     
     if (parsedDueDate != null) {
       finalDueDateString = parsedDueDate.toIso8601String().split('T')[0]; // YYYY-MM-DD
     } else {
-      // Default to 30 days if null
       finalDueDateString = postingDate.add(const Duration(days: 30)).toIso8601String().split('T')[0];
     }
 
-    // Process Metadata
     List<AdditionalInfoRow> metadataList = (jsonResult['metadata'] as List?)
           ?.map(
             (m) => AdditionalInfoRow(
@@ -290,7 +276,7 @@ class UploadCubit extends Cubit<UploadState> {
           )
           .toList() ?? [];
 
-    // Check if Due Date already exists in metadata (from AI), if not, add it
+    // check if due date already exists in metadata (from AI), if not, add it
     bool hasDueDate = metadataList.any((row) => row.key.toLowerCase().contains('due date'));
     if (!hasDueDate) {
       metadataList.add(AdditionalInfoRow(
@@ -309,10 +295,9 @@ class UploadCubit extends Cubit<UploadState> {
       createdBy: 'AI OCR',
       postingDate: postingDate,
       imageBase64: imageBase64,
-      metadata: metadataList, // Updated metadata with Due Date
+      metadata: metadataList,
     );
 
-    // ... (Rest of line item creation logic remains the same)
     final List<dynamic> linesData = jsonResult['line_items'] ?? [];
     final List<DocumentLineItem> lineItems = [];
 
@@ -334,7 +319,6 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    // Navigate
     if (isClosed) return;
     emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
     emit(UploadLoaded(state.document));
@@ -346,25 +330,18 @@ class UploadCubit extends Cubit<UploadState> {
     if (!await file.exists()) return null;
 
     try {
-      // HANDLE PDF: Rasterize the first page
       if (type == 'pdf' || type == 'application/pdf') {
         final pdfBytes = await file.readAsBytes();
-        // raster() returns a stream of pages. We take the first one.
-        // dpi: 72 is usually enough for a screen thumbnail
         await for (var page in Printing.raster(pdfBytes, pages: [0], dpi: 72)) {
           final pngBytes = await page.toPng();
           return base64Encode(pngBytes);
         }
       }
-      // HANDLE IMAGES: Standard read
       else if (['jpg', 'jpeg', 'png', 'image'].contains(type.toLowerCase())) {
         final bytes = await file.readAsBytes();
         return base64Encode(bytes);
       }
 
-      // HANDLE EXCEL:
-      // We return null here.
-      // In the UI, we will check if imageBase64 is null and show an Icon instead.
       return null;
     } catch (e) {
       print('Error generating thumbnail: $e');

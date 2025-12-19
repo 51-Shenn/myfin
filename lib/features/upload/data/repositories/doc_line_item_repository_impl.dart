@@ -10,8 +10,6 @@ class DocumentLineItemRepositoryImpl implements DocumentLineItemRepository {
   @override
   Future<DocumentLineItem> createLineItem(DocumentLineItem lineItem) async {
     final data = lineItem.toMap();
-    // Remove the ID if it's empty so Firestore generates one, 
-    // or keep it if you are generating IDs client-side.
     if (lineItem.lineItemId.isEmpty) {
       data.remove('lineItemId');
     }
@@ -56,7 +54,6 @@ class DocumentLineItemRepositoryImpl implements DocumentLineItemRepository {
     int page = 1,
     int limit = 20,
   }) async {
-    // Basic implementation delegating to the datasource
     final result = await dataSource.getLineItemsByDocumentId(
       documentId, 
       limit: limit, 

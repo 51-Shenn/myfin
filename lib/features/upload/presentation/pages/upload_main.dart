@@ -19,7 +19,6 @@ class UploadScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) {
-        // Instantiate Profile Repository on the fly
         final profileRepo = ProfileRepositoryImpl(
           remoteDataSource: ProfileRemoteDataSourceImpl()
         );
@@ -28,7 +27,7 @@ class UploadScreen extends StatelessWidget {
           getRecentDocumentsUseCase: GetRecentDocumentsUseCase(
             context.read<DocumentRepository>(),
           ),
-          profileRepository: profileRepo, // Pass it here
+          profileRepository: profileRepo,
         )..fetchDocument();
       },
       child: const UploadView(),
@@ -82,12 +81,6 @@ class UploadView extends StatelessWidget {
             context.read<UploadCubit>().fetchDocument();
           });
         }
-        // else if (state is UploadImagePicked) {
-        //   uploadCubit.processPickedImage(state.imagePath);
-        // }
-        // else if (state is UploadFilePicked) {
-        //   uploadCubit.processPickedFile(state.filePath, state.fileName);
-        // }
         else if (state is UploadNavigateToHistory) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/upload_history').then((_) {

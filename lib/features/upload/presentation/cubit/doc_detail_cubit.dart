@@ -38,9 +38,7 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       state.copyWith(
         isLoading: false,
         document: document,
-        // Fills the "Additional Info" section from the Document's metadata
         rows: document.metadata ?? [],
-        // Fills the "Line Items" section (including their attributes)
         lineItems: lineItems ?? [],
       ),
     );
@@ -179,7 +177,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     try {
       emit(state.copyWith(isSaving: true));
 
-      // Filter items that have a description but NO category
       final itemsToCategorize = state.lineItems
           .where(
             (item) => item.description != null && item.description!.isNotEmpty,
@@ -187,20 +184,18 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           .toList();
 
       if (itemsToCategorize.isNotEmpty) {
-        // Extract descriptions
         final descriptions = itemsToCategorize
             .map((e) => e.description!)
-            .toSet() // Remove duplicates to save tokens
+            .toSet() // remove duplicates to save tokens
             .toList();
 
-        // Call AI
+        // call AI to map category
         final categoryMap = await _aiDataSource.categorizeDescriptions(
           descriptions,
         );
 
-        // Update the list of line items with new categories
+        // update the list of line items with new categories
         final updatedLineItems = state.lineItems.map((item) {
-          // If this item needed categorization and we got a result
           if (item.categoryCode.isEmpty &&
               item.description != null &&
               categoryMap.containsKey(item.description)) {
@@ -209,7 +204,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           return item;
         }).toList();
 
-        // Update local state before saving to DB
         emit(state.copyWith(lineItems: updatedLineItems));
       }
 
@@ -247,15 +241,12 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
         if (isEmpty) continue;
 
-        // Auto-populate debit/credit from total if needed
         var itemToSave = item.copyWith(documentId: docId);
 
-        // If total is set but debit/credit are not, determine which one to set
         if (item.total > 0 &&
             item.debit == 0 &&
             item.credit == 0 &&
             item.categoryCode.isNotEmpty) {
-          // Import the mapper at the top: import 'package:myfin/features/dashboard/domain/usecases/main_category_mapper.dart';
           final isIncome = MainCategoryMapper.incomeMapping.containsKey(
             item.categoryCode,
           );
@@ -294,11 +285,11 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           lineItems: refreshedItems,
           isSaving: false,
           successMessage:
-              'Document categorized & saved successfully', // Updated message
+              'Document categorized & saved successfully',
         ),
       );
 
-      // Notify listeners that document was saved (e.g., to refresh dashboard)
+      // notify listeners that document was saved (e.g., to refresh dashboard)
       print(
         '💾 [DOC SAVE] Document saved successfully, calling onDocumentSaved callback...',
       );
@@ -337,7 +328,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         ),
       );
 
-      // Notify listeners that document was deleted (e.g., to refresh dashboard)
       onDocumentSaved?.call();
     } catch (e) {
       emit(
@@ -346,7 +336,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     }
   }
 
-  // --- Row Management ---
   void addNewRow() {
     final uniqueId = 'TEMP_${DateTime.now().microsecondsSinceEpoch.toString()}';
     emit(
@@ -377,7 +366,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     emit(state.copyWith(rows: updatedRows));
   }
 
-  // --- Line Item Management ---
   void addNewLineItem() {
     final uniqueId = DateTime.now().microsecondsSinceEpoch.toString();
     final newLineItem = DocumentLineItem(
@@ -402,7 +390,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     emit(state.copyWith(lineItems: updatedItems));
   }
 
-  // --- Line Item Attribute Management ---
   void addLineItemAttribute(String lineItemId) {
     final uniqueId = DateTime.now().microsecondsSinceEpoch.toString();
     final updatedItems = state.lineItems.map((item) {

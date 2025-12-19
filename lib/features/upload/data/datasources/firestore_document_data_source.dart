@@ -29,7 +29,7 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
 
     if (docSnapshot.exists) {
       final data = docSnapshot.data() as Map<String, dynamic>;
-      data['id'] = docSnapshot.id; // Inject the ID here
+      data['id'] = docSnapshot.id;
       return data;
     }
     return null;
@@ -69,14 +69,12 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
     if (limit != null) {
       query = query.limit(limit);
     }
-    // Pagination (using page) is complex with Firestore and often needs a
-    // 'startAfter' cursor, which is typically handled in the Repository.
 
     final querySnapshot = await query.get();
 
     return querySnapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id; // Inject the ID
+      data['id'] = doc.id;
       return data;
     }).toList();
   }
@@ -87,7 +85,7 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
     String id,
     Map<String, dynamic> updateData,
   ) async {
-    // Ensure updatedAt is updated on every modification
+    // ensure updatedAt is updated on every modification
     updateData['updatedAt'] = FieldValue.serverTimestamp();
     await _collectionRef.doc(id).set(updateData, SetOptions(merge: true));
   }

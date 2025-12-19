@@ -60,11 +60,9 @@ class DocumentDetailsScreen extends StatelessWidget {
           onDocumentSaved: onDocumentSaved,
         );
 
-        // 1. If objects are passed directly (e.g. from File Upload/OCR), use them.
         if (existingDocument != null) {
           cubit.initializeWithData(existingDocument!, existingLineItems);
         }
-        // 2. Otherwise, if an ID is passed, load from DB
         else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
         } else {
@@ -449,10 +447,10 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                   header: DocFieldHeader.status,
                                   value: state.document?.status ?? 'Draft',
                                   items:
-                                      docStatus, // Pass the list defined above
+                                      docStatus,
                                   enabled: !widget.isReadOnly,
                                   validator: AppValidators
-                                      .required, // Ensure you have the AppValidators class from the previous step
+                                      .required,
                                   onChanged: (value) {
                                     context
                                         .read<DocDetailCubit>()
@@ -639,7 +637,6 @@ class DynamicKeyValueSection extends StatelessWidget {
                         ),
                       ),
                       errorBorder: OutlineInputBorder(
-                        // Added error style
                         borderRadius: BorderRadius.circular(5),
                         borderSide: const BorderSide(
                           color: Colors.red,
