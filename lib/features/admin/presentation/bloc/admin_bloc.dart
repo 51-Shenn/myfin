@@ -76,7 +76,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     if (state is AdminLoaded) {
       final currentState = state as AdminLoaded;
 
-      // Find user to get current status
+      // get user to get current status
       final userToBan = currentState.users.firstWhere(
         (u) => u.userId == event.userId,
       );
