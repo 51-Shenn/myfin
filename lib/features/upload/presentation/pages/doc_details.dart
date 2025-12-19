@@ -36,12 +36,14 @@ class DocumentDetailsScreen extends StatelessWidget {
   final String? documentId;
   final Document? existingDocument;
   final List<DocumentLineItem>? existingLineItems;
+  final bool isReadOnly;
 
   const DocumentDetailsScreen({
     super.key,
     this.documentId,
     this.existingDocument,
     this.existingLineItems,
+    this.isReadOnly = false,
   });
 
   @override
@@ -60,20 +62,20 @@ class DocumentDetailsScreen extends StatelessWidget {
         // 2. Otherwise, if an ID is passed, load from DB
         else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
-        }
-        else {
+        } else {
           cubit.loadDocument(null);
         }
 
         return cubit;
       },
-      child: const DocDetailsView(),
+      child: DocDetailsView(isReadOnly: isReadOnly),
     );
   }
 }
 
 class DocDetailsView extends StatefulWidget {
-  const DocDetailsView({super.key});
+  final bool isReadOnly;
+  const DocDetailsView({super.key, this.isReadOnly = false});
 
   @override
   State<DocDetailsView> createState() => _DocDetailsViewState();
@@ -113,7 +115,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
 
           Future.delayed(const Duration(milliseconds: 500), () {
             if (context.mounted) {
-              Navigator.of(context).pop(); 
+              Navigator.of(context).pop();
             }
           });
         }
@@ -140,7 +142,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
             ),
             centerTitle: true,
             actions: [
-              if (state.isSaving)
+              if (widget.isReadOnly)
+                const SizedBox.shrink()
+              else if (state.isSaving)
                 const Padding(
                   padding: EdgeInsets.all(8.0),
                   child: Center(
@@ -183,20 +187,28 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                           builder: (dialogContext) => AlertDialog(
                             title: const Text('Delete Document'),
                             content: const Text(
-                                'Are you sure you want to delete this document permanently? This action cannot be undone.'),
+                              'Are you sure you want to delete this document permanently? This action cannot be undone.',
+                            ),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(dialogContext), // close dialog
+                                onPressed: () => Navigator.pop(
+                                  dialogContext,
+                                ), // close dialog
                                 child: const Text('Cancel'),
                               ),
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(dialogContext);
-                                  context.read<DocDetailCubit>().deleteDocument();
+                                  context
+                                      .read<DocDetailCubit>()
+                                      .deleteDocument();
                                 },
                                 child: const Text(
                                   'Delete',
-                                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
@@ -211,8 +223,8 @@ class _DocDetailsViewState extends State<DocDetailsView> {
           body: state.isLoading
               ? const Center(child: CircularProgressIndicator())
               : Form(
-                key: _formKey,
-                child: SingleChildScrollView(
+                  key: _formKey,
+                  child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -230,7 +242,10 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                   padding: const EdgeInsets.all(12.0),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.info, color: Colors.blue),
+                                      const Icon(
+                                        Icons.info,
+                                        color: Colors.blue,
+                                      ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
@@ -254,6 +269,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                     DocTextFormField(
                                       header: DocFieldHeader.name,
                                       value: state.document?.name ?? '',
+                                      enabled: !widget.isReadOnly,
                                       validator: AppValidators.required,
                                       onChanged: (value) {
                                         context
@@ -264,43 +280,52 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                     AutoCompleteField(
                                       header: DocFieldHeader.type,
                                       value: state.document?.type,
+                                      enabled: !widget.isReadOnly,
                                       validator: AppValidators.required,
                                       items: docType,
                                       onChanged: (value) {
-                                        context.read<DocDetailCubit>().updateDocumentField('type', value);
+                                        context
+                                            .read<DocDetailCubit>()
+                                            .updateDocumentField('type', value);
                                       },
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 10),
-                              Padding(
-                                padding: const EdgeInsets.all(5.0),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
-                                  ),
-                                  width: 150,
-                                  height: 150,
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.image,
-                                        size: 40,
-                                        color: Colors.grey[500],
+                              if (!widget.isReadOnly)
+                                Padding(
+                                  padding: const EdgeInsets.all(5.0),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[200],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Add Image',
-                                        style: TextStyle(color: Colors.grey[600]),
-                                      ),
-                                    ],
+                                    ),
+                                    width: 150,
+                                    height: 150,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.image,
+                                          size: 40,
+                                          color: Colors.grey[500],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Add Image',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           Row(
@@ -309,8 +334,11 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 child: AutoCompleteField(
                                   header: DocFieldHeader.status,
                                   value: state.document?.status ?? 'Draft',
-                                  items: docStatus, // Pass the list defined above
-                                  validator: AppValidators.required, // Ensure you have the AppValidators class from the previous step
+                                  items:
+                                      docStatus, // Pass the list defined above
+                                  enabled: !widget.isReadOnly,
+                                  validator: AppValidators
+                                      .required, // Ensure you have the AppValidators class from the previous step
                                   onChanged: (value) {
                                     context
                                         .read<DocDetailCubit>()
@@ -323,6 +351,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 child: DocTextFormField(
                                   header: DocFieldHeader.postingDate,
                                   validator: AppValidators.required,
+                                  enabled: !widget.isReadOnly,
                                   value: state.document != null
                                       ? DateFormat(
                                           'yyyy-MM-dd',
@@ -330,7 +359,8 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                       : '',
                                   isDate: true,
                                   onTap: () {
-                                    if (state.document != null) {
+                                    if (!widget.isReadOnly &&
+                                        state.document != null) {
                                       _pickDate(
                                         context,
                                         state.document!.postingDate,
@@ -355,6 +385,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                               return DynamicKeyValueSection(
                                 title: 'Additional Information',
                                 rows: state.rows,
+                                isReadOnly: widget.isReadOnly,
                                 onAdd: () =>
                                     context.read<DocDetailCubit>().addNewRow(),
                                 onUpdateKey: (idx, val) => context
@@ -363,48 +394,56 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 onUpdateValue: (idx, val) => context
                                     .read<DocDetailCubit>()
                                     .updateRowValue(idx, val),
-                                onDelete: (idx) =>
-                                    context.read<DocDetailCubit>().deleteRow(idx),
+                                onDelete: (idx) => context
+                                    .read<DocDetailCubit>()
+                                    .deleteRow(idx),
                               );
                             },
                           ),
-                
+
                           const SizedBox(height: 20),
-                          DocLineItemField(),
-                          CustomDivider(),
-                          Padding(
-                            padding: const EdgeInsets.all(5.0),
-                            child: Material(
-                              color: const Color(0xFFD9D9D9),
-                              borderRadius: BorderRadius.circular(10.0),
-                              clipBehavior: Clip.hardEdge,
-                              child: InkWell(
-                                onTap: () {
-                                  context.read<DocDetailCubit>().addNewLineItem();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    '+ Add New Line Item',
-                                    style: TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
+                          DocLineItemField(isReadOnly: widget.isReadOnly),
+                          if (!widget.isReadOnly)
+                            Column(
+                              children: [
+                                CustomDivider(),
+                                Padding(
+                                  padding: const EdgeInsets.all(5.0),
+                                  child: Material(
+                                    color: const Color(0xFFD9D9D9),
+                                    borderRadius: BorderRadius.circular(10.0),
+                                    clipBehavior: Clip.hardEdge,
+                                    child: InkWell(
+                                      onTap: () {
+                                        context
+                                            .read<DocDetailCubit>()
+                                            .addNewLineItem();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: const Text(
+                                          '+ Add New Line Item',
+                                          style: TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ),
                           const SizedBox(height: 20),
                         ],
                       ),
                     ),
                   ),
-              ),
+                ),
         );
       },
     );
@@ -418,6 +457,7 @@ class DynamicKeyValueSection extends StatelessWidget {
   final Function(int index, String val) onUpdateKey;
   final Function(int index, String val) onUpdateValue;
   final Function(int index) onDelete;
+  final bool isReadOnly;
 
   const DynamicKeyValueSection({
     super.key,
@@ -427,6 +467,7 @@ class DynamicKeyValueSection extends StatelessWidget {
     required this.onUpdateKey,
     required this.onUpdateValue,
     required this.onDelete,
+    this.isReadOnly = false,
   });
 
   @override
@@ -456,6 +497,9 @@ class DynamicKeyValueSection extends StatelessWidget {
                   padding: const EdgeInsets.all(5.0),
                   child: TextFormField(
                     initialValue: row.key,
+                    readOnly: isReadOnly,
+                    enabled: !isReadOnly,
+                    style: const TextStyle(color: Colors.black),
                     onChanged: (val) => onUpdateKey(index, val),
                     validator: (val) =>
                         val == null || val.isEmpty ? 'Field required' : null,
@@ -468,13 +512,26 @@ class DynamicKeyValueSection extends StatelessWidget {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Color(0xFFCCCCCC), width: 1)),
+                        borderSide: const BorderSide(
+                          color: Color(0xFFCCCCCC),
+                          width: 1,
+                        ),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(5),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5)),
-                      errorBorder: OutlineInputBorder( // Added error style
-                          borderRadius: BorderRadius.circular(5),
-                          borderSide: const BorderSide(color: Colors.red, width: 1)),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        // Added error style
+                        borderRadius: BorderRadius.circular(5),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 1,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -489,6 +546,9 @@ class DynamicKeyValueSection extends StatelessWidget {
                   padding: const EdgeInsets.all(5.0),
                   child: TextFormField(
                     initialValue: row.value,
+                    readOnly: isReadOnly,
+                    enabled: !isReadOnly,
+                    style: const TextStyle(color: Colors.black),
                     onChanged: (val) => onUpdateValue(index, val),
                     validator: (val) =>
                         val == null || val.isEmpty ? 'Value required' : null,
@@ -517,60 +577,62 @@ class DynamicKeyValueSection extends StatelessWidget {
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (dContext) => AlertDialog(
-                      title: const Text('Delete Row'),
-                      content: const Text('Delete this item?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dContext),
-                          child: const Text('Cancel'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            onDelete(index);
-                            Navigator.pop(dContext);
-                          },
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.red),
+              if (!isReadOnly)
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (dContext) => AlertDialog(
+                        title: const Text('Delete Row'),
+                        content: const Text('Delete this item?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dContext),
+                            child: const Text('Cancel'),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                          TextButton(
+                            onPressed: () {
+                              onDelete(index);
+                              Navigator.pop(dContext);
+                            },
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
             ],
           );
         }),
-        Padding(
-          padding: const EdgeInsets.all(5.0),
-          child: Material(
-            color: const Color(0xFFD9D9D9),
-            borderRadius: BorderRadius.circular(10.0),
-            clipBehavior: Clip.hardEdge,
-            child: InkWell(
-              onTap: onAdd,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
-                child: const Text(
-                  '+ Add Info',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+        if (!isReadOnly)
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Material(
+              color: const Color(0xFFD9D9D9),
+              borderRadius: BorderRadius.circular(10.0),
+              clipBehavior: Clip.hardEdge,
+              child: InkWell(
+                onTap: onAdd,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    '+ Add Info',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

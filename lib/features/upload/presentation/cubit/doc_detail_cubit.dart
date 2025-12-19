@@ -68,15 +68,17 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       final String memberId = user?.uid ?? "";
 
       if (memberId.isEmpty) {
-         emit(state.copyWith(isLoading: false, errorMessage: 'User not logged in'));
-         return;
+        emit(
+          state.copyWith(isLoading: false, errorMessage: 'User not logged in'),
+        );
+        return;
       }
 
       final firestore = FirebaseFirestore.instance;
       final memberRemote = MemberRemoteDataSourceImpl(firestore: firestore);
       final memberRepo = MemberRepositoryImpl(memberRemote);
       final memberUsername = (await memberRepo.getMember(memberId)).username;
-      
+
       // brand new doc template
       if (documentId == null || documentId.isEmpty) {
         final document = Document(
@@ -109,13 +111,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         emit(
           state.copyWith(
             isLoading: false,
-            errorMessage: 'Unauthorized: You do not have permission to view this document.',
+            errorMessage:
+                'Unauthorized: You do not have permission to view this document.',
           ),
         );
         return;
       }
 
-      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(documentId);
+      final lineItems = await _lineItemRepository.getLineItemsByDocumentId(
+        documentId,
+      );
 
       emit(
         state.copyWith(
@@ -226,7 +231,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       _deletedLineItemIds.clear();
 
       for (var item in state.lineItems) {
-
         bool isEmpty =
             (item.description == null || item.description!.trim().isEmpty) &&
             item.total == 0 &&
@@ -252,7 +256,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         }
       }
 
-      final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(docId);
+      final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(
+        docId,
+      );
 
       emit(
         state.copyWith(
@@ -289,15 +295,16 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
       await _docRepository.deleteDocument(docId);
 
-      emit(state.copyWith(
-        isSaving: false,
-        successMessage: 'Document deleted successfully',
-      ));
+      emit(
+        state.copyWith(
+          isSaving: false,
+          successMessage: 'Document deleted successfully',
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        isSaving: false,
-        errorMessage: 'Failed to delete: $e',
-      ));
+      emit(
+        state.copyWith(isSaving: false, errorMessage: 'Failed to delete: $e'),
+      );
     }
   }
 

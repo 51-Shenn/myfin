@@ -11,6 +11,7 @@ class DocTextFormField extends StatelessWidget {
   final bool multiLine;
   final VoidCallback? onTap;
   final bool isDate;
+  final bool enabled;
 
   const DocTextFormField({
     super.key,
@@ -23,6 +24,7 @@ class DocTextFormField extends StatelessWidget {
     this.multiLine = false,
     this.onTap,
     this.isDate = false,
+    this.enabled = true,
   });
 
   @override
@@ -45,10 +47,12 @@ class DocTextFormField extends StatelessWidget {
           TextFormField(
             key: isDate ? ValueKey(value) : null,
             initialValue: value,
+            enabled: enabled,
             readOnly: readOnly || isDate,
             onTap: onTap,
             onChanged: onChanged,
             validator: validator,
+            style: const TextStyle(color: Colors.black),
             minLines: multiLine ? 3 : 1,
             maxLines: multiLine ? 5 : 1,
             keyboardType: multiLine

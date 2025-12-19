@@ -8,7 +8,8 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
 
   FirestoreDocumentDataSource({required this.firestore});
 
-  CollectionReference get _collectionRef => firestore.collection(collectionPath);
+  CollectionReference get _collectionRef =>
+      firestore.collection(collectionPath);
 
   // CREATE
   @override
@@ -16,7 +17,7 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
     // add current timestamp when creating doc
     documentData['createdAt'] = FieldValue.serverTimestamp();
     documentData['updatedAt'] = FieldValue.serverTimestamp();
-    
+
     final docRef = await _collectionRef.add(documentData);
     return docRef.id;
   }
@@ -82,9 +83,12 @@ class FirestoreDocumentDataSource implements DocumentDataSource {
 
   // UPDATE
   @override
-  Future<void> updateDocument(String id, Map<String, dynamic> updateData) async {
+  Future<void> updateDocument(
+    String id,
+    Map<String, dynamic> updateData,
+  ) async {
     // Ensure updatedAt is updated on every modification
-    updateData['updatedAt'] = FieldValue.serverTimestamp(); 
+    updateData['updatedAt'] = FieldValue.serverTimestamp();
     await _collectionRef.doc(id).set(updateData, SetOptions(merge: true));
   }
 

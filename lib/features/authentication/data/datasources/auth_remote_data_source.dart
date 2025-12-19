@@ -76,8 +76,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       if (userCredential.additionalUserInfo?.isNewUser == true) {
         await userCredential.user?.delete();
-        await _googleSignIn
-            .signOut(); 
+        await _googleSignIn.signOut();
         throw Exception('Email not registered. Please sign up first.');
       }
 

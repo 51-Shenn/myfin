@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
@@ -20,6 +21,9 @@ Future<void> main() async {
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  await Hive.initFlutter();
+  await Hive.openBox('dashboard_cache');
+
   final firestore = FirebaseFirestore.instance;
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -29,6 +33,7 @@ Future<void> main() async {
         RepositoryProvider<DocumentRepository>(
           create: (context) => DocumentRepositoryImpl(
             FirestoreDocumentDataSource(firestore: firestore),
+            FirestoreDocumentLineItemDataSource(firestore: firestore),
           ),
         ),
         RepositoryProvider<DocumentLineItemRepository>(
@@ -42,6 +47,7 @@ Future<void> main() async {
           BlocProvider(
             create: (context) => AppRoutes.createAuthBloc(sharedPreferences),
           ),
+          BlocProvider(create: (context) => AppRoutes.createDashboardBloc()),
         ],
         child: MainApp(sharedPreferences: sharedPreferences),
       ),

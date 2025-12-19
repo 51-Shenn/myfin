@@ -14,9 +14,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ImagePicker _picker = ImagePicker();
   final GeminiOCRDataSource _ocrDataSource = GeminiOCRDataSource();
 
-  UploadCubit({
-    required this.getRecentDocumentsUseCase,
-  }) : super(const UploadInitial());
+  UploadCubit({required this.getRecentDocumentsUseCase})
+    : super(const UploadInitial());
 
   Future<void> fetchDocument() async {
     try {
@@ -29,8 +28,8 @@ class UploadCubit extends Cubit<UploadState> {
       }
 
       final documents = await getRecentDocumentsUseCase(
-        limit: 3, 
-        memberId: user.uid
+        limit: 3,
+        memberId: user.uid,
       );
 
       emit(UploadLoaded(documents));
@@ -81,7 +80,7 @@ class UploadCubit extends Cubit<UploadState> {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
         preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 80, 
+        imageQuality: 80,
       );
 
       if (photo != null) {
@@ -97,7 +96,11 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'png', 'jpeg'], // Restrict to images for OCR for now
+        allowedExtensions: [
+          'jpg',
+          'png',
+          'jpeg',
+        ], // Restrict to images for OCR for now
       );
 
       if (result != null && result.files.single.path != null) {
@@ -124,7 +127,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       // 1. Call Gemini
       final jsonResult = await _ocrDataSource.extractDataFromImage(imagePath);
-      
+
       // 2. Map JSON to Document Entity
       final docData = jsonResult['document'];
       final document = Document(
@@ -135,13 +138,15 @@ class UploadCubit extends Cubit<UploadState> {
         status: 'Draft',
         createdBy: 'AI OCR',
         postingDate: DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now(),
-        metadata: (jsonResult['metadata'] as List?)?.map((m) => 
-          AdditionalInfoRow(
-            id: const Uuid().v4(), 
-            key: m['key'] ?? '', 
-            value: m['value']?.toString() ?? ''
-          )
-        ).toList(),
+        metadata: (jsonResult['metadata'] as List?)
+            ?.map(
+              (m) => AdditionalInfoRow(
+                id: const Uuid().v4(),
+                key: m['key'] ?? '',
+                value: m['value']?.toString() ?? '',
+              ),
+            )
+            .toList(),
       );
 
       // 3. Map JSON to Line Items
@@ -150,26 +155,27 @@ class UploadCubit extends Cubit<UploadState> {
 
       for (int i = 0; i < linesData.length; i++) {
         final item = linesData[i];
-        lineItems.add(DocumentLineItem(
-          lineItemId: 'TEMP_${const Uuid().v4()}', // Temp ID
-          documentId: '',
-          lineNo: i + 1,
-          lineDate: document.postingDate,
-          categoryCode: item['category'] ?? '',
-          description: item['description'] ?? '',
-          total: (item['amount'] as num?)?.toDouble() ?? 0.0,
-          debit: 0,
-          credit: 0,
-          attribute: [],
-        ));
+        lineItems.add(
+          DocumentLineItem(
+            lineItemId: 'TEMP_${const Uuid().v4()}', // Temp ID
+            documentId: '',
+            lineNo: i + 1,
+            lineDate: document.postingDate,
+            categoryCode: item['category'] ?? '',
+            description: item['description'] ?? '',
+            total: (item['amount'] as num?)?.toDouble() ?? 0.0,
+            debit: 0,
+            credit: 0,
+            attribute: [],
+          ),
+        );
       }
 
       // 4. Navigate to Details Screen with Pre-filled Data
       emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
-      
+
       // 5. Reset state slightly so back button works
       emit(UploadLoaded(state.document));
-
     } catch (e) {
       emit(UploadError(state.document, 'AI Processing Failed: $e'));
     }
@@ -181,7 +187,12 @@ class UploadCubit extends Cubit<UploadState> {
     if (fileName.endsWith('.jpg') || fileName.endsWith('.png')) {
       await processPickedImage(path);
     } else {
-      emit(UploadError(state.document, "Only image files are supported for AI OCR currently."));
+      emit(
+        UploadError(
+          state.document,
+          "Only image files are supported for AI OCR currently.",
+        ),
+      );
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myfin/core/components/bottom_nav_bar.dart';
 import 'package:myfin/features/authentication/data/datasources/admin_remote_data_source.dart';
@@ -24,12 +25,25 @@ import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 import 'package:myfin/features/authentication/presentation/pages/auth_main.dart';
 import 'package:myfin/features/authentication/presentation/pages/forget_password_page.dart';
 import 'package:myfin/features/admin/presentation/pages/admin_main.dart';
+import 'package:myfin/features/dashboard/data/datasources/dashboard_remote_data_source.dart';
+import 'package:myfin/features/dashboard/data/datasources/dashboard_local_data_source.dart';
+import 'package:myfin/features/dashboard/data/repositories/dashboard_repository_impl.dart';
+import 'package:myfin/features/dashboard/domain/usecases/get_cash_flow_dashboard_data.dart';
+import 'package:myfin/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:myfin/features/dashboard/domain/usecases/generate_cash_flow_snapshots.dart';
+import 'package:myfin/features/dashboard/domain/usecases/subscribe_to_dashboard.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
+import 'package:myfin/features/upload/data/repositories/doc_line_item_repository_impl.dart';
+import 'package:myfin/features/upload/data/repositories/document_repository_impl.dart';
+import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 
 class AppRoutes {
   static const String auth = '/auth';
   static const String home = '/home';
   static const String adminHome = '/admin-home';
   static const String forgetPassword = '/forget-password';
+  static const String docDetails = '/doc_details';
 
   static AuthBloc createAuthBloc(SharedPreferences sharedPreferences) {
     final firebaseAuth = FirebaseAuth.instance;
@@ -87,6 +101,54 @@ class AppRoutes {
     )..add(AuthCheckRequested());
   }
 
+  static DashboardBloc createDashboardBloc() {
+    final firestore = FirebaseFirestore.instance;
+    final remoteDataSource = DashboardRemoteDataSourceImpl(
+      firestore: firestore,
+    );
+
+    // Create local data source for caching
+    final localDataSource = DashboardLocalDataSourceImpl(
+      box: Hive.box('dashboard_cache'),
+    );
+
+    final repository = DashboardRepositoryImpl(
+      remoteDataSource: remoteDataSource,
+      localDataSource: localDataSource,
+    );
+    final getDashboardData = GetCashFlowDashboardData(repository);
+
+    final documentDataSource = FirestoreDocumentDataSource(
+      firestore: firestore,
+    );
+    final lineItemDataSource = FirestoreDocumentLineItemDataSource(
+      firestore: firestore,
+    );
+    final documentRepository = DocumentRepositoryImpl(
+      documentDataSource,
+      lineItemDataSource,
+    );
+
+    final lineItemRepository = DocumentLineItemRepositoryImpl(
+      lineItemDataSource,
+    );
+
+    final generateSnapshots = GenerateCashFlowSnapshots(
+      dashboardRepository: repository,
+      documentRepository: documentRepository,
+      docLineItemRepository: lineItemRepository,
+      localDataSource: localDataSource,
+    );
+    final subscribeToDashboard = SubscribeToDashboard(repository);
+
+    return DashboardBloc(
+      getDashboardData: getDashboardData,
+      generateSnapshots: generateSnapshots,
+      subscribeToDashboard: subscribeToDashboard,
+      localDataSource: localDataSource,
+    );
+  }
+
   static Route<dynamic> onGenerateRoute(
     RouteSettings settings,
     SharedPreferences sharedPreferences,
@@ -106,6 +168,25 @@ class AppRoutes {
         );
       case adminHome:
         return MaterialPageRoute(builder: (_) => const AdminMainScreen());
+
+      case docDetails:
+        if (settings.arguments is DocDetailsArguments) {
+          final args = settings.arguments as DocDetailsArguments;
+          return MaterialPageRoute(
+            builder: (_) => DocumentDetailsScreen(
+              documentId: args.documentId,
+              existingDocument: args.existingDocument,
+              existingLineItems: args.existingLineItems,
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('Error: Invalid arguments for Doc Details'),
+            ),
+          ),
+        );
 
       default:
         return MaterialPageRoute(

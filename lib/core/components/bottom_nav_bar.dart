@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:convex_bottom_bar/convex_bottom_bar.dart';
+import 'package:myfin/core/navigation/dashboard_nav.dart';
 import 'package:myfin/core/navigation/report_nav.dart';
 import 'package:myfin/core/navigation/aichatbot_nav.dart';
 import 'package:myfin/core/navigation/upload_nav.dart';
 import 'package:myfin/core/navigation/user_profile_nav.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
+import 'package:myfin/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 
 class _TabItemBuilder extends DelegateBuilder {
   final List<TabItem<dynamic>> items;
@@ -33,8 +37,7 @@ class _TabItemBuilder extends DelegateBuilder {
           padding: EdgeInsets.all(padding),
           child: active ? (item.activeIcon ?? item.icon) : item.icon,
         ),
-        if (index == 2)
-          const SizedBox(height: 20),
+        if (index == 2) const SizedBox(height: 20),
         if (item.title?.isNotEmpty ?? false)
           Padding(
             padding: const EdgeInsets.only(top: 0),
@@ -167,7 +170,7 @@ class _BottomNavBarState extends State<BottomNavBar> {
   ];
 
   List<Widget> get _pages => <Widget>[
-    Container(color: Colors.red),
+    const DashboardNav(),
     const AiChatbotNav(),
     const UploadNav(),
     const ReportsNav(),
@@ -195,9 +198,19 @@ class _BottomNavBarState extends State<BottomNavBar> {
       shadowColor: shadowBlue,
       initialActiveIndex: _selectedIndex,
       height: 75.0,
-      onTap: (index) => setState(() {
-        _selectedIndex = index;
-      }),
+      onTap: (index) {
+        if (index == 0) {
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticatedAsMember) {
+            context.read<DashboardBloc>().add(
+              DashboardLoadRequested(authState.member.member_id),
+            );
+          }
+        }
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
     );
   }
 
