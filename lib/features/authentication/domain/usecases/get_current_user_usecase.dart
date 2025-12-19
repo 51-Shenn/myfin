@@ -27,6 +27,12 @@ class GetCurrentUserUseCase {
     } catch (e) {
       try {
         final member = await memberRepository.getMember(uid);
+
+        if (member.status.toLowerCase() == 'banned') {
+          await authRepository.signOut();
+          return null; 
+        }
+
         return SignInResult(
           uid: uid,
           userType: UserType.member,

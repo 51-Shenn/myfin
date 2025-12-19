@@ -79,6 +79,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       'invalid-email': 'Invalid email address. Please check and try again.',
       'network': 'Network error. Please check your connection and try again.',
       'user profile not found': 'User not found. Please complete registration.',
+      'banned': 'This account has been banned by the administrator.', 
     };
 
     if (error is FirebaseAuthException) {
