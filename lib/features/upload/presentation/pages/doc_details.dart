@@ -367,35 +367,76 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                               ),
                               const SizedBox(width: 10),
                               if (!widget.isReadOnly)
+                                GestureDetector(
+                                  onTap: () => _pickImage(context),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(5.0),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[200],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.grey[300]!,
+                                        ),
+                                      ),
+                                      width: 150,
+                                      height: 150,
+                                      child: (state.document?.imageBase64 !=
+                                                  null &&
+                                              state.document!.imageBase64!
+                                                  .isNotEmpty)
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(11),
+                                              child: Image.memory(
+                                                base64Decode(
+                                                  state.document!.imageBase64!,
+                                                ),
+                                                fit: BoxFit.cover,
+                                              ),
+                                            )
+                                          : Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.image,
+                                                  size: 40,
+                                                  color: Colors.grey[500],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Add Image',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                )
+                              else if (state.document?.imageBase64 != null &&
+                                  state.document!.imageBase64!.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.all(5.0),
                                   child: Container(
+                                    width: 150,
+                                    height: 150,
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[200],
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: Colors.grey[300]!,
                                       ),
                                     ),
-                                    width: 150,
-                                    height: 150,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.image,
-                                          size: 40,
-                                          color: Colors.grey[500],
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(11),
+                                      child: Image.memory(
+                                        base64Decode(
+                                          state.document!.imageBase64!,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Add Image',
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
+                                        fit: BoxFit.cover,
+                                      ),
                                     ),
                                   ),
                                 ),
