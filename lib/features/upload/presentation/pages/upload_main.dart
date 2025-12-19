@@ -105,7 +105,7 @@ class UploadView extends StatelessWidget {
             'Upload',
             style: TextStyle(
               fontFamily: 'Inter',
-              fontSize: 30,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
           ),
