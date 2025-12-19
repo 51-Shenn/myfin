@@ -35,14 +35,25 @@ class TaxRegulationModel {
       name: data['name'] as String,
       type: data['type'] as String,
       description: data['description'] as String,
-      rates:
-          (data['rates'] as List<dynamic>?)
-              ?.map(
+      rates: () {
+        final ratesData = data['rates'];
+        if (ratesData == null) {
+          return <TaxRateModel>[];
+        } else if (ratesData is List) {
+          // rates is stored as an array
+          return ratesData
+              .map(
                 (rateMap) =>
                     TaxRateModel.fromMap(rateMap as Map<String, dynamic>),
               )
-              .toList() ??
-          [],
+              .toList();
+        } else if (ratesData is Map) {
+          // rates is stored as a single object - convert to list
+          return [TaxRateModel.fromMap(ratesData as Map<String, dynamic>)];
+        } else {
+          return <TaxRateModel>[];
+        }
+      }(),
       createdBy: data['createdBy'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
