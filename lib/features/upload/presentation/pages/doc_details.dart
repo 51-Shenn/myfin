@@ -39,6 +39,7 @@ class DocumentDetailsScreen extends StatelessWidget {
   final Document? existingDocument;
   final List<DocumentLineItem>? existingLineItems;
   final bool isReadOnly;
+  final VoidCallback? onDocumentSaved;
 
   const DocumentDetailsScreen({
     super.key,
@@ -46,6 +47,7 @@ class DocumentDetailsScreen extends StatelessWidget {
     this.existingDocument,
     this.existingLineItems,
     this.isReadOnly = false,
+    this.onDocumentSaved,
   });
 
   @override
@@ -55,6 +57,7 @@ class DocumentDetailsScreen extends StatelessWidget {
         final cubit = DocDetailCubit(
           docRepository: context.read<DocumentRepository>(),
           lineItemRepository: context.read<DocumentLineItemRepository>(),
+          onDocumentSaved: onDocumentSaved,
         );
 
         // 1. If objects are passed directly (e.g. from File Upload/OCR), use them.

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:myfin/features/authentication/data/datasources/member_remote_data_source.dart';
 import 'package:myfin/features/authentication/data/repositories/member_repository_impl.dart';
@@ -9,17 +10,20 @@ import 'package:myfin/features/upload/domain/repositories/doc_line_item_reposito
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.dart';
+import 'package:myfin/features/dashboard/domain/usecases/main_category_mapper.dart';
 
 class DocDetailCubit extends Cubit<DocDetailState> {
   final DocumentRepository _docRepository;
   final DocumentLineItemRepository _lineItemRepository;
   final GeminiOCRDataSource _aiDataSource = GeminiOCRDataSource();
+  final VoidCallback? onDocumentSaved;
 
   final List<String> _deletedLineItemIds = []; // keep track of items deleted
 
   DocDetailCubit({
     required DocumentRepository docRepository,
     required DocumentLineItemRepository lineItemRepository,
+    this.onDocumentSaved,
   }) : _docRepository = docRepository,
        _lineItemRepository = lineItemRepository,
        super(const DocDetailState());
@@ -68,7 +72,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       final String memberId = user?.uid ?? "";
 
       if (memberId.isEmpty) {
-         emit(state.copyWith(isLoading: false, errorMessage: 'User not logged in'));
+        emit(
+          state.copyWith(isLoading: false, errorMessage: 'User not logged in'),
+        );
         return;
       }
 
@@ -241,7 +247,28 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
         if (isEmpty) continue;
 
-        final itemToSave = item.copyWith(documentId: docId);
+        // Auto-populate debit/credit from total if needed
+        var itemToSave = item.copyWith(documentId: docId);
+
+        // If total is set but debit/credit are not, determine which one to set
+        if (item.total > 0 &&
+            item.debit == 0 &&
+            item.credit == 0 &&
+            item.categoryCode.isNotEmpty) {
+          // Import the mapper at the top: import 'package:myfin/features/dashboard/domain/usecases/main_category_mapper.dart';
+          final isIncome = MainCategoryMapper.incomeMapping.containsKey(
+            item.categoryCode,
+          );
+          final isExpense = MainCategoryMapper.expenseMapping.containsKey(
+            item.categoryCode,
+          );
+
+          if (isIncome) {
+            itemToSave = itemToSave.copyWith(credit: item.total);
+          } else if (isExpense) {
+            itemToSave = itemToSave.copyWith(debit: item.total);
+          }
+        }
 
         bool isNewItem =
             itemToSave.lineItemId.isEmpty ||
@@ -270,6 +297,13 @@ class DocDetailCubit extends Cubit<DocDetailState> {
               'Document categorized & saved successfully', // Updated message
         ),
       );
+
+      // Notify listeners that document was saved (e.g., to refresh dashboard)
+      print(
+        '💾 [DOC SAVE] Document saved successfully, calling onDocumentSaved callback...',
+      );
+      onDocumentSaved?.call();
+      print('💾 [DOC SAVE] Callback invoked!');
     } catch (e) {
       emit(
         state.copyWith(
@@ -302,6 +336,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           successMessage: 'Document deleted successfully',
         ),
       );
+
+      // Notify listeners that document was deleted (e.g., to refresh dashboard)
+      onDocumentSaved?.call();
     } catch (e) {
       emit(
         state.copyWith(isSaving: false, errorMessage: 'Failed to delete: $e'),
