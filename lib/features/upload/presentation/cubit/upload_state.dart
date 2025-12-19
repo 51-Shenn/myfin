@@ -38,10 +38,9 @@ class UploadNavigateToManual extends UploadState {
 }
 
 class UploadNavigateToDocDetails extends UploadState {
-  final Document selectedDocument; // 1. Renamed to avoid conflict with List<Document>
-  final List<DocumentLineItem>? extractedLineItems; // Added this field
+  final Document selectedDocument;
+  final List<DocumentLineItem>? extractedLineItems;
 
-  // 2. Pass empty list [] to super because we are just navigating
   const UploadNavigateToDocDetails(this.selectedDocument, {this.extractedLineItems}) : super(const []);
 
   @override

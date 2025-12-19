@@ -11,26 +11,21 @@ class DocumentRepositoryImpl implements DocumentRepository {
 
   DocumentRepositoryImpl(this.dataSource, this.lineItemDataSource);
 
-  // --- Create ---
+  // create
   @override
   Future<Document> createDocument(Document document) async {
-    // 1. Map Document entity to raw data
     final rawData = document.toMap();
 
-    // 2. Call Data Source to create the document
     final docId = await dataSource.createDocument(rawData);
 
-    // 3. For the return, get the fresh data from the datasource (or simulate)
-    // For simplicity, we create a copy of the original doc with the new ID
     return Document(
       id: docId,
       name: document.name,
-      // ... copy all fields from the input document, ensuring timestamps are correct
       type: document.type,
       status: document.status,
       createdBy: document.createdBy,
-      createdAt: DateTime.now(), // Since it was just created
-      updatedAt: DateTime.now(), // Since it was just created
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
       postingDate: document.postingDate,
       metadata: document.metadata,
       refDocType: document.refDocType,
@@ -39,24 +34,21 @@ class DocumentRepositoryImpl implements DocumentRepository {
     );
   }
 
-  // --- Read (Single) ---
+  // read
   @override
   Future<Document> getDocumentById(String id) async {
-    // 1. Call Data Source to get raw data
     final rawData = await dataSource.getDocument(id);
 
-    // 2. Handle null case
     if (rawData == null) {
       throw Exception(
         'Document with ID $id not found.',
-      ); // Use a custom App Exception
+      );
     }
 
-    // 3. Map raw data to Document entity
     return Document.fromMap(rawData);
   }
 
-  // --- Read (List) ---
+  // read
   @override
   Future<List<Document>> getDocuments({
     String? status,
@@ -69,7 +61,6 @@ class DocumentRepositoryImpl implements DocumentRepository {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    // 1. Prepare parameters for the Data Source
     final filters = <String, dynamic>{
       if (status != null) 'status': status,
       if (type != null) 'type': type,
@@ -78,7 +69,6 @@ class DocumentRepositoryImpl implements DocumentRepository {
       if (endDate != null) 'endDate': endDate,
     };
 
-    // 2. Call Data Source
     final rawList = await dataSource.getDocuments(
       filters: filters,
       orderByField: sortBy,
@@ -87,11 +77,9 @@ class DocumentRepositoryImpl implements DocumentRepository {
       page: page,
     );
 
-    // 3. Map raw list to Document entities
     return rawList.map(Document.fromMap).toList();
   }
 
-  // READ
   @override
   Future<List<Document>> getDocumentsByCreator(String memberId) async {
     final rawList = await dataSource.getDocuments(
@@ -103,16 +91,11 @@ class DocumentRepositoryImpl implements DocumentRepository {
     return rawList.map(Document.fromMap).toList();
   }
 
-  // UPDATE
+  // update
   @override
   Future<Document> updateDocument(Document document) async {
-    // 1. Map the updated document to raw data
     final updateData = document.toMap();
-
-    // 2. Call Data Source to update the fields
     await dataSource.updateDocument(document.id, updateData);
-
-    // return the update doc object
     return document;
   }
 
@@ -125,13 +108,12 @@ class DocumentRepositoryImpl implements DocumentRepository {
     return getDocumentById(id);
   }
 
-  // DELETE
+  // delete
   @override
   Future<void> deleteDocument(String id) async {
     return dataSource.deleteDocument(id);
   }
 
-  // FILTER BY MAIN CATEGORY
   @override
   Future<List<Document>> getDocumentsByMainCategory({
     required String memberId,
@@ -144,7 +126,6 @@ class DocumentRepositoryImpl implements DocumentRepository {
     int page = 1,
     int limit = 50,
   }) async {
-    // 1. Get all documents for the member
     var allDocs = await getDocuments(
       memberId: memberId,
       sortBy: sortBy,
@@ -152,7 +133,6 @@ class DocumentRepositoryImpl implements DocumentRepository {
       limit: 1000,
     );
 
-    // 1.5 Filter documents by Date Range locally
     allDocs = allDocs.where((doc) {
       return doc.postingDate.isAfter(
             startDate.subtract(const Duration(seconds: 1)),
@@ -160,11 +140,10 @@ class DocumentRepositoryImpl implements DocumentRepository {
           doc.postingDate.isBefore(endDate.add(const Duration(seconds: 1)));
     }).toList();
 
-    // 2. Filter documents that have at least one line item matching the main category
     final matchingDocs = <Document>[];
 
     for (final doc in allDocs) {
-      // Get line items for this document
+      // get line items for this document
       final lineItemsData = await lineItemDataSource.getLineItemsByDocumentId(
         doc.id,
       );
@@ -172,9 +151,8 @@ class DocumentRepositoryImpl implements DocumentRepository {
           .map((data) => DocumentLineItem.fromMap(data))
           .toList();
 
-      // Check if any line item maps to the target main category
+      // check if any line item maps to the target main category
       final hasMatchingCategory = lineItems.any((item) {
-        // Enforce Amount Check: Only consider lines that contribute to the transaction type
         if (transactionType == 'income' && item.credit <= 0) return false;
         if (transactionType == 'expense' && item.debit <= 0) return false;
 
@@ -190,7 +168,6 @@ class DocumentRepositoryImpl implements DocumentRepository {
       }
     }
 
-    // 3. Apply pagination
     final startIndex = (page - 1) * limit;
     final endIndex = startIndex + limit;
 

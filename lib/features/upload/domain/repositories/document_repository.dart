@@ -35,7 +35,7 @@ abstract class DocumentRepository {
 
   Future<void> deleteDocument(String id);
 
-  // Filter documents by main category (aggregated from line items)
+  // filter documents by main category (aggregated from line items)
   Future<List<Document>> getDocumentsByMainCategory({
     required String memberId,
     required String mainCategory,

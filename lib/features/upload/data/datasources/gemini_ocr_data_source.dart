@@ -8,7 +8,7 @@ import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 class GeminiOCRDataSource {
   GeminiOCRDataSource();
 
-  // --- API LOGIC ---
+  // API LOGIC
 
   List<String> _getApiKeys() {
     final envVarNames = [
@@ -49,9 +49,9 @@ class GeminiOCRDataSource {
 
     Object? lastError;
 
-    // Loop through Keys
+    // loop through Keys
     for (String apiKey in keys) {
-      // Loop through Models
+      // loop through Models
       for (String modelName in _modelsToTry) {
         try {
           final keyId = apiKey.length > 4
@@ -62,7 +62,7 @@ class GeminiOCRDataSource {
           final model = GenerativeModel(model: modelName, apiKey: apiKey);
           final response = await model.generateContent(content);
 
-          return response; // Success! Return immediately.
+          return response;
         } catch (e) {
           print("Failed ($modelName). Error: $e");
           lastError = e;
@@ -76,22 +76,22 @@ class GeminiOCRDataSource {
     );
   }
 
-  // Uses the 'lineCategory' list imported from doc_line_item_field.dart
+  // uses the 'lineCategory' list imported from doc_line_item_field.dart
   String _getFormattedCategories() {
     return lineCategory.map((e) => "- $e").join("\n");
   }
 
-  // Uses the 'docType' list imported from doc_details.dart
+  // uses the 'docType' list imported from doc_details.dart
   String _getFormattedDocTypes() {
     return docType.map((e) => "- $e").join("\n");
   }
 
-  // --- PROMPT GENERATION ---
+  // PROMPT GENERATION
   String _buildPrompt(String? userCompanyName) {
     final String categoryList = _getFormattedCategories();
     final String docTypeList = _getFormattedDocTypes();
     
-    // Logic instructions for the AI
+    // logic instructions for the AI
     String contextLogic = "";
     if (userCompanyName != null && userCompanyName.isNotEmpty) {
       contextLogic = """
@@ -159,7 +159,6 @@ class GeminiOCRDataSource {
     """;
   }
 
-  // 1. Handle Images (JPG, PNG) and PDFs (Binary data)
   Future<Map<String, dynamic>> extractDataFromMedia(
     String filePath,
     String mimeType,
@@ -183,7 +182,7 @@ class GeminiOCRDataSource {
     }
   }
 
-  // 2. Handle Text Data (Excel converted to CSV string)
+  // Excel converted to CSV string
   Future<Map<String, dynamic>> extractDataFromText(
     String textData,
     String? userCompanyName,
@@ -199,7 +198,6 @@ class GeminiOCRDataSource {
     }
   }
 
-  // 3. Wrapper for Backward Compatibility (defaults to image/jpeg)
   Future<Map<String, dynamic>> extractDataFromImage(
     String imagePath,
     String? userCompanyName,
@@ -207,11 +205,10 @@ class GeminiOCRDataSource {
     return extractDataFromMedia(
       imagePath, 
       'image/jpeg', 
-      userCompanyName, // Fixed: Now passing the 3rd argument
+      userCompanyName,
     );
   }
 
-  // --- PRIVATE HELPER ---
   Future<Map<String, dynamic>> _executeExtraction(List<Content> content) async {
     final response = await _generateContentWithFallback(content);
     final responseText = response.text;
