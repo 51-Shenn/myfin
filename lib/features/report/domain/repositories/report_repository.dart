@@ -56,4 +56,10 @@ abstract class ReportRepository {
   Future<List<DocumentLineItem>> getDocLineItemsByDocumentIds(
     List<String> documentIds,
   );
+
+  /// Get sales tax regulation (most recent by type)
+  Future<dynamic> getSalesTaxRegulation();
+
+  /// Get income tax regulation (most recent by type)
+  Future<dynamic> getIncomeTaxRegulation();
 }

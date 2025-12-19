@@ -199,7 +199,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
       },
       builder: (context, state) {
         return Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(
+            backgroundColor: Colors.white,
             title: Text(
               'Document Details',
               style: const TextStyle(

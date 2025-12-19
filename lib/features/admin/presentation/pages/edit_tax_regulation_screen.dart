@@ -49,7 +49,9 @@ class _EditTaxRegulationScreenState extends State<EditTaxRegulationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Text(
           widget.isNew ? 'Add Tax Regulation' : 'Edit Tax Regulation',
         ),

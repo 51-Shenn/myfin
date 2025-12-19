@@ -25,7 +25,9 @@ class _TaxRegulationsListScreenState extends State<TaxRegulationsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text(
           'Tax Regulations',
           style: TextStyle(fontWeight: FontWeight.bold),

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+import 'package:myfin/features/admin/domain/entities/tax_regulation.dart';
 import 'package:myfin/features/report/services/generator/acc_payable_generator.dart';
 import 'package:myfin/features/report/services/generator/acc_receivable_generator.dart';
 import 'package:myfin/features/report/services/generator/balance_sheet_generator.dart';
@@ -707,14 +708,18 @@ class BalanceSheet extends Report {
   Future<BalanceSheet> generateReport(
     String businessName,
     List<Document> docData,
-    List<DocumentLineItem> docLineData,
-  ) async {
+    List<DocumentLineItem> docLineData, {
+    TaxRegulation? salesTaxRegulation,
+    TaxRegulation? incomeTaxRegulation,
+  }) async {
     final generator = BalanceSheetGenerator();
     return await generator.generateFullReport(
       this,
       businessName,
       docData,
       docLineData,
+      salesTaxRegulation: salesTaxRegulation,
+      incomeTaxRegulation: incomeTaxRegulation,
     );
   }
 

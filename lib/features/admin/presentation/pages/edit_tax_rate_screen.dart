@@ -69,7 +69,9 @@ class _EditTaxRateScreenState extends State<EditTaxRateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text('Edit Tax Rate'),
         centerTitle: true,
         actions: [
