@@ -4,7 +4,7 @@ import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 class BalanceSheetCalculator {
   final List<DocumentLineItem> lineItems;
   final DateTime asOfDate;
-  final double cashBalance; 
+  final double cashBalance;
   final TaxRegulation? salesTaxRegulation;
   final TaxRegulation? incomeTaxRegulation;
 
@@ -82,8 +82,9 @@ class BalanceSheetCalculator {
       _sumCategory('Purchase of Assets', true);
 
   double calculateAccumulatedDepreciation() {
-    return _sumCategory('Purchase of Assets', true) *
-        0.2; // Shown as positive in reports
+    // Sum all depreciation expenses to get accumulated depreciation
+    // Note: Depreciation is an expense (negative), so we negate it to get positive accumulated value
+    return -_sumCategory('Depreciation (Office, Equipment, Vehicles)', false);
   }
 
   double calculateIntangibleAssets() => _sumCategory('Intangible Assets', true);
@@ -165,8 +166,22 @@ class BalanceSheetCalculator {
 
   double calculateSharedPremium() => _sumCategory('Shared Premium', true);
 
+  // Adjust net income for calculated taxes to match tax payable in liabilities
+  double calculateNetIncomeAfterCalculatedTax(double netIncome) {
+    // If using tax regulations, deduct the calculated tax from net income
+    if (incomeTaxRegulation != null) {
+      final calculatedTax = _calculateProgressiveTax(
+        netIncome,
+        incomeTaxRegulation,
+      );
+      return netIncome - calculatedTax;
+    }
+    // Otherwise use net income as-is (tax already deducted in P&L)
+    return netIncome;
+  }
+
   double calculateRetainedEarnings(double netIncome) =>
-      netIncome;
+      calculateNetIncomeAfterCalculatedTax(netIncome);
 
   double calculateOtherCorporateEquity() => 0.0;
 
@@ -186,17 +201,18 @@ class BalanceSheetCalculator {
   double calculateTotalOwnersEquity(double netIncome) {
     return calculateOwnersCapital() -
         calculateOwnersDrawings() +
-        netIncome +
+        calculateNetIncomeAfterCalculatedTax(netIncome) +
         calculateOtherOwnersEquity();
   }
 
   double calculatePartnerCapital() => _sumCategory('Partner Investment', true);
 
-  double calculatePartnerDrawings() =>
-      _sumCategory('Partner Drawing', false); 
+  double calculatePartnerDrawings() => _sumCategory('Partner Drawing', false);
 
-  double calculateTotalPartnershipEquity() {
-    return calculatePartnerCapital() - calculatePartnerDrawings();
+  double calculateTotalPartnershipEquity(double netIncome) {
+    return calculatePartnerCapital() -
+        calculatePartnerDrawings() +
+        calculateNetIncomeAfterCalculatedTax(netIncome);
   }
 
   double calculateTotalEquity(
@@ -209,10 +225,17 @@ class BalanceSheetCalculator {
       case 'owner':
         return calculateTotalOwnersEquity(netIncome);
       case 'partnership':
-        return calculateTotalPartnershipEquity();
+        return calculateTotalPartnershipEquity(netIncome);
       default:
         return calculateTotalCorporateEquity(netIncome);
     }
+  }
+
+  // Calculate combined total from all equity types
+  double calculateTotalAllEquityTypes(double netIncome) {
+    return calculateTotalCorporateEquity(netIncome) +
+        calculateTotalOwnersEquity(netIncome) +
+        calculateTotalPartnershipEquity(netIncome);
   }
 
   double calculateTotalLiabilitiesAndEquity(

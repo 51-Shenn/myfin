@@ -53,12 +53,10 @@ class ProfitLossCalculator {
       _sumCategory('Opening Inventory', false);
   double calculatePurchases() => _sumCategory('Purchases', false);
   double calculateDeliveryFees() => _sumCategory('Delivery Fees', false);
-  double calculatePurchaseReturns() =>
-      _sumCategory('Purchase Returns', true);
+  double calculatePurchaseReturns() => _sumCategory('Purchase Returns', true);
   double calculatePurchaseDiscounts() =>
       _sumCategory('Purchase Discounts', true);
-  double calculateClosingInventory() =>
-      _sumCategory('Closing Inventory', true); 
+  double calculateClosingInventory() => _sumCategory('Closing Inventory', true);
   double calculateOtherCostOfGoodsSold() =>
       _sumCategory('Other Cost of Goods Sold', false);
 
@@ -93,7 +91,7 @@ class ProfitLossCalculator {
       _sumCategory('Training & Development', false);
 
   double calculateDepreciation() =>
-      (_sumCategory('Purchase of Assets', false) * 0.2);
+      _sumCategory('Depreciation (Office, Equipment, Vehicles)', false);
   double calculateAmortization() =>
       _sumCategory('Amortization (Patents, Trademarks, Software)', false);
 
