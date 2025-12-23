@@ -33,7 +33,7 @@ class CashFlowCalculator {
   double getNetIncome() => netIncome;
 
   double calculateDepreciationExpense() =>
-      -(_sumCategory('Purchase of Assets') * 0.2);
+      (_sumCategory('Purchase of Assets') * 0.2);
 
   double calculateAmortizationExpense() =>
       -_sumCategory('Amortization (Patents, Trademarks, Software)');
@@ -91,11 +91,11 @@ class CashFlowCalculator {
 
   double calculateDividendPayments() => -_sumCategory('Dividend Payment');
 
-  double calculateIssuanceOfLongTermDebt() => -_sumCategory('Debt');
+  double calculateIssuanceOfLongTermDebt() => _sumCategory('Debt');
 
   double calculateRepaymentOfLongTermDebt() => -_sumCategory('Debt Repayment');
 
-  double calculateIssuanceOfShortTermNotes() => -_sumCategory('Notes Payable');
+  double calculateIssuanceOfShortTermNotes() => _sumCategory('Notes Payable');
 
   double calculateRepaymentOfShortTermNotes() =>
       -_sumCategory('Notes Repayment');
