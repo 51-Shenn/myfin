@@ -107,7 +107,7 @@ class UploadCubit extends Cubit<UploadState> {
           'jpeg',
           'pdf',
           'xlsx',
-        ], // extensions that are allowed in this app
+        ],
       );
 
       if (result != null && result.files.single.path != null) {
@@ -140,6 +140,8 @@ class UploadCubit extends Cubit<UploadState> {
 
       Map<String, dynamic> jsonResult;
 
+      print("[DEBUG] Processing file type: $type at $path");
+
       if (type == 'pdf') {
         jsonResult = await _ocrDataSource.extractDataFromMedia(
           path,
@@ -148,6 +150,13 @@ class UploadCubit extends Cubit<UploadState> {
         );
       } else if (type == 'xlsx') {
         final String csvData = await _convertExcelToCsvString(path);
+        
+        if (csvData.isEmpty) {
+           throw Exception("Could not extract any text from the Excel file.");
+        }
+
+        print("[DEBUG] Sending CSV data length: ${csvData.length}");
+        
         jsonResult = await _ocrDataSource.extractDataFromText(
           csvData,
           companyName,
@@ -162,13 +171,14 @@ class UploadCubit extends Cubit<UploadState> {
 
       await _mapJsonToStateAndNavigate(jsonResult, path, type);
     } catch (e) {
+      print("[DEBUG] Processing Error: $e");
       if (isClosed) return;
       emit(UploadError(state.document, 'Processing Failed: $e'));
       emit(UploadLoaded(state.document));
     }
   }
 
-  // helper func to read excel
+  // Helper function to read excel with debug logging
   Future<String> _convertExcelToCsvString(String path) async {
     final file = File(path);
 
@@ -181,76 +191,85 @@ class UploadCubit extends Cubit<UploadState> {
       throw Exception("The selected file is empty.");
     }
 
+    String? extractedText;
+
+    // STRATEGY 1: SpreadsheetDecoder
     try {
-      final excel = Excel.decodeBytes(bytes);
-      final buffer = StringBuffer();
-
-      for (var table in excel.tables.keys) {
-        final sheet = excel.tables[table];
-        if (sheet == null || sheet.maxRows == 0) continue;
-
-        buffer.writeln("Sheet: $table");
-
-        for (var row in sheet.rows) {
-          final rowString = row
-              .map((cell) {
-                if (cell == null || cell.value == null) return "";
-
-                final val = cell.value;
-                // checks for Excel 4.0.0+
-                if (val is TextCellValue) return val.value.toString();
-                if (val is DoubleCellValue) return val.value.toString();
-                if (val is IntCellValue) return val.value.toString();
-                if (val is BoolCellValue) return val.value.toString();
-                if (val is DateCellValue)
-                  return val.asDateTimeLocal().toIso8601String();
-                if (val is TimeCellValue) return val.toString();
-                if (val is FormulaCellValue) return val.formula.toString();
-
-                return val.toString();
-              })
-              .join(", ");
-
-          if (rowString.trim().replaceAll(',', '').isNotEmpty) {
-            buffer.writeln(rowString);
-          }
-        }
-        buffer.writeln("---");
-      }
-
-      if (buffer.isNotEmpty) return buffer.toString();
-    } catch (e) {
-      print("Primary Excel decoder failed: $e. Attempting fallback...");
-    }
-
-    try {
+      print("[DEBUG] Attempting Strategy 1: SpreadsheetDecoder");
       final decoder = SpreadsheetDecoder.decodeBytes(bytes, update: true);
       final buffer = StringBuffer();
-
+      
       for (var table in decoder.tables.keys) {
         final sheet = decoder.tables[table];
         if (sheet == null || sheet.maxRows == 0) continue;
 
-        buffer.writeln("Sheet: $table");
+        print("[DEBUG] Reading Sheet: $table");
+
         for (var row in sheet.rows) {
-          final rowString = row
-              .map((cell) => cell?.toString() ?? "")
-              .join(", ");
-          if (rowString.trim().replaceAll(',', '').isNotEmpty) {
+          // Convert row to string, handle nulls
+          final List<String> rowValues = row.map((cell) {
+             if (cell == null) return "";
+             return cell.toString().trim();
+          }).toList();
+
+          final rowString = rowValues.join(", ");
+          
+          // Debug first few rows
+          if (buffer.length < 500) print("[DEBUG] Row: $rowString");
+
+          if (rowString.replaceAll(',', '').trim().isNotEmpty) {
             buffer.writeln(rowString);
           }
         }
-        buffer.writeln("---");
       }
-
-      if (buffer.isNotEmpty) return buffer.toString();
+      extractedText = buffer.toString();
     } catch (e) {
-      print("Fallback Excel decoder failed: $e");
+      print("[DEBUG] Strategy 1 failed: $e");
     }
 
-    throw Exception(
-      "Failed to process Excel file. The file might be corrupted, password protected, or in an unsupported format.",
-    );
+    // STRATEGY 2: Excel Package (Fallback if Strategy 1 failed OR returned empty)
+    if (extractedText == null || extractedText.trim().isEmpty) {
+       print("[DEBUG] Strategy 1 extracted extracted nothing. Attempting Strategy 2: Excel Package");
+       try {
+        final excel = Excel.decodeBytes(bytes);
+        final buffer = StringBuffer();
+
+        for (var table in excel.tables.keys) {
+          final sheet = excel.tables[table];
+          if (sheet == null || sheet.maxRows == 0) continue;
+
+          for (var row in sheet.rows) {
+            final rowString = row.map((cell) {
+              if (cell == null || cell.value == null) return "";
+              
+              final val = cell.value;
+              // Handle various cell types specifically for string conversion
+              if (val is TextCellValue) return val.value;
+              if (val is DoubleCellValue) return val.value.toString();
+              if (val is IntCellValue) return val.value.toString();
+              if (val is DateCellValue) {
+                return val.asDateTimeLocal().toIso8601String().split('T')[0];
+              }
+              return val.toString();
+            }).join(", ");
+
+            if (rowString.replaceAll(',', '').trim().isNotEmpty) {
+               buffer.writeln(rowString);
+            }
+          }
+        }
+        extractedText = buffer.toString();
+      } catch (e) {
+        print("[DEBUG] Strategy 2 failed: $e");
+      }
+    }
+
+    if (extractedText != null && extractedText.isNotEmpty) {
+      print("[DEBUG] Final Extracted Text (First 100 chars): ${extractedText.substring(0, extractedText.length > 100 ? 100 : extractedText.length)}");
+      return extractedText;
+    }
+
+    throw Exception("Failed to extract text from Excel. The file might be corrupted, password protected, or empty.");
   }
 
   Future<void> _mapJsonToStateAndNavigate(
@@ -272,9 +291,7 @@ class UploadCubit extends Cubit<UploadState> {
     String finalDueDateString;
 
     if (parsedDueDate != null) {
-      finalDueDateString = parsedDueDate.toIso8601String().split(
-        'T',
-      )[0]; // YYYY-MM-DD
+      finalDueDateString = parsedDueDate.toIso8601String().split('T')[0];
     } else {
       finalDueDateString = postingDate
           .add(const Duration(days: 30))
@@ -294,7 +311,6 @@ class UploadCubit extends Cubit<UploadState> {
             .toList() ??
         [];
 
-    // check if due date already exists in metadata (from AI), if not, add it
     bool hasDueDate = metadataList.any(
       (row) => row.key.toLowerCase().contains('due date'),
     );
@@ -356,6 +372,11 @@ class UploadCubit extends Cubit<UploadState> {
     if (!await file.exists()) return null;
 
     try {
+      // Excel files do not have a thumbnail usually, return null
+      if (type == 'xlsx' || type.contains('sheet')) {
+        return null; 
+      }
+
       if (type == 'pdf' || type == 'application/pdf') {
         final pdfBytes = await file.readAsBytes();
         await for (var page in Printing.raster(pdfBytes, pages: [0], dpi: 72)) {
