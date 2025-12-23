@@ -220,8 +220,21 @@ class GeminiOCRDataSource {
         .replaceAll('```', '')
         .trim();
 
-    return jsonDecode(cleanJson);
+    final dynamic decoded = jsonDecode(cleanJson);
+
+    // FIX: Handle cases where AI returns a List instead of a Map
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    } else if (decoded is List && decoded.isNotEmpty) {
+      // If it's a list, return the first element if it's a map
+      if (decoded.first is Map<String, dynamic>) {
+        return decoded.first as Map<String, dynamic>;
+      }
+    }
+
+    throw Exception("Invalid JSON format from AI. Expected Map, got: ${decoded.runtimeType}");
   }
+
 
   Future<Map<String, String>> categorizeDescriptions(
     List<String> descriptions,
