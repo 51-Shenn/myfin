@@ -14,7 +14,7 @@ class BalanceSheetGenerator {
     List<DocumentLineItem> docLineData, {
     double? netIncomeFromProfitLoss,
     double? endingCashFromCashFlow,
-    TaxRegulation? salesTaxRegulation, 
+    TaxRegulation? salesTaxRegulation,
     TaxRegulation? incomeTaxRegulation,
   }) async {
     final asOfDate = report.fiscal_period['endDate']!;
@@ -46,8 +46,8 @@ class BalanceSheetGenerator {
       lineItems: docLineData,
       asOfDate: asOfDate,
       cashBalance: endingCash,
-      salesTaxRegulation: salesTaxRegulation, 
-      incomeTaxRegulation: incomeTaxRegulation, 
+      salesTaxRegulation: salesTaxRegulation,
+      incomeTaxRegulation: incomeTaxRegulation,
     );
 
     final sections = [
@@ -208,37 +208,120 @@ class BalanceSheetGenerator {
     BalanceSheetCalculator calc,
     double netIncome,
   ) {
-    final corporateEquityGroup = ReportGroup(
-      group_title: 'Corporate Equity',
-      line_items: [
-        ReportLineItem(
-          item_title: 'Shared Capital',
-          amount: calc.calculateSharedCapital(),
-          isIncrease: true,
-        ),
-        ReportLineItem(
-          item_title: 'Shared Premium',
-          amount: calc.calculateSharedPremium(),
-          isIncrease: true,
-        ),
-        ReportLineItem(
-          item_title: 'Retained Earnings',
-          amount: calc.calculateRetainedEarnings(netIncome),
-          isIncrease: true,
-        ),
-        ReportLineItem(
-          item_title: 'Others',
-          amount: calc.calculateOtherCorporateEquity(),
-          isIncrease: true,
-        ),
-      ],
-      subtotal: calc.calculateTotalCorporateEquity(netIncome),
-    );
+    // Auto-detect which equity type to use based on which has capital
+    final hasCorporateEquity =
+        calc.calculateSharedCapital() != 0 ||
+        calc.calculateSharedPremium() != 0;
+    final hasOwnerEquity = calc.calculateOwnersCapital() != 0;
+    final hasPartnerEquity = calc.calculatePartnerCapital() != 0;
+
+    // Determine equity type (prioritize in order: corporate > owner > partnership)
+    String equityType = 'corporate';
+    if (hasPartnerEquity) equityType = 'partnership';
+    if (hasOwnerEquity) equityType = 'owner';
+    if (hasCorporateEquity) equityType = 'corporate';
+
+    List<ReportGroup> equityGroups = [];
+    double totalEquity = 0;
+
+    if (equityType == 'corporate') {
+      final corporateEquityGroup = ReportGroup(
+        group_title: 'Corporate Equity',
+        line_items: [
+          ReportLineItem(
+            item_title: 'Shared Capital',
+            amount: calc.calculateSharedCapital(),
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Shared Premium',
+            amount: calc.calculateSharedPremium(),
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Retained Earnings',
+            amount: calc.calculateRetainedEarnings(netIncome),
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Others',
+            amount: calc.calculateOtherCorporateEquity(),
+            isIncrease: true,
+          ),
+        ],
+        subtotal: calc.calculateTotalCorporateEquity(netIncome),
+      );
+      equityGroups.add(corporateEquityGroup);
+      totalEquity = calc.calculateTotalCorporateEquity(netIncome);
+    } else if (equityType == 'owner') {
+      final ownersEquityGroup = ReportGroup(
+        group_title: "Owner's Equity",
+        line_items: [
+          ReportLineItem(
+            item_title: 'Owner Capital',
+            amount: calc.calculateOwnersCapital(),
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Owner Drawings',
+            amount: calc.calculateOwnersDrawings(),
+            isIncrease: false,
+          ),
+          ReportLineItem(
+            item_title: 'Net Income',
+            amount: netIncome,
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Income Tax',
+            amount: calc.calculateIncomeTaxPayable(netIncome),
+            isIncrease: false,
+          ),
+          ReportLineItem(
+            item_title: 'Others',
+            amount: calc.calculateOtherOwnersEquity(),
+            isIncrease: true,
+          ),
+        ],
+        subtotal: calc.calculateTotalOwnersEquity(netIncome),
+      );
+      equityGroups.add(ownersEquityGroup);
+      totalEquity = calc.calculateTotalOwnersEquity(netIncome);
+    } else {
+      final partnershipEquityGroup = ReportGroup(
+        group_title: 'Partnership Equity',
+        line_items: [
+          ReportLineItem(
+            item_title: 'Partner Capital',
+            amount: calc.calculatePartnerCapital(),
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Partner Drawings',
+            amount: calc.calculatePartnerDrawings(),
+            isIncrease: false,
+          ),
+          ReportLineItem(
+            item_title: 'Net Income',
+            amount: netIncome,
+            isIncrease: true,
+          ),
+          ReportLineItem(
+            item_title: 'Income Tax',
+            amount: calc.calculateIncomeTaxPayable(netIncome),
+            isIncrease: false,
+          ),
+        ],
+        subtotal: calc.calculateTotalPartnershipEquity(netIncome),
+      );
+      equityGroups.add(partnershipEquityGroup);
+      totalEquity = calc.calculateTotalPartnershipEquity(netIncome);
+    }
 
     return ReportSection(
       section_title: 'Equity',
-      groups: [corporateEquityGroup],
-      grand_total: calc.calculateTotalEquity(netIncome),
+      groups: equityGroups,
+      grand_total: totalEquity,
     );
   }
 }

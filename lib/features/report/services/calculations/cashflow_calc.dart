@@ -33,7 +33,7 @@ class CashFlowCalculator {
   double getNetIncome() => netIncome;
 
   double calculateDepreciationExpense() =>
-      (_sumCategory('Purchase of Assets') * 0.2);
+      -_sumCategory('Depreciation (Office, Equipment, Vehicles)');
 
   double calculateAmortizationExpense() =>
       -_sumCategory('Amortization (Patents, Trademarks, Software)');
