@@ -1,218 +1,138 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
-class DataSeeder {
+class BalancedDataSeeder {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Uuid _uuid = const Uuid();
-  final Random _random = Random();
 
-  // The specific Member ID you provided
-  final String targetMemberId = 'umP1hregypZiPlMXFYuOqh6CNNC2';
-  final String username = 'SeededUser';
+  // "Created By" name for display purposes
+  final String username = 'System Admin';
 
-  // Updated List from doc_details.dart
-  final List<String> _docTypes = [
-    'Sales Invoice',
-    'Official Receipt',
-    'Cash Receipt',
-    'Credit Note',
-    'Debit Note',
-    'Sales Order',
-    'Purchase Order',
-    'Supplier Invoice',
-    'Goods Received Note',
-    'Delivery Order',
-    'Payment Voucher',
-    'Receipt Voucher',
-    'Journal Voucher',
-    'Expense Claim Form',
-    'Payroll Slip',
-    'Time Sheet',
-    'Bank Statement',
-    'Deposit Slip',
-    'Cheque Stub',
-    'Petty Cash Voucher',
-    'Stock Issue Note',
-    'Stock Return Note',
-    'Inventory Adjustment Form',
-    'Asset Purchase Invoice',
-    'Asset Disposal Form',
-    'Loan Agreement',
-    'Loan Repayment Schedule',
-    'Dividend Voucher',
-    'Capital Injection Record',
-    'Owner Drawing Record',
-    'Contract Agreement',
-    'Service Report',
-    'Maintenance Record',
-    'Insurance Claim Form',
-    'Tax Invoice',
-    'Tax Payment Receipt',
-  ];
-
-  // Updated List from doc_details.dart
-  final List<String> _statuses = [
-    'Draft',
-    'Pending Approval',
-    'Approved',
-    'Posted',
-    'Paid',
-    'Void',
-    'Rejected',
-  ];
-
-  // Updated List from doc_line_item_field.dart
-  final List<String> _categories = [
-    'Product Revenue',
-    'Service Revenue',
-    'Subscription Revenue',
-    'Rental Revenue',
-    'Other Operating Revenue',
-    'Sales Returns',
-    'Sales Discounts',
-    'Sales Allowances',
-    'Interest Income',
-    'Dividend Income',
-    'Investment Gains',
-    'Insurance Claims',
-    'Gain on Sale of Assets',
-    'Other Income',
-    'Opening Inventory',
-    'Purchases',
-    'Delivery Fees',
-    'Purchase Returns',
-    'Purchase Discounts',
-    'Closing Inventory',
-    'Other Cost of Goods Sold',
-    'Direct Labor Costs',
-    'Contractor Costs',
-    'Other Cost of Services',
-    'Advertising',
-    'Sales Commissions',
-    'Sales Salaries',
-    'Travel & Entertainment',
-    'Shipping/Delivery-Out',
-    'Office Salaries',
-    'Office Rent',
-    'Office Utilities',
-    'Office Supplies',
-    'Telephone & Internet',
-    'Repairs & Maintenance',
-    'Insurance',
-    'Professional Fees',
-    'Bank Charges',
-    'Training & Development',
-    'Depreciation (Office, Equipment, Vehicles)',
-    'Amortization (Patents, Trademarks, Software)',
-    'Licenses & Permits',
-    'Security',
-    'Outsourcing Expenses',
-    'Subscriptions & Tools',
-    'HR & Recruiting',
-    'Interest Expense',
-    'Loss on Sale of Assets',
-    'Investment Losses',
-    'Penalties & Fines',
-    'Legal Settlements',
-    'Impairment Losses',
-    'Other Expenses',
-    'Purchase of Assets',
-    'Money Lent to Others',
-    'Money Collected from Others',
-    'Stock',
-    'Stock Repurchase',
-    'Dividend Payment',
-    'Debt',
-    'Debt Repayment',
-    'Notes Payable',
-    'Notes Repayment',
-    'Cash & Cash Equivalents',
-    'Intangible Assets',
-    'Long-term Investments',
-    'Other Assets',
-    'Shared Premium',
-    'Owner Investment',
-    'Owner Drawing',
-    'Partner Investment',
-    'Partner Drawing',
-    'Tax Expense'
-  ];
-
-  // Extended generic descriptions to mix and match with the large category list
-  final List<String> _descriptions = [
-    'Monthly Service Fee', 'Q1 Consultation', 'Office Chairs', 'Dell Monitors',
-    'Monthly Office Rent', 'Electricity Bill', 'Water Bill', 'Internet Subscription',
-    'Grab Ride to Airport', 'Team Lunch', 'Client Entertainment', 'Google Ads Campaign',
-    'Facebook Marketing', 'Audit Services', 'Legal Fees', 'Tax Submission',
-    'Software License', 'Cloud Server Hosting', 'Cleaning Services', 'Security Deposit',
-    'Laptop Purchase', 'Stationery Batch A', 'Printer Toner', 'Repair Services',
-    'Annual Insurance Premium', 'Bank Service Charge', 'Interest Payment'
-  ];
-
-  Future<void> seedData() async {
-    print("🌱 Starting Data Seed for $targetMemberId...");
-
-    final batch = _firestore.batch();
+  Future<void> seedBalancedData() async {
+    // 1. Get Current User Dynamically
+    final user = FirebaseAuth.instance.currentUser;
     
-    // Generate 30 Documents as requested
-    for (int i = 0; i < 150; i++) {
-      // 1. Prepare Document Data
-      final String docId = _firestore.collection('documents').doc().id;
-      // Random date within the last 90 days
-      final DateTime docDate = DateTime.now().subtract(Duration(days: _random.nextInt(90)));
-      final String docType = _docTypes[_random.nextInt(_docTypes.length)];
-      
-      final docData = {
-        'memberId': targetMemberId,
-        'name': '$docType #${1000 + i} - ${_descriptions[_random.nextInt(_descriptions.length)]}',
-        'type': docType,
-        'status': _statuses[_random.nextInt(_statuses.length)],
-        'createdBy': username,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        'postingDate': Timestamp.fromDate(docDate),
-        'metadata': [
-          {'id': _uuid.v4(), 'key': 'Vendor', 'value': 'Tech Corp Sdn Bhd'},
-          {'id': _uuid.v4(), 'key': 'Payment Term', 'value': '30 Days'},
-        ],
-        'refDocType': null,
-        'refDocId': null,
-        'imageBase64': null, 
-      };
-
-      // Add Document to Batch
-      final docRef = _firestore.collection('documents').doc(docId);
-      batch.set(docRef, docData);
-
-      // 2. Generate 1-5 Line Items for this Document
-      int lineItemCount = _random.nextInt(4) + 1; // 1 to 5 items
-      
-      for (int j = 0; j < lineItemCount; j++) {
-        final String lineId = _firestore.collection('document_line_items').doc().id;
-        double amount = (_random.nextDouble() * 2000) + 50; // Random amount 50.00 - 2050.00
-        
-        final lineData = {
-          'documentId': docId,
-          'lineNo': j + 1,
-          'lineDate': Timestamp.fromDate(docDate),
-          'categoryCode': _categories[_random.nextInt(_categories.length)],
-          'description': _descriptions[_random.nextInt(_descriptions.length)],
-          'total': double.parse(amount.toStringAsFixed(2)),
-          'debit': 0.0, // Simplified: Keeping 0.0 as per logic
-          'credit': 0.0, // Simplified: Keeping 0.0 as per logic
-          'attribute': [
-             {'id': _uuid.v4(), 'key': 'Department', 'value': 'General'},
-          ],
-        };
-
-        final lineRef = _firestore.collection('document_line_items').doc(lineId);
-        batch.set(lineRef, lineData);
-      }
+    if (user == null) {
+      print("❌ Error: You must be logged in to seed data.");
+      return;
     }
 
-    // Commit Batch
+    final String targetMemberId = user.uid;
+    print("⚖️ Seeding Balanced Data for User ID: $targetMemberId...");
+
+    final batch = _firestore.batch();
+    final DateTime now = DateTime.now();
+    // Force date to 1st of current month to ensure it appears in reports
+    final DateTime postingDate = DateTime(now.year, now.month, 1, 12, 0, 0);
+
+    // =========================================================================
+    // THE BALANCED DATA SET (Assets = 161,800 | Liab+Eq = 161,800)
+    // =========================================================================
+
+    // 1. CAPITAL (Equity +100k, Cash +100k)
+    await _addDoc(batch, targetMemberId, "Capital Injection", "Capital Injection Record", "Approved", postingDate, [
+      _Line("Stock", "Initial Capital", 100000.00, isCredit: true)
+    ]);
+
+    // 2. LOAN (Liabilities +50k, Cash +50k)
+    // Note: With the code fix, this will correctly increase Cash.
+    await _addDoc(batch, targetMemberId, "Business Loan", "Loan Agreement", "Posted", postingDate, [
+      _Line("Debt", "Bank Loan", 50000.00, isCredit: true)
+    ]);
+
+    // 3. ASSET PURCHASE (Asset +20k, Cash -20k)
+    // Note: Your logic auto-calculates 20% depreciation (4k) later.
+    await _addDoc(batch, targetMemberId, "Server Purchase", "Asset Purchase Invoice", "Posted", postingDate, [
+      _Line("Purchase of Assets", "Dell Servers", 20000.00, isDebit: true)
+    ]);
+
+    // 4. REVENUE (Equity +30k, Cash +30k)
+    await _addDoc(batch, targetMemberId, "Software Sales", "Sales Invoice", "Posted", postingDate.add(const Duration(days: 1)), [
+      _Line("Product Revenue", "App Licensing", 30000.00, isCredit: true)
+    ]);
+
+    // 5. EXPENSES (Equity -14.2k, Cash -14.2k)
+    // - Rent: 5,000
+    // - Salaries: 8,000
+    // - Utilities: 1,200
+    await _addDoc(batch, targetMemberId, "Office Rent", "Payment Voucher", "Paid", postingDate.add(const Duration(days: 2)), [
+      _Line("Office Rent", "HQ Rent", 5000.00, isDebit: true)
+    ]);
+    
+    await _addDoc(batch, targetMemberId, "Staff Salaries", "Payroll Slip", "Posted", postingDate.add(const Duration(days: 15)), [
+      _Line("Office Salaries", "Jan Payroll", 8000.00, isDebit: true)
+    ]);
+
+    await _addDoc(batch, targetMemberId, "Electric Bill", "Payment Voucher", "Paid", postingDate.add(const Duration(days: 20)), [
+      _Line("Office Utilities", "TNB Bill", 1200.00, isDebit: true)
+    ]);
+
     await batch.commit();
-    print("✅ Successfully seeded 30 documents and their line items for $targetMemberId");
+    print("✅ Seed Complete! Refresh your Dashboard.");
   }
+
+  Future<void> _addDoc(
+    WriteBatch batch, 
+    String memberId,
+    String name, 
+    String type, 
+    String status, 
+    DateTime date, 
+    List<_Line> lines
+  ) async {
+    final String docId = _firestore.collection('documents').doc().id;
+
+    final docData = {
+      'id': docId,
+      'memberId': memberId, // USING DYNAMIC ID
+      'name': name,
+      'type': type,
+      'status': status,
+      'createdBy': username,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'postingDate': Timestamp.fromDate(date),
+      'metadata': [
+        {'id': _uuid.v4(), 'key': 'Generated', 'value': 'BalancedSeeder'},
+      ],
+      'refDocType': null,
+      'refDocId': null,
+      'imageBase64': null, 
+    };
+
+    final docRef = _firestore.collection('documents').doc(docId);
+    batch.set(docRef, docData);
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final String lineId = _firestore.collection('document_line_items').doc().id;
+      
+      final lineData = {
+        'lineItemId': lineId,
+        'documentId': docId,
+        'lineNo': i + 1,
+        'lineDate': Timestamp.fromDate(date),
+        'categoryCode': line.category,
+        'description': line.desc,
+        'total': line.amount,
+        'debit': line.isDebit ? line.amount : 0.0,
+        'credit': line.isCredit ? line.amount : 0.0,
+        'attribute': [],
+      };
+
+      final lineRef = _firestore.collection('document_line_items').doc(lineId);
+      batch.set(lineRef, lineData);
+    }
+  }
+}
+
+class _Line {
+  final String category;
+  final String desc;
+  final double amount;
+  final bool isDebit;
+  final bool isCredit;
+
+  _Line(this.category, this.desc, this.amount, {this.isDebit = false, this.isCredit = false});
 }
