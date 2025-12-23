@@ -68,10 +68,17 @@ class UploadView extends StatelessWidget {
           });
         } else if (state is UploadNavigateToDocDetails) {
           NavBarController.of(context)?.toggleNavBar();
+          
+          // --- BUG FIX START ---
+          // Check if it's a NEW upload (empty ID) OR has an image.
+          // Excel files have no image but are new uploads with data.
+          final bool isNewUpload = state.selectedDocument.id.isEmpty;
+          final bool hasImage = state.imageBase64 != null;
+
           Navigator.pushNamed(
             context,
             '/doc_details',
-            arguments: state.imageBase64 != null
+            arguments: (isNewUpload || hasImage)
                 ? DocDetailsArguments(
                     existingDocument: state.selectedDocument,
                     existingLineItems: state.extractedLineItems,
@@ -79,6 +86,8 @@ class UploadView extends StatelessWidget {
                   )
                 : DocDetailsArguments(documentId: state.selectedDocument.id),
           ).then((_) {
+          // --- BUG FIX END ---
+          
             if (!context.mounted) return;
             NavBarController.of(context)?.toggleNavBar();
             context.read<UploadCubit>().fetchDocument();
