@@ -9,7 +9,6 @@ import 'package:myfin/features/authentication/presentation/bloc/auth_bloc.dart';
 class UploadNav extends StatefulWidget {
   const UploadNav({super.key});
 
-  // Public static getter to access the navigator key
   static GlobalKey<NavigatorState> get navigatorKey =>
       _UploadNavState.uploadNavKey;
 
@@ -29,7 +28,6 @@ class _UploadNavState extends State<UploadNav> {
         return MaterialPageRoute(
           settings: settings,
           builder: (BuildContext context) {
-            // routes for upload navigation
             if (settings.name == '/doc_details') {
               final args = settings.arguments as DocDetailsArguments?;
 
@@ -38,28 +36,14 @@ class _UploadNavState extends State<UploadNav> {
                 existingLineItems: args?.existingLineItems,
                 documentId: args?.documentId,
                 onDocumentSaved: () {
-                  print(
-                    '🔄 [DASHBOARD UPDATE] Document saved callback triggered!',
-                  );
-                  // Get the root context's DashboardBloc and trigger refresh
                   final rootContext = Navigator.of(
                     context,
                     rootNavigator: true,
                   ).context;
                   final authState = rootContext.read<AuthBloc>().state;
                   if (authState is AuthAuthenticatedAsMember) {
-                    print(
-                      '🔄 [DASHBOARD UPDATE] Triggering DashboardLoadRequested for member: ${authState.member.member_id}',
-                    );
                     rootContext.read<DashboardBloc>().add(
-                      DashboardLoadRequested(authState.member.member_id),
-                    );
-                    print(
-                      '✅ [DASHBOARD UPDATE] Dashboard refresh triggered successfully!',
-                    );
-                  } else {
-                    print(
-                      '❌ [DASHBOARD UPDATE] User not authenticated as member',
+                      DashboardRefreshRequested(authState.member.member_id),
                     );
                   }
                 },
@@ -68,10 +52,7 @@ class _UploadNavState extends State<UploadNav> {
               return const UploadHistoryScreen();
             }
 
-            // use in button
-            // onPressed: () => Navigator.pushNamed(context, '/upload_doc_details'),
-
-            return const UploadScreen(); // upload screen
+            return const UploadScreen();
           },
         );
       },

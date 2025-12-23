@@ -42,3 +42,12 @@ class DashboardSubscriptionRequested extends DashboardEvent {
   @override
   List<Object> get props => [memberId];
 }
+
+class DashboardRefreshRequested extends DashboardEvent {
+  final String memberId;
+
+  const DashboardRefreshRequested(this.memberId);
+
+  @override
+  List<Object> get props => [memberId];
+}

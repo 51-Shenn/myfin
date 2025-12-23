@@ -17,20 +17,24 @@ class DashboardLoaded extends DashboardState {
   final String selectedPeriod;
   final bool showMoneyIn;
   final double totalBalance;
-  final double incomeChangePercent; 
+  final double incomeChangePercent;
 
   final Map<String, double> currentIncomeCategories;
   final Map<String, double> currentExpenseCategories;
 
-  const DashboardLoaded({
+  // Add timestamp to ensure each refresh creates a new state instance
+  final DateTime refreshedAt;
+
+  DashboardLoaded({
     required this.snapshots,
     required this.currentSnapshot,
     required this.selectedPeriod,
     this.showMoneyIn = true,
     this.totalBalance = 0,
-    this.incomeChangePercent = 0, 
+    this.incomeChangePercent = 0,
     this.currentIncomeCategories = const {},
     this.currentExpenseCategories = const {},
+    required this.refreshedAt,
   });
 
   DashboardLoaded copyWith({
@@ -42,6 +46,7 @@ class DashboardLoaded extends DashboardState {
     double? incomeChangePercent,
     Map<String, double>? currentIncomeCategories,
     Map<String, double>? currentExpenseCategories,
+    DateTime? refreshedAt,
   }) {
     return DashboardLoaded(
       snapshots: snapshots ?? this.snapshots,
@@ -54,6 +59,7 @@ class DashboardLoaded extends DashboardState {
           currentIncomeCategories ?? this.currentIncomeCategories,
       currentExpenseCategories:
           currentExpenseCategories ?? this.currentExpenseCategories,
+      refreshedAt: refreshedAt ?? DateTime.now(),
     );
   }
 
@@ -67,6 +73,7 @@ class DashboardLoaded extends DashboardState {
     incomeChangePercent,
     currentIncomeCategories,
     currentExpenseCategories,
+    refreshedAt,
   ];
 }
 

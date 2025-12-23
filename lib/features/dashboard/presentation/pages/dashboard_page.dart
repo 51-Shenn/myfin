@@ -114,7 +114,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 80), // Bottom padding for nav bar
+                    const SizedBox(height: 80), 
                   ],
                 ),
               );
