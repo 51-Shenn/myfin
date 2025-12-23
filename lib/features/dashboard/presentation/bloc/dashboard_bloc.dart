@@ -25,6 +25,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<DashboardSubscriptionRequested>(_onSubscriptionRequested);
     on<DashboardFiscalPeriodChanged>(_onPeriodChanged);
     on<DashboardMoneyTypeChanged>(_onMoneyTypeChanged);
+    on<DashboardRefreshRequested>(_onRefreshRequested);
   }
 
   Future<void> _onLoadRequested(
@@ -61,6 +62,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
             selectedPeriod: 'No Data',
             totalBalance: 0,
             incomeChangePercent: 0,
+            refreshedAt: DateTime.now(),
           ),
         );
         continue;
@@ -134,6 +136,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       incomeChangePercent: incomeChangePercent,
       currentIncomeCategories: categories['income'] ?? {},
       currentExpenseCategories: categories['expense'] ?? {},
+      refreshedAt: DateTime.now(),
     );
   }
 
@@ -174,6 +177,91 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     if (state is DashboardLoaded) {
       final currentState = state as DashboardLoaded;
       emit(currentState.copyWith(showMoneyIn: event.showMoneyIn));
+    }
+  }
+
+  Future<void> _onRefreshRequested(
+    DashboardRefreshRequested event,
+    Emitter<DashboardState> emit,
+  ) async {
+    try {
+      print(
+        '🔄 [DASHBOARD REFRESH] Starting refresh for member: ${event.memberId}',
+      );
+
+      // Regenerate snapshots to reflect any document changes
+      await generateSnapshots(event.memberId);
+      print('✅ [DASHBOARD REFRESH] Snapshots regenerated successfully');
+
+      // Explicitly fetch the updated snapshots
+      final updatedSnapshots = await getDashboardData(event.memberId);
+      print(
+        '📊 [DASHBOARD REFRESH] Fetched ${updatedSnapshots.length} snapshots',
+      );
+
+      // Filter out snapshots with no activity
+      final activeSnapshots = updatedSnapshots
+          .where((s) => s.totalIncome > 0 || s.totalExpense > 0)
+          .toList();
+
+      if (activeSnapshots.isEmpty) {
+        print('⚠️ [DASHBOARD REFRESH] No active snapshots found');
+        emit(
+          DashboardLoaded(
+            snapshots: const [],
+            currentSnapshot: _createEmptySnapshot(event.memberId),
+            selectedPeriod: 'No Data',
+            totalBalance: 0,
+            incomeChangePercent: 0,
+            refreshedAt: DateTime.now(),
+          ),
+        );
+        return;
+      }
+
+      // Sort snapshots descending by fiscal period (latest first)
+      final sortedSnapshots = List<CashFlowSnapshot>.from(activeSnapshots)
+        ..sort((a, b) => b.fiscalPeriod.compareTo(a.fiscalPeriod));
+
+      // Preserve selected period if possible
+      String selectedPeriod = sortedSnapshots.first.fiscalPeriod;
+      if (state is DashboardLoaded) {
+        final currentLoaded = state as DashboardLoaded;
+        if (sortedSnapshots.any(
+          (s) => s.fiscalPeriod == currentLoaded.selectedPeriod,
+        )) {
+          selectedPeriod = currentLoaded.selectedPeriod;
+        }
+      }
+
+      final currentSnapshot = sortedSnapshots.firstWhere(
+        (s) => s.fiscalPeriod == selectedPeriod,
+        orElse: () => sortedSnapshots.first,
+      );
+
+      final incomeChange = _calculateIncomeTrend(
+        currentSnapshot,
+        sortedSnapshots,
+      );
+
+      final updatedState = await _fetchCategoriesAndLoad(
+        sortedSnapshots,
+        currentSnapshot,
+        selectedPeriod,
+        currentSnapshot.assets - currentSnapshot.liabilities,
+        double.parse(incomeChange.toStringAsFixed(1)),
+      );
+
+      // Preserve the money type filter
+      final showMoneyIn = state is DashboardLoaded
+          ? (state as DashboardLoaded).showMoneyIn
+          : true;
+
+      emit(updatedState.copyWith(showMoneyIn: showMoneyIn));
+      print('✅ [DASHBOARD REFRESH] Dashboard state updated successfully');
+    } catch (e) {
+      print('⚠️ [DASHBOARD REFRESH] Error during refresh: $e');
+      // Don't emit error state as subscription is still active
     }
   }
 

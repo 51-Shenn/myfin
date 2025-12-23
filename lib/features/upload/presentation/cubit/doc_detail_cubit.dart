@@ -18,7 +18,7 @@ class DocDetailCubit extends Cubit<DocDetailState> {
   final GeminiOCRDataSource _aiDataSource = GeminiOCRDataSource();
   final VoidCallback? onDocumentSaved;
 
-  final List<String> _deletedLineItemIds = []; // keep track of items deleted
+  final List<String> _deletedLineItemIds = []; 
 
   DocDetailCubit({
     required DocumentRepository docRepository,
@@ -243,10 +243,7 @@ class DocDetailCubit extends Cubit<DocDetailState> {
 
         var itemToSave = item.copyWith(documentId: docId);
 
-        if (item.total > 0 &&
-            item.debit == 0 &&
-            item.credit == 0 &&
-            item.categoryCode.isNotEmpty) {
+        if (item.total > 0 && item.categoryCode.isNotEmpty) {
           final isIncome = MainCategoryMapper.incomeMapping.containsKey(
             item.categoryCode,
           );
@@ -255,9 +252,15 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           );
 
           if (isIncome) {
-            itemToSave = itemToSave.copyWith(credit: item.total);
+            itemToSave = itemToSave.copyWith(
+              credit: item.total,
+              debit: 0,
+            );
           } else if (isExpense) {
-            itemToSave = itemToSave.copyWith(debit: item.total);
+            itemToSave = itemToSave.copyWith(
+              debit: item.total,
+              credit: 0,
+            );
           }
         }
 
@@ -284,17 +287,11 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           document: docToSave,
           lineItems: refreshedItems,
           isSaving: false,
-          successMessage:
-              'Document categorized & saved successfully',
+          successMessage: 'Document categorized & saved successfully',
         ),
       );
 
-      // notify listeners that document was saved (e.g., to refresh dashboard)
-      print(
-        '💾 [DOC SAVE] Document saved successfully, calling onDocumentSaved callback...',
-      );
       onDocumentSaved?.call();
-      print('💾 [DOC SAVE] Callback invoked!');
     } catch (e) {
       emit(
         state.copyWith(
@@ -306,7 +303,6 @@ class DocDetailCubit extends Cubit<DocDetailState> {
   }
 
   Future<void> deleteDocument() async {
-    // if new doc, just discard and close the ui
     if (state.document == null || state.document!.id.isEmpty) {
       emit(state.copyWith(successMessage: 'Draft discarded'));
       return;
