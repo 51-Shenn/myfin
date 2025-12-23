@@ -33,15 +33,15 @@ class CashFlowCalculator {
   double getNetIncome() => netIncome;
 
   double calculateDepreciationExpense() =>
-      (_sumCategory('Purchase of Assets') * 0.2);
+      -(_sumCategory('Purchase of Assets') * 0.2);
 
   double calculateAmortizationExpense() =>
-      _sumCategory('Amortization (Patents, Trademarks, Software)');
+      -_sumCategory('Amortization (Patents, Trademarks, Software)');
 
-  double calculateImpairmentLosses() => _sumCategory('Impairment Losses');
+  double calculateImpairmentLosses() => -_sumCategory('Impairment Losses');
 
   double calculateLossOnSaleOfAssets() =>
-      _sumCategory('Loss on Sale of Assets');
+      -_sumCategory('Loss on Sale of Assets');
 
   double calculateGainOnSaleOfAssets() =>
       _sumCategory('Gain on Sale of Assets');
@@ -58,64 +58,55 @@ class CashFlowCalculator {
   }
 
   double calculateTotalOperatingActivities() {
-    return netIncome -
-        calculateDepreciationExpense() -
-        calculateAmortizationExpense() -
-        calculateImpairmentLosses() -
+    return netIncome +
+        calculateDepreciationExpense() +
+        calculateAmortizationExpense() +
+        calculateImpairmentLosses() +
         calculateLossOnSaleOfAssets() +
         calculateGainOnSaleOfAssets() +
         calculateUnrealizedGainsLosses() +
         calculateChangeInAccounts();
   }
 
-  double calculatePurchaseOfAssets() => _sumCategory('Purchase of Assets');
+  double calculatePurchaseOfAssets() => -_sumCategory('Purchase of Assets');
 
   double calculateProceedsFromSaleOfAssets() =>
       _sumCategory('Proceeds from Sale of Assets');
 
-  double calculateMoneyLentToOthers() => _sumCategory('Money Lent to Others');
+  double calculateMoneyLentToOthers() => -_sumCategory('Money Lent to Others');
 
   double calculateMoneyCollectedFromOthers() =>
       _sumCategory('Money Collected from Others');
 
   double calculateTotalInvestingActivities() {
-    return -calculatePurchaseOfAssets() +
-        calculateProceedsFromSaleOfAssets() -
+    return calculatePurchaseOfAssets() +
+        calculateProceedsFromSaleOfAssets() +
         calculateMoneyLentToOthers() +
         calculateMoneyCollectedFromOthers();
   }
 
-  double calculateIssuanceOfStock() {
-    return _sumCategory('Stock') +
-        _sumCategory('Shared Premium') +
-        _sumCategory('Owner Investment') +
-        _sumCategory('Partner Investment');
-  }
+  double calculateIssuanceOfStock() => _sumCategory('Stock');
 
-  double calculateRepurchaseOfStock() {
-    return _sumCategory('Stock Repurchase') +
-        _sumCategory('Owner Drawing') +
-        _sumCategory('Partner Drawing');
-  }
+  double calculateRepurchaseOfStock() => _sumCategory('Stock Repurchase');
 
-  double calculateDividendPayments() => _sumCategory('Dividend Payment');
+  double calculateDividendPayments() => -_sumCategory('Dividend Payment');
 
-  double calculateIssuanceOfLongTermDebt() => _sumCategory('Debt');
+  double calculateIssuanceOfLongTermDebt() => -_sumCategory('Debt');
 
-  double calculateRepaymentOfLongTermDebt() => _sumCategory('Debt Repayment');
+  double calculateRepaymentOfLongTermDebt() => -_sumCategory('Debt Repayment');
 
-  double calculateIssuanceOfShortTermNotes() => _sumCategory('Notes Payable');
+  double calculateIssuanceOfShortTermNotes() => -_sumCategory('Notes Payable');
 
   double calculateRepaymentOfShortTermNotes() =>
-      _sumCategory('Notes Repayment');
+      -_sumCategory('Notes Repayment');
 
   double calculateTotalFinancingActivities() {
-    return calculateIssuanceOfStock() -
-        calculateRepurchaseOfStock() -
+    return calculateIssuanceOfStock() +
+        calculateRepurchaseOfStock() +
         calculateDividendPayments() +
-        calculateIssuanceOfLongTermDebt() -
+        calculateIssuanceOfLongTermDebt() +
         calculateRepaymentOfLongTermDebt() +
-        calculateIssuanceOfShortTermNotes() -
+        calculateIssuanceOfShortTermNotes() +
         calculateRepaymentOfShortTermNotes();
   }
 

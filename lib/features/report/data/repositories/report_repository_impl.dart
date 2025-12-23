@@ -256,7 +256,7 @@ class ReportRepositoryImpl implements ReportRepository {
   Future<TaxRegulation?> getIncomeTaxRegulation() async {
     try {
       final model = await taxRegulationDataSource.getTaxRegulationByType(
-        'Income Tax',
+        'Income',
       );
       return model?.toEntity();
     } catch (e) {
