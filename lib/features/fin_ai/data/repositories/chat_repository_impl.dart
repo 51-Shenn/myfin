@@ -3,13 +3,11 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Import Data Sources
 import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
 import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
 
 class ChatRepository {
-  // Use DataSources directly instead of Repositories
   final FirestoreDocumentDataSource _docDataSource;
   final FirestoreDocumentLineItemDataSource _lineDataSource;
   final FirestoreReportDataSource _reportDataSource;
@@ -53,23 +51,25 @@ class ChatRepository {
     final documentContext = await _buildDocumentContext(memberId);
     final reportContext = await _buildReportContext(memberId);
 
+    // UPDATED PROMPT LOGIC HERE
     _systemInstruction = Content.text('''
       You are FinAI, an expert financial assistant.
       
       Here is the user's financial data (Raw Database Records):
 
-      === GENERATED REPORTS ===
+      === GENERATED REPORTS (Sorted: NEWEST FIRST) ===
       $reportContext
 
       === RECENT UPLOADED DOCUMENTS ===
       $documentContext
 
       INSTRUCTIONS:
-      1. Use the provided reports and documents to answer questions.
-      2. The "GENERATED REPORTS" contain the official calculated figures (Net Income, Assets, etc.).
-      3. The "UPLOADED DOCUMENTS" contain specific transaction details.
-      4. If values are 0 or missing, state that based on the available data.
-      5. Be concise and professional.
+      1. **PRIORITY RULE:** The "GENERATED REPORTS" section is sorted by date (Newest at the top).
+      2. If multiple reports of the same type exist (e.g., 5 Balance Sheets), **ONLY use the FIRST/TOP-MOST report** of that type to answer questions about the "current" status.
+      3. **IGNORE older reports** of the same type unless the user specifically asks for a history comparison or a specific past date.
+      4. If the latest report shows 0.0 for a value, state that the *latest generated report* shows 0.
+      5. The "UPLOADED DOCUMENTS" contain specific transaction details. Use these to explain *why* the report figures might be what they are.
+      6. Be concise and professional.
     ''');
 
     _history = [];
@@ -115,7 +115,6 @@ class ChatRepository {
 
   Future<String> _buildDocumentContext(String memberId) async {
     try {
-      // Fetch Raw Maps directly
       final docs = await _docDataSource.getDocuments(
         filters: {'memberId': memberId},
         limit: 30,
@@ -127,10 +126,8 @@ class ChatRepository {
 
       for (var doc in docs) {
         final docId = doc['id'];
-        // Fetch Raw Line Item Maps directly
         final lines = await _lineDataSource.getLineItemsByDocumentId(docId);
         
-        // Calculate total manually from raw maps
         double docTotal = lines.fold(0.0, (sum, item) {
           return sum + ((item['total'] as num?)?.toDouble() ?? 0.0);
         });
@@ -158,14 +155,17 @@ class ChatRepository {
 
   Future<String> _buildReportContext(String memberId) async {
     try {
-      // Fetch Raw Maps directly
+      // 1. Fetch Raw Maps directly
       final reports = await _reportDataSource.getReportsByMemberId(memberId);
 
       if (reports.isEmpty) return "No generated reports found.";
 
       final StringBuffer buffer = StringBuffer();
-      final recentReports = reports.take(5);
+      
+      // CHANGED LIMIT FROM 5 TO 15
+      final recentReports = reports.take(15); 
 
+      int index = 1;
       for (var report in recentReports) {
         final String type = report['report_type'] ?? 'Unknown';
         
@@ -184,11 +184,14 @@ class ChatRepository {
           }
         } catch (_) {}
 
-        buffer.writeln("- Report: $type");
+        // Add explicit "LATEST" tag to the very first item processed
+        // Since Firebase returns descending order, the first item is naturally the latest.
+        String latestTag = (index == 1) ? " [LATEST REPORT]" : "";
+
+        buffer.writeln("Report #$index: $type$latestTag");
         buffer.writeln("  Generated: $generatedDate");
         buffer.writeln("  Period: $periodStr");
 
-        // Helper to safely get string from map
         String val(String key) => report[key]?.toString() ?? "0";
 
         if (type.contains('Profit')) {
@@ -210,6 +213,7 @@ class ChatRepository {
           buffer.writeln("  > Overdue: ${val('total_overdue')}");
         }
         buffer.writeln("");
+        index++;
       }
       return buffer.toString();
     } catch (e) {
