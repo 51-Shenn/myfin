@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
-import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
+
+// --- DATA SOURCE IMPORTS ---
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:myfin/features/report/data/datasources/report_remote_data_source.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
+// ---------------------------
+
 import 'package:myfin/features/fin_ai/data/repositories/chat_repository_impl.dart';
 import 'package:myfin/features/fin_ai/domain/entities/chat_message.dart';
 import 'package:myfin/features/fin_ai/presentation/bloc/fin_ai_bloc.dart';
@@ -13,17 +19,32 @@ class AiChatbotScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ChatViewModel(
-        ChatRepository(
-          docRepo: context.read<DocumentRepository>(),
-          lineRepo: context.read<DocumentLineItemRepository>(),
-        ),
-      ),
+      create: (context) {
+        final firestore = FirebaseFirestore.instance;
+        
+        return ChatViewModel(
+          ChatRepository(
+            // 1. Report Data Source
+            reportDataSource: FirestoreReportDataSource(
+              firestore: firestore,
+            ),
+            // 2. Document Data Source
+            docDataSource: FirestoreDocumentDataSource(
+              firestore: firestore,
+            ),
+            // 3. Line Item Data Source (Required to calculate document totals and see details)
+            lineDataSource: FirestoreDocumentLineItemDataSource(
+              firestore: firestore,
+            ),
+          ),
+        );
+      },
       child: const _AiInfoDashboardView(),
     );
   }
 }
 
+// ... Rest of the file (_AiInfoDashboardView, _ChatInterface, etc.) remains exactly the same ...
 class _AiInfoDashboardView extends StatelessWidget {
   const _AiInfoDashboardView();
 

@@ -59,27 +59,27 @@ class CashFlowGenerator {
             ReportLineItem(
               item_title: 'Depreciation Expense',
               amount: calc.calculateDepreciationExpense(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Amortization Expense',
               amount: calc.calculateAmortizationExpense(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Impairment Losses',
               amount: calc.calculateImpairmentLosses(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Loss on Sale of Assets',
               amount: calc.calculateLossOnSaleOfAssets(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Gain on Sale of Assets',
               amount: calc.calculateGainOnSaleOfAssets(),
-              isIncrease: false,
+              isIncrease: true,
             ),
             ReportLineItem(
               item_title: 'Unrealized Gains / Losses on Investments',
@@ -149,7 +149,7 @@ class CashFlowGenerator {
             ReportLineItem(
               item_title: 'Repurchase of Company Stock (Treasury Stock)',
               amount: calc.calculateRepurchaseOfStock(),
-              isIncrease: false,
+              isIncrease: true,
             ),
             ReportLineItem(
               item_title: 'Payment of Dividends to Shareholders',
@@ -159,7 +159,7 @@ class CashFlowGenerator {
             ReportLineItem(
               item_title: 'Issuance of Long-Term Debt',
               amount: calc.calculateIssuanceOfLongTermDebt(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Repayment of Long-Term Debt Principal',
@@ -169,7 +169,7 @@ class CashFlowGenerator {
             ReportLineItem(
               item_title: 'Issuance of Short-Term Notes Payable',
               amount: calc.calculateIssuanceOfShortTermNotes(),
-              isIncrease: true,
+              isIncrease: false,
             ),
             ReportLineItem(
               item_title: 'Repayment of Short-Term Notes Payable',
