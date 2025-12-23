@@ -4,7 +4,7 @@ class CashFlowCalculator {
   final List<DocumentLineItem> lineItems;
   final DateTime startDate;
   final DateTime endDate;
-  final double netIncome; 
+  final double netIncome;
 
   CashFlowCalculator({
     required this.lineItems,
@@ -58,11 +58,11 @@ class CashFlowCalculator {
   }
 
   double calculateTotalOperatingActivities() {
-    return netIncome +
-        calculateDepreciationExpense() +
-        calculateAmortizationExpense() +
-        calculateImpairmentLosses() +
-        calculateLossOnSaleOfAssets() -
+    return netIncome -
+        calculateDepreciationExpense() -
+        calculateAmortizationExpense() -
+        calculateImpairmentLosses() -
+        calculateLossOnSaleOfAssets() +
         calculateGainOnSaleOfAssets() +
         calculateUnrealizedGainsLosses() +
         calculateChangeInAccounts();
