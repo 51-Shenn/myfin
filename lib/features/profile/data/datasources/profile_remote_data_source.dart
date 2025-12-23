@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:myfin/features/authentication/data/models/member_model.dart';
 import 'package:myfin/features/profile/data/models/business_profile.dart';
 import 'package:myfin/core/utils/image_chunker_service.dart';
 
