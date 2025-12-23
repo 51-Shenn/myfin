@@ -7,9 +7,6 @@ import 'package:myfin/core/navigation/app_routes.dart';
 import 'package:myfin/core/validators/auth_validator.dart';
 import 'package:myfin/core/utils/ui_helpers.dart';
 
-// For generate data
-import 'package:myfin/core/services/data_seeder.dart';
-//
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
