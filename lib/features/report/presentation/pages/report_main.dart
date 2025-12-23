@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +22,7 @@ class _MainReportScreenState extends State<MainReportScreen> {
   DateTime? startDate;
   DateTime? endDate;
   String member_id = "";
+  Timer? _refreshTimer;
 
   List<String> reportTypes = [
     ReportType.profitLoss,
@@ -84,6 +86,19 @@ class _MainReportScreenState extends State<MainReportScreen> {
     if (user != null) {
       member_id = user.uid;
     }
+
+    // Start auto-refresh timer for recent reports (every 5 seconds)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        context.read<ReportBLoC>().add(LoadReportsEvent(member_id));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
