@@ -32,9 +32,6 @@ import 'package:myfin/features/profile/presentation/pages/business_profile.dart'
 import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
 import 'package:myfin/features/profile/presentation/pages/change_password.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
-import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
-import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
-import 'package:myfin/features/profile/presentation/pages/change_password.dart';
 import 'package:myfin/features/profile/presentation/pages/change_email_screen.dart';
 import 'package:myfin/features/profile/presentation/pages/edit_business_profile.dart';
 import 'package:myfin/features/profile/domain/entities/business_profile.dart';
@@ -49,7 +46,6 @@ import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_s
 import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
 import 'package:myfin/features/upload/data/repositories/doc_line_item_repository_impl.dart';
 import 'package:myfin/features/upload/data/repositories/document_repository_impl.dart';
-import 'package:myfin/features/upload/presentation/pages/doc_details.dart';
 
 class AppRoutes {
   static const String auth = '/auth';

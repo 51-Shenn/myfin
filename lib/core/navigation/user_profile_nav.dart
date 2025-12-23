@@ -1,17 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:myfin/features/authentication/domain/entities/member.dart';
 import 'package:myfin/features/profile/data/datasources/profile_remote_data_source.dart';
 import 'package:myfin/features/profile/data/repositories/profile_repository_impl.dart';
-import 'package:myfin/features/profile/domain/entities/business_profile.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:myfin/features/profile/presentation/bloc/profile_event.dart';
 import 'package:myfin/features/profile/presentation/pages/profile_main.dart';
-import 'package:myfin/features/profile/presentation/pages/edit_profile.dart';
-import 'package:myfin/features/profile/presentation/pages/business_profile.dart';
-import 'package:myfin/features/profile/presentation/pages/edit_business_profile.dart';
-import 'package:myfin/features/profile/presentation/pages/change_password.dart';
 import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
 
 class ProfileNav extends StatefulWidget {
