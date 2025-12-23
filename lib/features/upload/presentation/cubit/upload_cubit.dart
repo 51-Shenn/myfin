@@ -22,8 +22,10 @@ class UploadCubit extends Cubit<UploadState> {
   final ImagePicker _picker = ImagePicker();
   final GeminiOCRDataSource _ocrDataSource = GeminiOCRDataSource();
 
-  UploadCubit({required this.getRecentDocumentsUseCase, required this.profileRepository,})
-    : super(const UploadInitial());
+  UploadCubit({
+    required this.getRecentDocumentsUseCase,
+    required this.profileRepository,
+  }) : super(const UploadInitial());
 
   Future<void> fetchDocument() async {
     try {
@@ -64,7 +66,9 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 30,
       );
 
       if (image != null) {
@@ -80,7 +84,9 @@ class UploadCubit extends Cubit<UploadState> {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,
         preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 50,
       );
 
       if (photo != null) {
@@ -142,7 +148,10 @@ class UploadCubit extends Cubit<UploadState> {
         );
       } else if (type == 'xlsx') {
         final String csvData = await _convertExcelToCsvString(path);
-        jsonResult = await _ocrDataSource.extractDataFromText(csvData, companyName);
+        jsonResult = await _ocrDataSource.extractDataFromText(
+          csvData,
+          companyName,
+        );
       } else {
         jsonResult = await _ocrDataSource.extractDataFromMedia(
           path,
@@ -193,7 +202,8 @@ class UploadCubit extends Cubit<UploadState> {
                 if (val is DoubleCellValue) return val.value.toString();
                 if (val is IntCellValue) return val.value.toString();
                 if (val is BoolCellValue) return val.value.toString();
-                if (val is DateCellValue) return val.asDateTimeLocal().toIso8601String();
+                if (val is DateCellValue)
+                  return val.asDateTimeLocal().toIso8601String();
                 if (val is TimeCellValue) return val.toString();
                 if (val is FormulaCellValue) return val.formula.toString();
 
@@ -254,47 +264,58 @@ class UploadCubit extends Cubit<UploadState> {
     String? imageBase64 = await _generateThumbnail(filePath, type);
 
     final docData = jsonResult['document'];
-    
-    final DateTime postingDate = DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now();
+
+    final DateTime postingDate =
+        DateTime.tryParse(docData['date'] ?? '') ?? DateTime.now();
 
     DateTime? parsedDueDate = DateTime.tryParse(docData['due_date'] ?? '');
     String finalDueDateString;
-    
+
     if (parsedDueDate != null) {
-      finalDueDateString = parsedDueDate.toIso8601String().split('T')[0]; // YYYY-MM-DD
+      finalDueDateString = parsedDueDate.toIso8601String().split(
+        'T',
+      )[0]; // YYYY-MM-DD
     } else {
-      finalDueDateString = postingDate.add(const Duration(days: 30)).toIso8601String().split('T')[0];
+      finalDueDateString = postingDate
+          .add(const Duration(days: 30))
+          .toIso8601String()
+          .split('T')[0];
     }
 
-    List<AdditionalInfoRow> metadataList = (jsonResult['metadata'] as List?)
-          ?.map(
-            (m) => AdditionalInfoRow(
-              id: const Uuid().v4(),
-              key: m['key'] ?? '',
-              value: m['value']?.toString() ?? '',
-            ),
-          )
-          .toList() ?? [];
+    List<AdditionalInfoRow> metadataList =
+        (jsonResult['metadata'] as List?)
+            ?.map(
+              (m) => AdditionalInfoRow(
+                id: const Uuid().v4(),
+                key: m['key'] ?? '',
+                value: m['value']?.toString() ?? '',
+              ),
+            )
+            .toList() ??
+        [];
 
     // check if due date already exists in metadata (from AI), if not, add it
-    bool hasDueDate = metadataList.any((row) => row.key.toLowerCase().contains('due date'));
+    bool hasDueDate = metadataList.any(
+      (row) => row.key.toLowerCase().contains('due date'),
+    );
     if (!hasDueDate) {
-      metadataList.add(AdditionalInfoRow(
-        id: const Uuid().v4(),
-        key: 'Due Date',
-        value: finalDueDateString,
-      ));
+      metadataList.add(
+        AdditionalInfoRow(
+          id: const Uuid().v4(),
+          key: 'Due Date',
+          value: finalDueDateString,
+        ),
+      );
     }
 
     final document = Document(
-      id: '', 
+      id: '',
       memberId: currentMemberId,
       name: docData['name'] ?? 'Uploaded Document',
       type: docData['type'] ?? 'Invoice',
       status: 'Draft',
       createdBy: 'AI OCR',
       postingDate: postingDate,
-      imageBase64: imageBase64,
       metadata: metadataList,
     );
 
@@ -320,10 +341,15 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (isClosed) return;
-    emit(UploadNavigateToDocDetails(document, extractedLineItems: lineItems));
+    emit(
+      UploadNavigateToDocDetails(
+        document,
+        extractedLineItems: lineItems,
+        imageBase64: imageBase64,
+      ),
+    );
     emit(UploadLoaded(state.document));
   }
-
 
   Future<String?> _generateThumbnail(String filePath, String type) async {
     final file = File(filePath);
@@ -336,8 +362,7 @@ class UploadCubit extends Cubit<UploadState> {
           final pngBytes = await page.toPng();
           return base64Encode(pngBytes);
         }
-      }
-      else if (['jpg', 'jpeg', 'png', 'image'].contains(type.toLowerCase())) {
+      } else if (['jpg', 'jpeg', 'png', 'image'].contains(type.toLowerCase())) {
         final bytes = await file.readAsBytes();
         return base64Encode(bytes);
       }

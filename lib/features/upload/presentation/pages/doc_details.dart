@@ -4,6 +4,7 @@ import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
+import 'package:myfin/features/upload/domain/repositories/document_image_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_cubit.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 import 'package:myfin/features/upload/presentation/pages/doc_field_header.dart';
@@ -40,6 +41,7 @@ class DocumentDetailsScreen extends StatelessWidget {
   final List<DocumentLineItem>? existingLineItems;
   final bool isReadOnly;
   final VoidCallback? onDocumentSaved;
+  final String? imageBase64;
 
   const DocumentDetailsScreen({
     super.key,
@@ -48,6 +50,7 @@ class DocumentDetailsScreen extends StatelessWidget {
     this.existingLineItems,
     this.isReadOnly = false,
     this.onDocumentSaved,
+    this.imageBase64,
   });
 
   @override
@@ -57,13 +60,17 @@ class DocumentDetailsScreen extends StatelessWidget {
         final cubit = DocDetailCubit(
           docRepository: context.read<DocumentRepository>(),
           lineItemRepository: context.read<DocumentLineItemRepository>(),
+          imageRepository: context.read<DocumentImageRepository>(),
           onDocumentSaved: onDocumentSaved,
         );
 
         if (existingDocument != null) {
-          cubit.initializeWithData(existingDocument!, existingLineItems);
-        }
-        else if (documentId != null && documentId!.isNotEmpty) {
+          cubit.initializeWithData(
+            existingDocument!,
+            existingLineItems,
+            imageBase64: imageBase64,
+          );
+        } else if (documentId != null && documentId!.isNotEmpty) {
           cubit.loadDocument(documentId!);
         } else {
           cubit.loadDocument(null);
@@ -136,9 +143,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
     try {
       final XFile? image = await picker.pickImage(
         source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 30,
       );
 
       if (image != null) {
@@ -379,16 +386,15 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                       ),
                                       width: 150,
                                       height: 150,
-                                      child: (state.document?.imageBase64 !=
-                                                  null &&
-                                              state.document!.imageBase64!
-                                                  .isNotEmpty)
+                                      child:
+                                          (state.imageBase64 != null &&
+                                              state.imageBase64!.isNotEmpty)
                                           ? ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(11),
                                               child: Image.memory(
                                                 base64Decode(
-                                                  state.document!.imageBase64!,
+                                                  state.imageBase64!,
                                                 ),
                                                 fit: BoxFit.cover,
                                               ),
@@ -414,8 +420,8 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                     ),
                                   ),
                                 )
-                              else if (state.document?.imageBase64 != null &&
-                                  state.document!.imageBase64!.isNotEmpty)
+                              else if (state.imageBase64 != null &&
+                                  state.imageBase64!.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.all(5.0),
                                   child: Container(
@@ -430,9 +436,7 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(11),
                                       child: Image.memory(
-                                        base64Decode(
-                                          state.document!.imageBase64!,
-                                        ),
+                                        base64Decode(state.imageBase64!),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
@@ -446,11 +450,9 @@ class _DocDetailsViewState extends State<DocDetailsView> {
                                 child: AutoCompleteField(
                                   header: DocFieldHeader.status,
                                   value: state.document?.status ?? 'Draft',
-                                  items:
-                                      docStatus,
+                                  items: docStatus,
                                   enabled: !widget.isReadOnly,
-                                  validator: AppValidators
-                                      .required,
+                                  validator: AppValidators.required,
                                   onChanged: (value) {
                                     context
                                         .read<DocDetailCubit>()
@@ -753,11 +755,13 @@ class DocDetailsArguments {
   final Document? existingDocument;
   final List<DocumentLineItem>? existingLineItems;
   final String? documentId;
+  final String? imageBase64;
 
   DocDetailsArguments({
     this.existingDocument,
     this.existingLineItems,
     this.documentId,
+    this.imageBase64,
   });
 }
 

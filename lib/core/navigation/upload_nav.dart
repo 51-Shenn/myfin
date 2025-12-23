@@ -35,6 +35,7 @@ class _UploadNavState extends State<UploadNav> {
                 existingDocument: args?.existingDocument,
                 existingLineItems: args?.existingLineItems,
                 documentId: args?.documentId,
+                imageBase64: args?.imageBase64,
                 onDocumentSaved: () {
                   final rootContext = Navigator.of(
                     context,

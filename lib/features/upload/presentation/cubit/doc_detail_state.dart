@@ -10,6 +10,7 @@ class DocDetailState extends Equatable {
   final bool isSaving;
   final String? errorMessage;
   final String? successMessage;
+  final String? imageBase64; // Stored separately from document entity
 
   const DocDetailState({
     this.document,
@@ -19,6 +20,7 @@ class DocDetailState extends Equatable {
     this.isSaving = false,
     this.errorMessage,
     this.successMessage,
+    this.imageBase64,
   });
 
   DocDetailState copyWith({
@@ -29,6 +31,7 @@ class DocDetailState extends Equatable {
     bool? isSaving,
     String? errorMessage,
     String? successMessage,
+    String? imageBase64,
   }) {
     return DocDetailState(
       document: document ?? this.document,
@@ -38,17 +41,19 @@ class DocDetailState extends Equatable {
       isSaving: isSaving ?? this.isSaving,
       errorMessage: errorMessage,
       successMessage: successMessage,
+      imageBase64: imageBase64 ?? this.imageBase64,
     );
   }
 
   @override
   List<Object?> get props => [
-        document,
-        lineItems,
-        rows,
-        isLoading,
-        isSaving,
-        errorMessage,
-        successMessage,
-      ];
+    document,
+    lineItems,
+    rows,
+    isLoading,
+    isSaving,
+    errorMessage,
+    successMessage,
+    imageBase64,
+  ];
 }

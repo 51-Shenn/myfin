@@ -14,7 +14,7 @@ class Document {
   final List<AdditionalInfoRow>? metadata;
   final String? refDocType;
   final String? refDocId;
-  final String? imageBase64;
+  final String? imageRef; // Reference to document_images collection
 
   Document({
     required this.id,
@@ -29,7 +29,7 @@ class Document {
     this.metadata,
     this.refDocType,
     this.refDocId,
-    this.imageBase64,
+    this.imageRef, String? imageBase64,
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
@@ -47,7 +47,7 @@ class Document {
       'refDocType': refDocType,
       'refDocId': refDocId,
       'memberId': memberId,
-      'imageBase64': imageBase64,
+      'imageRef': imageRef,
     };
   }
 
@@ -74,7 +74,7 @@ class Document {
           .toList(),
       refDocType: data['refDocType'] as String?,
       refDocId: data['refDocId'] as String?,
-      imageBase64: data['imageBase64'] as String?,
+      imageRef: data['imageRef'] as String?,
     );
   }
 
@@ -103,7 +103,7 @@ class Document {
           .toList(),
       refDocType: data['refDocType'] as String?,
       refDocId: data['refDocId'] as String?,
-      imageBase64: data['imageBase64'] as String?,
+      imageRef: data['imageRef'] as String?,
     );
   }
 
@@ -120,7 +120,7 @@ class Document {
     List<AdditionalInfoRow>? metadata,
     String? refDocType,
     String? refDocId,
-    String? imageBase64,
+    String? imageRef,
   }) {
     return Document(
       id: id ?? this.id,
@@ -135,7 +135,7 @@ class Document {
       metadata: metadata ?? this.metadata,
       refDocType: refDocType ?? this.refDocType,
       refDocId: refDocId ?? this.refDocId,
-      imageBase64: imageBase64 ?? this.imageBase64,
+      imageRef: imageRef ?? this.imageRef,
     );
   }
 }

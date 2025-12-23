@@ -12,9 +12,9 @@ class UploadHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => UploadHistoryCubit(
-        context.read<DocumentRepository>(),
-      )..fetchHistory(),
+      create: (context) =>
+          UploadHistoryCubit(context.read<DocumentRepository>())
+            ..fetchHistory(),
       child: const UploadHistoryView(),
     );
   }
@@ -52,11 +52,15 @@ class UploadHistoryView extends StatelessWidget {
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: Colors.red),
                   const SizedBox(height: 10),
-                  Text(state.message, style: const TextStyle(color: Colors.red)),
+                  Text(
+                    state.message,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                   TextButton(
-                    onPressed: () => context.read<UploadHistoryCubit>().fetchHistory(),
+                    onPressed: () =>
+                        context.read<UploadHistoryCubit>().fetchHistory(),
                     child: const Text("Retry"),
-                  )
+                  ),
                 ],
               ),
             );
@@ -80,23 +84,22 @@ class UploadHistoryView extends StatelessWidget {
             }
 
             return RefreshIndicator(
-              onRefresh: () => context.read<UploadHistoryCubit>().fetchHistory(),
+              onRefresh: () =>
+                  context.read<UploadHistoryCubit>().fetchHistory(),
               child: ListView.separated(
                 padding: const EdgeInsets.all(20),
                 itemCount: state.documents.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 0),
                 itemBuilder: (context, index) {
                   final document = state.documents[index];
-                  
+
                   return DocumentCard(
                     document: document,
-                    onTap: () async {                      
+                    onTap: () async {
                       await Navigator.pushNamed(
                         context,
                         '/doc_details',
-                        arguments: DocDetailsArguments(
-                          existingDocument: document,
-                        ),
+                        arguments: DocDetailsArguments(documentId: document.id),
                       );
 
                       if (context.mounted) {

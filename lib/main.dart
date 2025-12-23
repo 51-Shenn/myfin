@@ -16,10 +16,13 @@ import 'package:myfin/features/authentication/data/repositories/member_repositor
 import 'package:myfin/features/authentication/domain/repositories/member_repository.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_doc_line_data_source.dart';
 import 'package:myfin/features/upload/data/datasources/firestore_document_data_source.dart';
+import 'package:myfin/features/upload/data/datasources/firestore_document_image_data_source.dart';
 import 'package:myfin/features/upload/data/repositories/doc_line_item_repository_impl.dart';
 import 'package:myfin/features/upload/data/repositories/document_repository_impl.dart';
+import 'package:myfin/features/upload/data/repositories/document_image_repository_impl.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
+import 'package:myfin/features/upload/domain/repositories/document_image_repository.dart';
 import 'package:myfin/firebase_options.dart';
 
 Future<void> main() async {
@@ -49,6 +52,11 @@ Future<void> main() async {
         RepositoryProvider<DocumentLineItemRepository>(
           create: (context) => DocumentLineItemRepositoryImpl(
             FirestoreDocumentLineItemDataSource(firestore: firestore),
+          ),
+        ),
+        RepositoryProvider<DocumentImageRepository>(
+          create: (context) => DocumentImageRepositoryImpl(
+            FirestoreDocumentImageDataSource(firestore: firestore),
           ),
         ),
         // Add MemberRepository Provider

@@ -40,11 +40,20 @@ class UploadNavigateToManual extends UploadState {
 class UploadNavigateToDocDetails extends UploadState {
   final Document selectedDocument;
   final List<DocumentLineItem>? extractedLineItems;
+  final String? imageBase64;
 
-  const UploadNavigateToDocDetails(this.selectedDocument, {this.extractedLineItems}) : super(const []);
+  const UploadNavigateToDocDetails(
+    this.selectedDocument, {
+    this.extractedLineItems,
+    this.imageBase64,
+  }) : super(const []);
 
   @override
-  List<Object> get props => [selectedDocument, if (extractedLineItems != null) extractedLineItems!];
+  List<Object> get props => [
+    selectedDocument,
+    if (extractedLineItems != null) extractedLineItems!,
+    if (imageBase64 != null) imageBase64!,
+  ];
 }
 
 class UploadNavigateToHistory extends UploadState {

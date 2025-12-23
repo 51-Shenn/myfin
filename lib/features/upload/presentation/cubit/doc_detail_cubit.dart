@@ -8,6 +8,7 @@ import 'package:myfin/features/upload/domain/entities/document.dart';
 import 'package:myfin/features/upload/domain/entities/doc_line_item.dart';
 import 'package:myfin/features/upload/domain/repositories/doc_line_item_repository.dart';
 import 'package:myfin/features/upload/domain/repositories/document_repository.dart';
+import 'package:myfin/features/upload/domain/repositories/document_image_repository.dart';
 import 'package:myfin/features/upload/presentation/cubit/doc_detail_state.dart';
 import 'package:myfin/features/upload/data/datasources/gemini_ocr_data_source.dart';
 import 'package:myfin/features/dashboard/domain/usecases/main_category_mapper.dart';
@@ -15,23 +16,27 @@ import 'package:myfin/features/dashboard/domain/usecases/main_category_mapper.da
 class DocDetailCubit extends Cubit<DocDetailState> {
   final DocumentRepository _docRepository;
   final DocumentLineItemRepository _lineItemRepository;
+  final DocumentImageRepository? _imageRepository;
   final GeminiOCRDataSource _aiDataSource = GeminiOCRDataSource();
   final VoidCallback? onDocumentSaved;
 
-  final List<String> _deletedLineItemIds = []; 
+  final List<String> _deletedLineItemIds = [];
 
   DocDetailCubit({
     required DocumentRepository docRepository,
     required DocumentLineItemRepository lineItemRepository,
+    DocumentImageRepository? imageRepository,
     this.onDocumentSaved,
   }) : _docRepository = docRepository,
        _lineItemRepository = lineItemRepository,
+       _imageRepository = imageRepository,
        super(const DocDetailState());
 
   Future<void> initializeWithData(
     Document document,
-    List<DocumentLineItem>? lineItems,
-  ) async {
+    List<DocumentLineItem>? lineItems, {
+    String? imageBase64,
+  }) async {
     _deletedLineItemIds.clear();
 
     emit(
@@ -40,6 +45,7 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         document: document,
         rows: document.metadata ?? [],
         lineItems: lineItems ?? [],
+        imageBase64: imageBase64,
       ),
     );
 
@@ -124,11 +130,22 @@ class DocDetailCubit extends Cubit<DocDetailState> {
         documentId,
       );
 
+      // Load the image if it exists
+      String? imageBase64;
+      if (_imageRepository != null && document.imageRef != null) {
+        try {
+          imageBase64 = await _imageRepository.getImage(documentId);
+        } catch (e) {
+          print('Failed to load image: $e');
+        }
+      }
+
       emit(
         state.copyWith(
           document: document,
           rows: document.metadata,
           lineItems: lineItems,
+          imageBase64: imageBase64,
           isLoading: false,
         ),
       );
@@ -149,23 +166,31 @@ class DocDetailCubit extends Cubit<DocDetailState> {
     switch (field) {
       case 'name':
         updatedDoc = state.document!.copyWith(name: value as String);
+        emit(state.copyWith(document: updatedDoc));
         break;
       case 'type':
         updatedDoc = state.document!.copyWith(type: value as String);
+        emit(state.copyWith(document: updatedDoc));
         break;
       case 'status':
         updatedDoc = state.document!.copyWith(status: value as String);
+        emit(state.copyWith(document: updatedDoc));
         break;
       case 'postingDate':
         updatedDoc = state.document!.copyWith(postingDate: value as DateTime);
+        emit(state.copyWith(document: updatedDoc));
+        break;
+      case 'imageRef':
+        updatedDoc = state.document!.copyWith(imageRef: value as String);
+        emit(state.copyWith(document: updatedDoc));
         break;
       case 'imageBase64':
-        updatedDoc = state.document!.copyWith(imageBase64: value as String);
+        // Store imageBase64 in state, not in document entity
+        emit(state.copyWith(imageBase64: value as String));
         break;
       default:
-        updatedDoc = state.document!;
+        return;
     }
-    emit(state.copyWith(document: updatedDoc));
   }
 
   Future<void> saveDocument() async {
@@ -252,15 +277,9 @@ class DocDetailCubit extends Cubit<DocDetailState> {
           );
 
           if (isIncome) {
-            itemToSave = itemToSave.copyWith(
-              credit: item.total,
-              debit: 0,
-            );
+            itemToSave = itemToSave.copyWith(credit: item.total, debit: 0);
           } else if (isExpense) {
-            itemToSave = itemToSave.copyWith(
-              debit: item.total,
-              credit: 0,
-            );
+            itemToSave = itemToSave.copyWith(debit: item.total, credit: 0);
           }
         }
 
@@ -281,6 +300,22 @@ class DocDetailCubit extends Cubit<DocDetailState> {
       final refreshedItems = await _lineItemRepository.getLineItemsByDocumentId(
         docId,
       );
+
+      // Save the image if it exists in state
+      if (_imageRepository != null &&
+          state.imageBase64 != null &&
+          state.imageBase64!.isNotEmpty) {
+        try {
+          await _imageRepository.saveImage(docId, state.imageBase64!);
+          // Update document with imageRef if it doesn't have one
+          if (docToSave.imageRef == null) {
+            docToSave = docToSave.copyWith(imageRef: docId);
+            await _docRepository.updateDocument(docToSave);
+          }
+        } catch (e) {
+          print('Failed to save image: $e');
+        }
+      }
 
       emit(
         state.copyWith(

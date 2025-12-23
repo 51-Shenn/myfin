@@ -20,7 +20,7 @@ class UploadScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) {
         final profileRepo = ProfileRepositoryImpl(
-          remoteDataSource: ProfileRemoteDataSourceImpl()
+          remoteDataSource: ProfileRemoteDataSourceImpl(),
         );
 
         return UploadCubit(
@@ -71,17 +71,19 @@ class UploadView extends StatelessWidget {
           Navigator.pushNamed(
             context,
             '/doc_details',
-            arguments: DocDetailsArguments(
-              existingDocument: state.selectedDocument,
-              existingLineItems: state.extractedLineItems,
-            ),
+            arguments: state.imageBase64 != null
+                ? DocDetailsArguments(
+                    existingDocument: state.selectedDocument,
+                    existingLineItems: state.extractedLineItems,
+                    imageBase64: state.imageBase64,
+                  )
+                : DocDetailsArguments(documentId: state.selectedDocument.id),
           ).then((_) {
             if (!context.mounted) return;
             NavBarController.of(context)?.toggleNavBar();
             context.read<UploadCubit>().fetchDocument();
           });
-        }
-        else if (state is UploadNavigateToHistory) {
+        } else if (state is UploadNavigateToHistory) {
           NavBarController.of(context)?.toggleNavBar();
           Navigator.pushNamed(context, '/upload_history').then((_) {
             if (!context.mounted) return;
