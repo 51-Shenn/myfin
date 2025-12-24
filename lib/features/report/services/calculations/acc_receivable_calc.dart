@@ -15,9 +15,8 @@ class AccountsReceivableCalculator {
 
   List<Document> getReceivableDocuments() {
     return documents.where((doc) {
-      return (doc.status == 'Posted' || doc.status == 'Approved') &&
-          (doc.metadata?.map((m) => m.key).contains('Customer Name') ??
-              false) && // check if
+      return doc.type == 'Sales Invoice' &&
+          (doc.status == 'Posted' || doc.status == 'Draft') &&
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }

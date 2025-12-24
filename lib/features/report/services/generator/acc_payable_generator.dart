@@ -39,7 +39,7 @@ class AccPayableGenerator {
         }
 
         final phoneEntry = metadata.firstWhere(
-          (m) => m.key == 'Supplier Phone',
+          (m) => m.key == 'Supplier Contact',
           orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
         );
         final emailEntry = metadata.firstWhere(

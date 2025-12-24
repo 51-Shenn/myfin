@@ -15,9 +15,8 @@ class AccountsPayableCalculator {
 
   List<Document> getPayableDocuments() {
     return documents.where((doc) {
-      return (doc.status == 'Posted' || doc.status == 'Approved') &&
-          (doc.metadata?.map((m) => m.key).contains('Supplier Name') ??
-              false) && 
+      return doc.type == 'Sales Invoice' &&
+          doc.status == 'Posted' &&
           doc.postingDate.isBefore(asOfDate.add(const Duration(days: 1)));
     }).toList();
   }
@@ -48,7 +47,7 @@ class AccountsPayableCalculator {
     if (doc.metadata != null) {
       try {
         final dueDateMetadata = doc.metadata!.firstWhere(
-          (m) => m.key == 'due_date',
+          (m) => m.key == 'Due Date',
           orElse: () => AdditionalInfoRow(id: '', key: '', value: ''),
         );
 
